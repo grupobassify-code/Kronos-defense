@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#064E3B" />
+      <stop offset="100%" stop-color="#022C22" />
+    </radialGradient>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4ADE80" />
+      <stop offset="100%" stop-color="#15803D" />
+    </linearGradient>
+  </defs>
+
+  <!-- Base Badge Background -->
+  <rect width="256" height="256" rx="28" fill="url(#bgGrad)" />
+  <rect x="4" y="4" width="248" height="248" rx="24" fill="none" stroke="#15803D" stroke-width="3" opacity="0.6" />
+
+  
+      <!-- Thorn Bramble Ring -->
+      <circle cx="128" cy="128" r="105" fill="none" stroke="#15803D" stroke-width="4" stroke-dasharray="16, 6" />
+      <!-- Crown of Briars & Thorns -->
+      <path d="M65 95 L90 55 L115 85 L128 40 L141 85 L166 55 L191 95 Z" fill="#14532D" stroke="#4ADE80" stroke-width="3" />
+      <!-- Rose Blooms in Crown -->
+      <circle cx="128" cy="85" r="10" fill="#E11D48" stroke="#FB7185" stroke-width="2" />
+      <circle cx="95" cy="90" r="7" fill="#E11D48" />
+      <circle cx="161" cy="90" r="7" fill="#E11D48" />
+      <!-- Queen Face -->
+      <path d="M98 100 C98 90, 158 90, 158 100 C158 140, 146 165, 128 170 C110 165, 98 140, 98 100 Z" fill="#DCFCE7" />
+      <!-- Seductive Toxic Eyes -->
+      <ellipse cx="114" cy="115" rx="6" ry="3" fill="#15803D" />
+      <ellipse cx="142" cy="115" rx="6" ry="3" fill="#15803D" />
+      <circle cx="114" cy="115" r="2" fill="#4ADE80" />
+      <circle cx="142" cy="115" r="2" fill="#4ADE80" />
+      <!-- Thorn Whip -->
+      <path d="M50 170 Q100 220 180 185 Q210 170 230 190" stroke="#15803D" stroke-width="4" fill="none" stroke-linecap="round" />
+      <polygon points="120,195 125,205 115,205" fill="#4ADE80" />
+      <polygon points="150,185 155,195 145,195" fill="#4ADE80" />
+    
+</svg>

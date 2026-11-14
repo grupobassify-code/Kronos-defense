@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#881337" />
+      <stop offset="100%" stop-color="#4C0519" />
+    </radialGradient>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDA4AF" />
+      <stop offset="100%" stop-color="#F43F5E" />
+    </linearGradient>
+  </defs>
+
+  <!-- Base Badge Background -->
+  <rect width="256" height="256" rx="28" fill="url(#bgGrad)" />
+  <rect x="4" y="4" width="248" height="248" rx="24" fill="none" stroke="#F43F5E" stroke-width="3" opacity="0.6" />
+
+  
+      <!-- Rising Sun Blood Eclipse -->
+      <circle cx="128" cy="128" r="95" fill="#9F1239" opacity="0.3" />
+      <circle cx="128" cy="128" r="105" fill="none" stroke="#F43F5E" stroke-width="4" stroke-dasharray="16, 8" />
+      <!-- Kabuto Helmet Crest (Kuwagata) -->
+      <path d="M128 65 Q95 20 60 25 Q90 55 120 70 Z" fill="#F43F5E" stroke="#FECDD3" stroke-width="2" />
+      <path d="M128 65 Q161 20 196 25 Q166 55 136 70 Z" fill="#F43F5E" stroke="#FECDD3" stroke-width="2" />
+      <circle cx="128" cy="68" r="9" fill="#FFF1F2" stroke="#E11D48" stroke-width="3" />
+      <!-- Samurai Menpo Mask & Helm -->
+      <path d="M84 90 C84 65, 172 65, 172 90 L180 140 C180 185, 142 200, 128 202 C114 200, 76 185, 76 140 Z" fill="#4C0519" stroke="#E11D48" stroke-width="4" />
+      <!-- Menpo Fierce Teeth Grin -->
+      <path d="M102 145 L154 145 L144 175 L112 175 Z" fill="#BE123C" stroke="#FFF1F2" stroke-width="2" />
+      <line x1="114" y1="148" x2="114" y2="172" stroke="#FFF1F2" stroke-width="2" />
+      <line x1="128" y1="148" x2="128" y2="172" stroke="#FFF1F2" stroke-width="2" />
+      <line x1="142" y1="148" x2="142" y2="172" stroke="#FFF1F2" stroke-width="2" />
+      <!-- Glowing Crimson Eyes -->
+      <ellipse cx="112" cy="115" rx="7" ry="4" fill="#FDA4AF" filter="drop-shadow(0 0 6px #F43F5E)" />
+      <ellipse cx="144" cy="115" rx="7" ry="4" fill="#FDA4AF" filter="drop-shadow(0 0 6px #F43F5E)" />
+      <!-- Katana Slashing Arc -->
+      <path d="M40 210 Q140 180 220 90" stroke="#FFF1F2" stroke-width="5" stroke-linecap="round" filter="drop-shadow(0 0 8px #F43F5E)" />
+    
+</svg>

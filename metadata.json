@@ -1,0 +1,6 @@
+{
+  "name": "Chronos Defense: Tactical Showdown",
+  "description": "Un moderno juego de Tower Defense por rondas en cuadrícula con unidades heroicas, árbol de mejoras, habilidades especiales Showdown y épicas batallas contra jefes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

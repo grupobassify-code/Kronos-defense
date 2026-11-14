@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#14532D" />
+      <stop offset="100%" stop-color="#052E16" />
+    </radialGradient>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#86EFAC" />
+      <stop offset="100%" stop-color="#22C55E" />
+    </linearGradient>
+  </defs>
+
+  <!-- Base Badge Background -->
+  <rect width="256" height="256" rx="28" fill="url(#bgGrad)" />
+  <rect x="4" y="4" width="248" height="248" rx="24" fill="none" stroke="#22C55E" stroke-width="3" opacity="0.6" />
+
+  
+      <!-- Ancient Bramble Vines & Leaves -->
+      <circle cx="128" cy="128" r="105" fill="none" stroke="#22C55E" stroke-width="4" stroke-dasharray="14, 10" opacity="0.6" />
+      <!-- Antler Headdress -->
+      <path d="M80 85 Q50 45 40 25 M55 45 Q35 55 25 50" stroke="#78350F" stroke-width="6" stroke-linecap="round" />
+      <path d="M176 85 Q206 45 216 25 M201 45 Q221 55 231 50" stroke="#78350F" stroke-width="6" stroke-linecap="round" />
+      <!-- Leafy Cowl -->
+      <path d="M82 100 C82 55, 174 55, 174 100 C174 155, 158 190, 128 196 C98 190, 82 155, 82 100 Z" fill="#166534" stroke="#22C55E" stroke-width="4" />
+      <!-- Druid Face with Nature Markings -->
+      <path d="M100 105 C100 95, 156 95, 156 105 C156 142, 144 165, 128 168 C112 165, 100 142, 100 105 Z" fill="#FED7AA" />
+      <!-- Emerald Glow Eyes -->
+      <circle cx="114" cy="120" r="4" fill="#22C55E" filter="drop-shadow(0 0 6px #22C55E)" />
+      <circle cx="142" cy="120" r="4" fill="#22C55E" filter="drop-shadow(0 0 6px #22C55E)" />
+      <!-- Leaf Crown -->
+      <path d="M110 92 Q128 75 146 92" stroke="#86EFAC" stroke-width="4" fill="none" />
+      <!-- Living Wooden Staff with Glowing Bud -->
+      <path d="M175 60 L185 220" stroke="#78350F" stroke-width="8" stroke-linecap="round" />
+      <circle cx="174" cy="55" r="14" fill="#22C55E" filter="drop-shadow(0 0 14px #86EFAC)" />
+      <circle cx="174" cy="55" r="7" fill="#FEF08A" />
+    
+</svg>

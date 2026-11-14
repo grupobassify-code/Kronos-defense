@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#78350F" />
+      <stop offset="100%" stop-color="#451A03" />
+    </radialGradient>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEF08A" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+  </defs>
+
+  <!-- Base Badge Background -->
+  <rect width="256" height="256" rx="28" fill="url(#bgGrad)" />
+  <rect x="4" y="4" width="248" height="248" rx="24" fill="none" stroke="#F59E0B" stroke-width="3" opacity="0.6" />
+
+  
+      <!-- Radiant Solar Halo Aura -->
+      <circle cx="128" cy="128" r="105" fill="none" stroke="#F59E0B" stroke-width="5" stroke-dasharray="18, 8" />
+      <circle cx="128" cy="128" r="85" fill="none" stroke="#FEF08A" stroke-width="2" opacity="0.6" />
+      <!-- Sun Rays -->
+      <g transform="translate(128, 128)">
+        <line x1="0" y1="-80" x2="0" y2="-95" stroke="#FEF08A" stroke-width="4" stroke-linecap="round" />
+        <line x1="56" y1="-56" x2="68" y2="-68" stroke="#FEF08A" stroke-width="4" stroke-linecap="round" />
+        <line x1="80" y1="0" x2="95" y2="0" stroke="#FEF08A" stroke-width="4" stroke-linecap="round" />
+        <line x1="56" y1="56" x2="68" y2="68" stroke="#FEF08A" stroke-width="4" stroke-linecap="round" />
+        <line x1="-56" y1="-56" x2="-68" y2="-68" stroke="#FEF08A" stroke-width="4" stroke-linecap="round" />
+        <line x1="-80" y1="0" x2="-95" y2="0" stroke="#FEF08A" stroke-width="4" stroke-linecap="round" />
+      </g>
+      <!-- Sun Priest Mitre / Crown -->
+      <path d="M90 90 L128 35 L166 90 Z" fill="#D97706" stroke="#FEF08A" stroke-width="3" />
+      <circle cx="128" cy="68" r="10" fill="#FEF08A" filter="drop-shadow(0 0 10px #F59E0B)" />
+      <!-- Golden Vestments & Face -->
+      <path d="M88 100 C88 80, 168 80, 168 100 C168 150, 152 185, 128 190 C104 185, 88 150, 88 100 Z" fill="#92400E" stroke="#F59E0B" stroke-width="3" />
+      <path d="M102 108 C102 100, 154 100, 154 108 C154 140, 142 160, 128 164 C114 160, 102 140, 102 108 Z" fill="#FED7AA" />
+      <circle cx="116" cy="120" r="4" fill="#D97706" />
+      <circle cx="140" cy="120" r="4" fill="#D97706" />
+      <!-- Solar Ankh / Staff -->
+      <circle cx="128" cy="205" r="14" fill="#F59E0B" stroke="#FEF08A" stroke-width="3" filter="drop-shadow(0 0 8px #F59E0B)" />
+    
+</svg>
