@@ -71,7 +71,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
               onClick={handleOpen}
             >
               <img
-                src="/src/assets/images/card_pack_booster_1791485514522.jpg"
+                src="/assets/images/card_pack_booster_1791485514522.jpg"
                 alt="Sobre Crono"
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"

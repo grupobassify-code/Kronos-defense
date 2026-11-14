@@ -84,7 +84,7 @@ export const ENEMIES: Record<EnemyType, EnemyBlueprint> = {
     size: 26,
     color: '#E11D48',
     accentColor: '#FDA4AF',
-    imageUrl: '/src/assets/images/boss_goliath_1791483684669.jpg',
+    imageUrl: '/assets/images/boss_goliath_1791483684669.jpg',
     isBoss: true,
     specialAbility: 'Inmune a CC duro · Daño devastador a la base'
   },
@@ -101,7 +101,7 @@ export const ENEMIES: Record<EnemyType, EnemyBlueprint> = {
     size: 32,
     color: '#4C1D95',
     accentColor: '#F43F5E',
-    imageUrl: '/src/assets/images/boss_eclipse_1791483718360.jpg',
+    imageUrl: '/assets/images/boss_eclipse_1791483718360.jpg',
     isBoss: true,
     specialAbility: 'Aura de anulación y vitalidad estelar'
   },

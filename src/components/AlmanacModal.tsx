@@ -124,7 +124,7 @@ export const AlmanacModal: React.FC<AlmanacModalProps> = ({ onClose }) => {
                 </div>
                 <div className="rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-black">
                   <img
-                    src="/src/assets/images/spritesheet_heroes_roster_1791484962258.jpg"
+                    src="/assets/images/spritesheet_heroes_roster_1791484962258.jpg"
                     alt="Hoja de Sprites de Héroes Chronos Defense"
                     referrerPolicy="no-referrer"
                     className="w-full h-auto object-contain hover:scale-[1.01] transition-transform duration-200"
@@ -150,7 +150,7 @@ export const AlmanacModal: React.FC<AlmanacModalProps> = ({ onClose }) => {
                 </div>
                 <div className="rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-black">
                   <img
-                    src="/src/assets/images/spritesheet_enemies_horde_1791484974731.jpg"
+                    src="/assets/images/spritesheet_enemies_horde_1791484974731.jpg"
                     alt="Hoja de Sprites de Enemigos Chronos Defense"
                     referrerPolicy="no-referrer"
                     className="w-full h-auto object-contain hover:scale-[1.01] transition-transform duration-200"
@@ -176,7 +176,7 @@ export const AlmanacModal: React.FC<AlmanacModalProps> = ({ onClose }) => {
                 </div>
                 <div className="max-w-md mx-auto rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-black">
                   <img
-                    src="/src/assets/images/spritesheet_tactical_vfx_1791484983154.jpg"
+                    src="/assets/images/spritesheet_tactical_vfx_1791484983154.jpg"
                     alt="Matriz de Ataques y Habilidades Chronos Defense"
                     referrerPolicy="no-referrer"
                     className="w-full h-auto object-contain hover:scale-[1.01] transition-transform duration-200"

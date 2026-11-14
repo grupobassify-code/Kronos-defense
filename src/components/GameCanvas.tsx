@@ -69,9 +69,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   // Preload map, unit, and sprite sheet images
   useEffect(() => {
     if (map.bgImageUrl) getImage(map.bgImageUrl);
-    getImage('/src/assets/images/spritesheet_heroes_roster_1791484962258.jpg');
-    getImage('/src/assets/images/spritesheet_enemies_horde_1791484974731.jpg');
-    getImage('/src/assets/images/spritesheet_tactical_vfx_1791484983154.jpg');
+    getImage('/assets/images/spritesheet_heroes_roster_1791484962258.jpg');
+    getImage('/assets/images/spritesheet_enemies_horde_1791484974731.jpg');
+    getImage('/assets/images/spritesheet_tactical_vfx_1791484983154.jpg');
     Object.values(UNITS).forEach((u) => {
       if (u.imageUrl) getImage(u.imageUrl);
       if (u.showdownImageUrl) getImage(u.showdownImageUrl);
@@ -1188,7 +1188,7 @@ function drawShowdownOverlay(
   const p = vfx.progress;
 
   if (vfx.type === 'supernova') {
-    const atkImg = getImage('/src/assets/images/attack_supernova_1791483748936.jpg');
+    const atkImg = getImage('/assets/images/attack_supernova_1791483748936.jpg');
     if (atkImg) {
       const size = Math.min(width, height) * (0.6 + p * 0.8);
       ctx.globalAlpha = Math.max(0, 1 - p);
@@ -1197,7 +1197,7 @@ function drawShowdownOverlay(
     ctx.fillStyle = `rgba(239, 68, 68, ${0.4 * (1 - p)})`;
     ctx.fillRect(0, 0, width, height);
   } else if (vfx.type === 'meteor') {
-    const atkImg = getImage('/src/assets/images/attack_meteor_1791483757694.jpg');
+    const atkImg = getImage('/assets/images/attack_meteor_1791483757694.jpg');
     if (atkImg) {
       const size = 260 * (1 - p * 0.3);
       const x = width * 0.3 + p * width * 0.4;
@@ -1206,7 +1206,7 @@ function drawShowdownOverlay(
       ctx.drawImage(atkImg, x - size / 2, y - size / 2, size, size);
     }
   } else if (vfx.type === 'orbital') {
-    const atkImg = getImage('/src/assets/images/attack_orbital_beam_1791483770365.jpg');
+    const atkImg = getImage('/assets/images/attack_orbital_beam_1791483770365.jpg');
     if (atkImg) {
       ctx.globalAlpha = Math.max(0, 1 - p);
       ctx.drawImage(atkImg, 0, 0, width, height);

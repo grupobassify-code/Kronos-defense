@@ -10,7 +10,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/map_emerald_valley_1791483583627.jpg',
+    bgImageUrl: '/assets/images/map_emerald_valley_1791483583627.jpg',
     pathWaypoints: [
       { x: 0, y: 2 },
       { x: 5, y: 2 },
@@ -47,7 +47,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/map_magma_canyon_1791483594170.jpg',
+    bgImageUrl: '/assets/images/map_magma_canyon_1791483594170.jpg',
     pathWaypoints: [
       { x: 0, y: 5 },
       { x: 3, y: 5 },
@@ -84,7 +84,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/map_cyber_bastion_1791483604754.jpg',
+    bgImageUrl: '/assets/images/map_cyber_bastion_1791483604754.jpg',
     pathWaypoints: [
       { x: 0, y: 1 },
       { x: 14, y: 1 },
@@ -121,7 +121,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/map_chrono_desert_1791557263959.jpg',
+    bgImageUrl: '/assets/images/map_chrono_desert_1791557263959.jpg',
     pathWaypoints: [
       { x: 0, y: 8 },
       { x: 4, y: 8 },
@@ -158,7 +158,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/map_eclipse_colosseum_1791557284111.jpg',
+    bgImageUrl: '/assets/images/map_eclipse_colosseum_1791557284111.jpg',
     pathWaypoints: [
       { x: 0, y: 4 },
       { x: 6, y: 4 },
@@ -195,7 +195,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/arena_glacier_peaks_1791645617666.jpg',
+    bgImageUrl: '/assets/images/arena_glacier_peaks_1791645617666.jpg',
     pathWaypoints: [
       { x: 0, y: 3 },
       { x: 4, y: 3 },
@@ -231,7 +231,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/arena_neon_metropolis_1791645633582.jpg',
+    bgImageUrl: '/assets/images/arena_neon_metropolis_1791645633582.jpg',
     pathWaypoints: [
       { x: 0, y: 6 },
       { x: 7, y: 6 },
@@ -267,7 +267,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/arena_void_abyss_1791645656970.jpg',
+    bgImageUrl: '/assets/images/arena_void_abyss_1791645656970.jpg',
     pathWaypoints: [
       { x: 0, y: 2 },
       { x: 3, y: 2 },
@@ -303,7 +303,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/arena_celestial_sanctum_1791645674094.jpg',
+    bgImageUrl: '/assets/images/arena_celestial_sanctum_1791645674094.jpg',
     pathWaypoints: [
       { x: 0, y: 8 },
       { x: 5, y: 8 },
@@ -337,7 +337,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/arena_storm_citadel_1791645689441.jpg',
+    bgImageUrl: '/assets/images/arena_storm_citadel_1791645689441.jpg',
     pathWaypoints: [
       { x: 0, y: 5 },
       { x: 4, y: 5 },
@@ -373,7 +373,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/arena_emerald_jungle_1791645706880.jpg',
+    bgImageUrl: '/assets/images/arena_emerald_jungle_1791645706880.jpg',
     pathWaypoints: [
       { x: 0, y: 1 },
       { x: 6, y: 1 },
@@ -409,7 +409,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/arena_infernal_forge_1791645728799.jpg',
+    bgImageUrl: '/assets/images/arena_infernal_forge_1791645728799.jpg',
     pathWaypoints: [
       { x: 0, y: 7 },
       { x: 5, y: 7 },
@@ -445,7 +445,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/arena_astral_nexus_1791645751961.jpg',
+    bgImageUrl: '/assets/images/arena_astral_nexus_1791645751961.jpg',
     pathWaypoints: [
       { x: 0, y: 4 },
       { x: 4, y: 4 },
@@ -481,7 +481,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/arena_shadow_crypt_1791645769745.jpg',
+    bgImageUrl: '/assets/images/arena_shadow_crypt_1791645769745.jpg',
     pathWaypoints: [
       { x: 0, y: 9 },
       { x: 4, y: 9 },
@@ -517,7 +517,7 @@ export const MAPS: MapData[] = [
     cols: 18,
     rows: 11,
     tileSize: 52,
-    bgImageUrl: '/src/assets/images/arena_valhalla_throne_1791645790729.jpg',
+    bgImageUrl: '/assets/images/arena_valhalla_throne_1791645790729.jpg',
     pathWaypoints: [
       { x: 0, y: 5 },
       { x: 3, y: 5 },
