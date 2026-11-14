@@ -15,6 +15,7 @@ import {
   Skull
 } from 'lucide-react';
 import { UnitRole } from '../types/game';
+import { GameImage } from './GameImage';
 
 interface AlmanacModalProps {
   onClose: () => void;
@@ -123,10 +124,9 @@ export const AlmanacModal: React.FC<AlmanacModalProps> = ({ onClose }) => {
                   </span>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-black">
-                  <img
+                  <GameImage
                     src="/assets/images/spritesheet_heroes_roster_1791484962258.jpg"
                     alt="Hoja de Sprites de Héroes Chronos Defense"
-                    referrerPolicy="no-referrer"
                     className="w-full h-auto object-contain hover:scale-[1.01] transition-transform duration-200"
                   />
                 </div>
@@ -149,10 +149,10 @@ export const AlmanacModal: React.FC<AlmanacModalProps> = ({ onClose }) => {
                   </span>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-black">
-                  <img
+                  <GameImage
                     src="/assets/images/spritesheet_enemies_horde_1791484974731.jpg"
                     alt="Hoja de Sprites de Enemigos Chronos Defense"
-                    referrerPolicy="no-referrer"
+                    loading="lazy"
                     className="w-full h-auto object-contain hover:scale-[1.01] transition-transform duration-200"
                   />
                 </div>
@@ -175,10 +175,10 @@ export const AlmanacModal: React.FC<AlmanacModalProps> = ({ onClose }) => {
                   </span>
                 </div>
                 <div className="max-w-md mx-auto rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-black">
-                  <img
+                  <GameImage
                     src="/assets/images/spritesheet_tactical_vfx_1791484983154.jpg"
                     alt="Matriz de Ataques y Habilidades Chronos Defense"
-                    referrerPolicy="no-referrer"
+                    loading="lazy"
                     className="w-full h-auto object-contain hover:scale-[1.01] transition-transform duration-200"
                   />
                 </div>
@@ -212,11 +212,17 @@ export const AlmanacModal: React.FC<AlmanacModalProps> = ({ onClose }) => {
                           }}
                         >
                           {unit.imageUrl ? (
-                            <img
+                            <GameImage
                               src={unit.imageUrl}
                               alt={unit.name}
-                              referrerPolicy="no-referrer"
+                              loading="lazy"
                               className="w-full h-full object-cover"
+                              fallback={
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: unit.colorTheme.primary }}
+                                />
+                              }
                             />
                           ) : (
                             <div
@@ -257,11 +263,16 @@ export const AlmanacModal: React.FC<AlmanacModalProps> = ({ onClose }) => {
                         }}
                       >
                         {selectedUnit.imageUrl ? (
-                          <img
+                          <GameImage
                             src={selectedUnit.imageUrl}
                             alt={selectedUnit.name}
-                            referrerPolicy="no-referrer"
                             className="w-full h-full object-cover"
+                            fallback={
+                              <div
+                                className="w-6 h-6 rounded-full"
+                                style={{ backgroundColor: selectedUnit.colorTheme.primary }}
+                              />
+                            }
                           />
                         ) : (
                           <div
@@ -295,10 +306,9 @@ export const AlmanacModal: React.FC<AlmanacModalProps> = ({ onClose }) => {
                   <div className="mt-3 p-3 bg-amber-950/30 border border-amber-800/40 rounded-xl relative overflow-hidden">
                     {selectedUnit.showdownImageUrl && (
                       <div className="w-full h-20 rounded-lg overflow-hidden border border-amber-800/40 mb-2 relative">
-                        <img
+                        <GameImage
                           src={selectedUnit.showdownImageUrl}
                           alt={selectedUnit.showdownName}
-                          referrerPolicy="no-referrer"
                           className="w-full h-full object-cover opacity-80"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-transparent" />
@@ -378,11 +388,17 @@ export const AlmanacModal: React.FC<AlmanacModalProps> = ({ onClose }) => {
                       <div className="flex items-center gap-2">
                         {enemy.imageUrl ? (
                           <div className="w-8 h-8 rounded-lg overflow-hidden border border-red-500/50 shrink-0">
-                            <img
+                            <GameImage
                               src={enemy.imageUrl}
                               alt={enemy.name}
-                              referrerPolicy="no-referrer"
+                              loading="lazy"
                               className="w-full h-full object-cover"
+                              fallback={
+                                <div
+                                  className="w-4 h-4 rounded-full"
+                                  style={{ backgroundColor: enemy.accentColor }}
+                                />
+                              }
                             />
                           </div>
                         ) : (

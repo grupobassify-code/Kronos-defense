@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { music } from '../utils/music';
 import { saveProgression } from '../utils/progression';
+import { GameImage } from './GameImage';
 
 interface CardsHubProps {
   progression: PlayerProgression;
@@ -332,11 +333,15 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                       </div>
                       <div className={`w-full h-14 rounded-lg overflow-hidden mb-1.5 border-2 ${rMeta.cardBorder} bg-slate-950`}>
                         {deckUnit.imageUrl && (
-                          <img
+                          <GameImage
                             src={deckUnit.imageUrl}
                             alt={deckUnit.name}
-                            referrerPolicy="no-referrer"
                             className="w-full h-full object-cover"
+                            fallback={
+                              <div className="w-full h-full flex items-center justify-center bg-slate-900 text-xs font-bold text-slate-400">
+                                {deckUnit.name.slice(0, 2).toUpperCase()}
+                              </div>
+                            }
                           />
                         )}
                       </div>
@@ -586,13 +591,18 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                         {/* Portrait */}
                         <div className={`relative w-full h-24 sm:h-28 rounded-xl overflow-hidden mb-2 border-2 ${rMeta.cardBorder} bg-slate-900`}>
                           {unit.imageUrl ? (
-                            <img
+                            <GameImage
                               src={unit.imageUrl}
                               alt={unit.name}
-                              referrerPolicy="no-referrer"
+                              loading="lazy"
                               className={`w-full h-full object-cover transition-transform group-hover:scale-105 ${
                                 !isUnlocked ? 'grayscale opacity-40' : ''
                               }`}
+                              fallback={
+                                <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400 text-xs font-bold">
+                                  {unit.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              }
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500">
@@ -680,11 +690,15 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                       <div className="flex items-center gap-3.5 pb-4 border-b border-slate-800">
                         <div className={`w-16 h-16 rounded-2xl overflow-hidden border-2 ${selRMeta.cardBorder} bg-slate-900 shrink-0 shadow-lg relative`}>
                           {selectedUnit.imageUrl && (
-                            <img
+                            <GameImage
                               src={selectedUnit.imageUrl}
                               alt={selectedUnit.name}
-                              referrerPolicy="no-referrer"
                               className={`w-full h-full object-cover ${!isSelectedUnlocked ? 'grayscale opacity-40' : ''}`}
+                              fallback={
+                                <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400 text-sm font-bold">
+                                  {selectedUnit.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              }
                             />
                           )}
                         </div>
@@ -1010,11 +1024,11 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                       : 'border-slate-800 opacity-60 cursor-not-allowed'
                   } ${isOpeningPack ? 'scale-110 rotate-1 animate-pulse border-amber-400' : ''}`}
                 >
-                  <img
+                  <GameImage
                     src="/assets/images/card_pack_booster_1791485514522.jpg"
                     alt="Sobre Crono"
-                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
+                    fallback={<div className="w-full h-full bg-purple-950 flex items-center justify-center text-4xl">🎴</div>}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end justify-center p-3">
                     <span className="text-xs font-bold text-yellow-300 uppercase tracking-wider">
@@ -1075,11 +1089,15 @@ export const CardsHub: React.FC<CardsHubProps> = ({
 
                             <div className={`w-20 h-20 rounded-2xl overflow-hidden border-2 ${rMeta.cardBorder} mb-2 shadow-lg`}>
                               {reward.cardId && UNITS[reward.cardId]?.imageUrl ? (
-                                <img
+                                <GameImage
                                   src={UNITS[reward.cardId].imageUrl}
                                   alt={reward.cardName}
-                                  referrerPolicy="no-referrer"
                                   className="w-full h-full object-cover"
+                                  fallback={
+                                    <div className="w-full h-full flex items-center justify-center bg-purple-950">
+                                      🎴
+                                    </div>
+                                  }
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-purple-950">
@@ -1255,11 +1273,12 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                       style={{ borderColor: enemy.color, backgroundColor: enemy.accentColor + '20' }}
                     >
                       {enemy.imageUrl ? (
-                        <img
+                        <GameImage
                           src={enemy.imageUrl}
                           alt={enemy.name}
-                          referrerPolicy="no-referrer"
+                          loading="lazy"
                           className="w-full h-full object-cover"
+                          fallback={<Skull className="w-5 h-5 text-red-400" />}
                         />
                       ) : (
                         <Skull className="w-5 h-5 text-red-400" />

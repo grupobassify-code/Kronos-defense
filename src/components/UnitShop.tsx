@@ -3,6 +3,7 @@ import { UnitBlueprint, UnitRole, UnitRarity } from '../types/game';
 import { UNIT_LIST, UNITS } from '../data/units';
 import { getRarityMeta, compareRarities } from '../utils/rarity';
 import { Coins, Zap, Shield, Flame, Snowflake, Sparkles, Lock, Star } from 'lucide-react';
+import { GameImage } from './GameImage';
 
 interface UnitShopProps {
   currentGold: number;
@@ -203,11 +204,16 @@ export const UnitShop: React.FC<UnitShopProps> = ({
                   }}
                 >
                   {unit.imageUrl ? (
-                    <img
+                    <GameImage
                       src={unit.imageUrl}
                       alt={unit.name}
-                      referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"
+                      fallback={
+                        <div
+                          className="w-3.5 h-3.5 rounded-full"
+                          style={{ backgroundColor: unit.colorTheme.primary }}
+                        />
+                      }
                     />
                   ) : (
                     <div

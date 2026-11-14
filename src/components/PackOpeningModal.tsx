@@ -3,6 +3,7 @@ import { PackReward } from '../types/game';
 import { UNITS } from '../data/units';
 import { sounds } from '../utils/audio';
 import { Sparkles, Coins, Zap, Check, ArrowRight, PackageOpen } from 'lucide-react';
+import { GameImage } from './GameImage';
 
 interface PackOpeningModalProps {
   unopenedCount: number;
@@ -70,11 +71,11 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
               }`}
               onClick={handleOpen}
             >
-              <img
+              <GameImage
                 src="/assets/images/card_pack_booster_1791485514522.jpg"
                 alt="Sobre Crono"
-                referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
+                fallback={<div className="w-full h-full bg-purple-950 flex items-center justify-center text-4xl">🎴</div>}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end justify-center p-3">
                 <span className="text-xs font-bold text-yellow-300 uppercase tracking-wider group-hover:scale-105 transition-transform">
@@ -119,11 +120,11 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                         </div>
                         <div className="w-16 h-16 rounded-xl overflow-hidden border border-purple-400 my-1 shadow-md">
                           {unit.imageUrl ? (
-                            <img
+                            <GameImage
                               src={unit.imageUrl}
                               alt={unit.name}
-                              referrerPolicy="no-referrer"
                               className="w-full h-full object-cover"
+                              fallback={<div className="w-full h-full bg-purple-600" />}
                             />
                           ) : (
                             <div className="w-full h-full bg-purple-600" />

@@ -17,6 +17,7 @@ import {
   Lock,
   Star
 } from 'lucide-react';
+import { GameImage } from './GameImage';
 
 interface UnitInspectorProps {
   unit: PlacedUnit;
@@ -91,11 +92,16 @@ export const UnitInspector: React.FC<UnitInspectorProps> = ({
             }}
           >
             {bp.imageUrl ? (
-              <img
+              <GameImage
                 src={bp.imageUrl}
                 alt={bp.name}
-                referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
+                fallback={
+                  <div
+                    className="w-5 h-5 rounded-full"
+                    style={{ backgroundColor: bp.colorTheme.primary }}
+                  />
+                }
               />
             ) : (
               <div
@@ -226,10 +232,9 @@ export const UnitInspector: React.FC<UnitInspectorProps> = ({
 
             {bp.showdownImageUrl && (
               <div className="w-full h-14 rounded-lg overflow-hidden border border-amber-800/40 mb-1.5 relative">
-                <img
+                <GameImage
                   src={bp.showdownImageUrl}
                   alt={bp.showdownName}
-                  referrerPolicy="no-referrer"
                   className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />

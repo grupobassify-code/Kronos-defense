@@ -43,6 +43,7 @@ import { RoundSummaryModal } from './components/RoundSummaryModal';
 import { GameOverModal } from './components/GameOverModal';
 import { CardsHub } from './components/CardsHub';
 import { MapSelectModal } from './components/MapSelectModal';
+import { GameImage } from './components/GameImage';
 
 export default function App() {
   // Story Mode Persistent Progression & Missions
@@ -2388,11 +2389,11 @@ export default function App() {
             {/* Arena Preview Image */}
             {arenaPromotion.arena.map.bgImageUrl && (
               <div className="w-full h-40 sm:h-48 rounded-2xl overflow-hidden border-2 border-slate-700/80 shadow-inner relative my-2">
-                <img
+                <GameImage
                   src={arenaPromotion.arena.map.bgImageUrl}
                   alt={arenaPromotion.arena.name}
-                  referrerPolicy="no-referrer"
                   className="w-full h-full object-cover"
+                  fallback={<div className="w-full h-full bg-slate-900" />}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end justify-between p-3">
                   <span className="text-xs font-bold text-amber-300">{arenaPromotion.arena.badge}</span>
@@ -2427,7 +2428,12 @@ export default function App() {
                 <div className="p-3 bg-gradient-to-r from-amber-950/90 via-purple-950/70 to-slate-900 border-2 border-amber-400/70 rounded-2xl flex items-center gap-3 text-left shadow-xl">
                   <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-amber-400 bg-slate-950 shrink-0 shadow-md">
                     {divUnit.imageUrl ? (
-                      <img src={divUnit.imageUrl} alt={divUnit.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                      <GameImage
+                        src={divUnit.imageUrl}
+                        alt={divUnit.name}
+                        className="w-full h-full object-cover"
+                        fallback={<div className="w-full h-full flex items-center justify-center text-xl">👑</div>}
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xl">👑</div>
                     )}

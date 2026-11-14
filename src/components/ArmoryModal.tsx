@@ -15,6 +15,7 @@ import {
   Coins,
   CheckCircle2
 } from 'lucide-react';
+import { GameImage } from './GameImage';
 
 interface ArmoryModalProps {
   progression: PlayerProgression;
@@ -130,11 +131,17 @@ export const ArmoryModal: React.FC<ArmoryModalProps> = ({
                         }}
                       >
                         {unit.imageUrl ? (
-                          <img
+                          <GameImage
                             src={unit.imageUrl}
                             alt={unit.name}
-                            referrerPolicy="no-referrer"
+                            loading="lazy"
                             className={`w-full h-full object-cover ${!unlocked ? 'grayscale' : ''}`}
+                            fallback={
+                              <div
+                                className="w-4 h-4 rounded-full"
+                                style={{ backgroundColor: unit.colorTheme.primary }}
+                              />
+                            }
                           />
                         ) : (
                           <div
@@ -202,11 +209,11 @@ export const ArmoryModal: React.FC<ArmoryModalProps> = ({
                     }}
                   >
                     {selectedUnit.imageUrl ? (
-                      <img
+                      <GameImage
                         src={selectedUnit.imageUrl}
                         alt={selectedUnit.name}
-                        referrerPolicy="no-referrer"
                         className={`w-full h-full object-cover ${!isUnlocked ? 'grayscale' : ''}`}
+                        fallback={<div className="w-full h-full bg-slate-800" />}
                       />
                     ) : (
                       <div className="w-full h-full bg-slate-800" />

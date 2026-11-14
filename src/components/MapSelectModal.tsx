@@ -3,6 +3,7 @@ import { ARENAS, ArenaInfo } from '../data/maps';
 import { getDivinityForArena } from '../data/units';
 import { MapData } from '../types/game';
 import { Play, ChevronLeft, ChevronRight, Swords, Trophy, Lock, Sparkles, CheckCircle2, Shield } from 'lucide-react';
+import { GameImage } from './GameImage';
 
 interface MapSelectModalProps {
   currentMapId: string;
@@ -141,13 +142,18 @@ export const MapSelectModal: React.FC<MapSelectModalProps> = ({
                   {/* AI Generated Arena Artwork (16:9 widescreen) */}
                   <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden border border-slate-700/80 bg-slate-900 shadow-inner my-1">
                     {arena.map.bgImageUrl ? (
-                      <img
+                      <GameImage
                         src={arena.map.bgImageUrl}
                         alt={arena.name}
-                        referrerPolicy="no-referrer"
+                        loading={idx <= 2 ? 'eager' : 'lazy'}
                         className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
                           isArenaLocked ? 'grayscale opacity-40' : ''
                         }`}
+                        fallback={
+                          <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-bold bg-slate-900">
+                            {arena.name}
+                          </div>
+                        }
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">

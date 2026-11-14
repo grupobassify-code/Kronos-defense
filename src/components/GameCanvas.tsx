@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   MapData,
   PlacedUnit,
@@ -10,6 +10,7 @@ import {
 import { UNITS } from '../data/units';
 import { ENEMIES } from '../data/enemies';
 import { isPathTile, isObstacleTile } from '../utils/pathUtils';
+import { resolveAssetUrl } from '../utils/assets';
 
 interface GameCanvasProps {
   map: MapData;
@@ -30,18 +31,54 @@ interface GameCanvasProps {
   canAffordPlacement: boolean;
 }
 
-// Global Image Cache to prevent flickering during animation
+// Global Image Cache with onload subscription so canvas redraws as soon as web images finish loading
 const imageCache: Record<string, HTMLImageElement> = {};
+const imageLoadSubscribers = new Set<() => void>();
+
+function notifyImageLoaded() {
+  imageLoadSubscribers.forEach((cb) => {
+    try {
+      cb();
+    } catch {
+      // ignore
+    }
+  });
+}
 
 function getImage(url?: string): HTMLImageElement | null {
-  if (!url || typeof Image === 'undefined') return null;
-  if (!imageCache[url]) {
+  const resolved = resolveAssetUrl(url);
+  if (!resolved || typeof Image === 'undefined') return null;
+
+  if (!imageCache[resolved]) {
     const img = new Image();
-    img.src = url;
-    imageCache[url] = img;
+    img.decoding = 'async';
+    img.onload = () => notifyImageLoaded();
+    img.onerror = () => {
+      // Allow clean fallback without crashing drawImage
+    };
+    img.src = resolved;
+    imageCache[resolved] = img;
   }
-  const cached = imageCache[url];
+
+  const cached = imageCache[resolved];
   return cached.complete && cached.naturalWidth > 0 ? cached : null;
+}
+
+function safeDrawImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number
+): boolean {
+  try {
+    if (!img.complete || img.naturalWidth <= 0) return false;
+    ctx.drawImage(img, dx, dy, dw, dh);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -63,23 +100,26 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   canAffordPlacement
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [, setImageLoadTick] = useState(0);
 
   const canvasWidth = map.cols * map.tileSize;
   const canvasHeight = map.rows * map.tileSize;
 
-  // Preload map, unit, and sprite sheet images
+  // Subscribe to async image load events so canvas redraws immediately when web assets arrive
+  useEffect(() => {
+    const onLoaded = () => setImageLoadTick((n) => (n + 1) % 1000000);
+    imageLoadSubscribers.add(onLoaded);
+    return () => {
+      imageLoadSubscribers.delete(onLoaded);
+    };
+  }, []);
+
+  // Preload priority assets for the active map (avoid saturating browser connections on mount)
   useEffect(() => {
     if (map.bgImageUrl) getImage(map.bgImageUrl);
-    getImage('/assets/images/spritesheet_heroes_roster_1791484962258.jpg');
-    getImage('/assets/images/spritesheet_enemies_horde_1791484974731.jpg');
-    getImage('/assets/images/spritesheet_tactical_vfx_1791484983154.jpg');
-    Object.values(UNITS).forEach((u) => {
-      if (u.imageUrl) getImage(u.imageUrl);
-      if (u.showdownImageUrl) getImage(u.showdownImageUrl);
-    });
-    Object.values(ENEMIES).forEach((e) => {
-      if (e.imageUrl) getImage(e.imageUrl);
-    });
+    getImage('/assets/images/attack_supernova_1791483748936.jpg');
+    getImage('/assets/images/attack_meteor_1791483757694.jpg');
+    getImage('/assets/images/attack_orbital_beam_1791483770365.jpg');
   }, [map]);
 
   // Handle canvas mouse move
@@ -252,8 +292,7 @@ function drawGrid(
 
   // 1. Draw AI Scenery Background
   const bgImg = getImage(map.bgImageUrl);
-  if (bgImg) {
-    ctx.drawImage(bgImg, 0, 0, width, height);
+  if (bgImg && safeDrawImage(ctx, bgImg, 0, 0, width, height)) {
     // Dark tactical overlay to keep gameplay elements crisp and legible
     ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
     ctx.fillRect(0, 0, width, height);
@@ -682,7 +721,7 @@ function drawUnit(ctx: CanvasRenderingContext2D, unit: PlacedUnit, isSelected: b
     ctx.beginPath();
     ctx.arc(0, 0, 15.5, 0, Math.PI * 2);
     ctx.clip();
-    ctx.drawImage(heroImg, -16, -16, 32, 32);
+    safeDrawImage(ctx, heroImg, -16, -16, 32, 32);
     ctx.restore();
   } else {
     // Vector fallback
@@ -798,7 +837,7 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: ActiveEnemy) {
     ctx.arc(0, 0, size, 0, Math.PI * 2);
     ctx.save();
     ctx.clip();
-    ctx.drawImage(bossImg, -size, -size, size * 2, size * 2);
+    safeDrawImage(ctx, bossImg, -size, -size, size * 2, size * 2);
     ctx.restore();
 
     ctx.strokeStyle = accentColor;
@@ -1193,7 +1232,7 @@ function drawShowdownOverlay(
     if (atkImg) {
       const size = Math.min(width, height) * (0.6 + p * 0.8);
       ctx.globalAlpha = Math.max(0, 1 - p);
-      ctx.drawImage(atkImg, width / 2 - size / 2, height / 2 - size / 2, size, size);
+      safeDrawImage(ctx, atkImg, width / 2 - size / 2, height / 2 - size / 2, size, size);
     }
     ctx.fillStyle = `rgba(239, 68, 68, ${0.4 * (1 - p)})`;
     ctx.fillRect(0, 0, width, height);
@@ -1204,13 +1243,13 @@ function drawShowdownOverlay(
       const x = width * 0.3 + p * width * 0.4;
       const y = -50 + p * (height + 50);
       ctx.globalAlpha = Math.max(0, 1 - p * 0.5);
-      ctx.drawImage(atkImg, x - size / 2, y - size / 2, size, size);
+      safeDrawImage(ctx, atkImg, x - size / 2, y - size / 2, size, size);
     }
   } else if (vfx.type === 'orbital') {
     const atkImg = getImage('/assets/images/attack_orbital_beam_1791483770365.jpg');
     if (atkImg) {
       ctx.globalAlpha = Math.max(0, 1 - p);
-      ctx.drawImage(atkImg, 0, 0, width, height);
+      safeDrawImage(ctx, atkImg, 0, 0, width, height);
     }
     ctx.fillStyle = `rgba(168, 85, 247, ${0.4 * (1 - p)})`;
     ctx.fillRect(0, 0, width, height);
