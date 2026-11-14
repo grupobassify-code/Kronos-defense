@@ -34,13 +34,14 @@ interface GameCanvasProps {
 const imageCache: Record<string, HTMLImageElement> = {};
 
 function getImage(url?: string): HTMLImageElement | null {
-  if (!url) return null;
+  if (!url || typeof Image === 'undefined') return null;
   if (!imageCache[url]) {
     const img = new Image();
     img.src = url;
     imageCache[url] = img;
   }
-  return imageCache[url].complete ? imageCache[url] : null;
+  const cached = imageCache[url];
+  return cached.complete && cached.naturalWidth > 0 ? cached : null;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({

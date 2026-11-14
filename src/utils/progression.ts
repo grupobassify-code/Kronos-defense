@@ -75,47 +75,54 @@ export function loadProgression(): { progression: PlayerProgression; missions: M
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      const unlocked = parsed.progression?.unlockedCardIds?.length
-        ? parsed.progression.unlockedCardIds
-        : INITIAL_PROGRESSION.unlockedCardIds;
+      if (!parsed || typeof parsed !== 'object') {
+        return { progression: INITIAL_PROGRESSION, missions: INITIAL_MISSIONS };
+      }
 
-      const activeDeck = Array.isArray(parsed.progression?.activeDeckCardIds) && parsed.progression.activeDeckCardIds.length > 0
-        ? parsed.progression.activeDeckCardIds.filter((id: string) => unlocked.includes(id)).slice(0, 7)
-        : unlocked.slice(0, 7);
+      const rawProg = parsed.progression && typeof parsed.progression === 'object' ? parsed.progression : {};
+      const validUnlocked = Array.isArray(rawProg.unlockedCardIds)
+        ? rawProg.unlockedCardIds.filter((id: unknown): id is string => typeof id === 'string' && Boolean(UNITS[id]))
+        : [];
+      const unlocked = validUnlocked.length > 0 ? validUnlocked : INITIAL_PROGRESSION.unlockedCardIds;
+
+      const rawDeck = Array.isArray(rawProg.activeDeckCardIds)
+        ? rawProg.activeDeckCardIds.filter((id: unknown): id is string => typeof id === 'string' && unlocked.includes(id)).slice(0, 7)
+        : [];
 
       const prog: PlayerProgression = {
         ...INITIAL_PROGRESSION,
-        ...parsed.progression,
-        highestArenaUnlocked: Math.max(1, parsed.progression?.highestArenaUnlocked || 1),
-        killsTowardsNextPack: parsed.progression?.killsTowardsNextPack || 0,
-        packsClaimedFromKills: parsed.progression?.packsClaimedFromKills || 0,
-        lifetimeKills: parsed.progression?.lifetimeKills || 0,
-        lifetimeWaves: parsed.progression?.lifetimeWaves || 0,
-        lifetimeGold: parsed.progression?.lifetimeGold || 0,
-        highScoreWave: parsed.progression?.highScoreWave || 0,
-        arenaBestWaves: parsed.progression?.arenaBestWaves || {},
-        totalMatchesPlayed: parsed.progression?.totalMatchesPlayed || 0,
-        lastSavedTimestamp: parsed.progression?.lastSavedTimestamp || Date.now(),
+        ...rawProg,
+        highestArenaUnlocked: Math.max(1, Number(rawProg.highestArenaUnlocked) || 1),
+        killsTowardsNextPack: Number(rawProg.killsTowardsNextPack) || 0,
+        packsClaimedFromKills: Number(rawProg.packsClaimedFromKills) || 0,
+        lifetimeKills: Number(rawProg.lifetimeKills) || 0,
+        lifetimeWaves: Number(rawProg.lifetimeWaves) || 0,
+        lifetimeGold: Number(rawProg.lifetimeGold) || 0,
+        highScoreWave: Number(rawProg.highScoreWave) || 0,
+        arenaBestWaves: rawProg.arenaBestWaves && typeof rawProg.arenaBestWaves === 'object' ? rawProg.arenaBestWaves : {},
+        totalMatchesPlayed: Number(rawProg.totalMatchesPlayed) || 0,
+        lastSavedTimestamp: Number(rawProg.lastSavedTimestamp) || Date.now(),
         settings: {
           ...INITIAL_PROGRESSION.settings,
-          ...(parsed.progression?.settings || {})
+          ...(rawProg.settings && typeof rawProg.settings === 'object' ? rawProg.settings : {})
         },
         unlockedCardIds: unlocked,
-        activeDeckCardIds: activeDeck.length > 0 ? activeDeck : unlocked.slice(0, 7),
+        activeDeckCardIds: rawDeck.length > 0 ? rawDeck : unlocked.slice(0, 7),
         cardMasteryLevels: {
           ...INITIAL_PROGRESSION.cardMasteryLevels,
-          ...(parsed.progression?.cardMasteryLevels || {})
+          ...(rawProg.cardMasteryLevels && typeof rawProg.cardMasteryLevels === 'object' ? rawProg.cardMasteryLevels : {})
         }
       };
 
+      const savedMissionsList = Array.isArray(parsed.missions) ? parsed.missions : [];
       const missions: Mission[] = INITIAL_MISSIONS.map((m) => {
-        const saved = parsed.missions?.find((sm: Mission) => sm.id === m.id);
+        const saved = savedMissionsList.find((sm: Mission) => sm && sm.id === m.id);
         if (saved) {
           return {
             ...m,
-            currentCount: saved.currentCount || 0,
-            completed: saved.completed || false,
-            claimed: saved.claimed || false
+            currentCount: Number(saved.currentCount) || 0,
+            completed: Boolean(saved.completed),
+            claimed: Boolean(saved.claimed)
           };
         }
         return m;

@@ -47,33 +47,37 @@ class ProceduralMusicEngine {
   }
 
   private initContext() {
-    if (!this.ctx && typeof window !== 'undefined') {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (AudioCtx) {
-        this.ctx = new AudioCtx();
-        this.masterMusicGain = this.ctx.createGain();
-        this.masterMusicGain.gain.setValueAtTime(
-          this.isMuted ? 0 : this.volume,
-          this.ctx.currentTime
-        );
-        this.masterMusicGain.connect(this.ctx.destination);
+    try {
+      if (!this.ctx && typeof window !== 'undefined') {
+        const AudioCtx =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) {
+          this.ctx = new AudioCtx();
+          this.masterMusicGain = this.ctx.createGain();
+          this.masterMusicGain.gain.setValueAtTime(
+            this.isMuted ? 0 : this.volume,
+            this.ctx.currentTime
+          );
+          this.masterMusicGain.connect(this.ctx.destination);
 
-        // Create spatial ambient delay bus
-        this.delayNode = this.ctx.createDelay();
-        this.delayNode.delayTime.setValueAtTime(0.24, this.ctx.currentTime);
-        this.delayGain = this.ctx.createGain();
-        this.delayGain.gain.setValueAtTime(0.22, this.ctx.currentTime);
+          // Create spatial ambient delay bus
+          this.delayNode = this.ctx.createDelay();
+          this.delayNode.delayTime.setValueAtTime(0.24, this.ctx.currentTime);
+          this.delayGain = this.ctx.createGain();
+          this.delayGain.gain.setValueAtTime(0.22, this.ctx.currentTime);
 
-        this.delayNode.connect(this.delayGain);
-        this.delayGain.connect(this.delayNode); // feedback
-        this.delayGain.connect(this.masterMusicGain);
+          this.delayNode.connect(this.delayGain);
+          this.delayGain.connect(this.delayNode); // feedback
+          this.delayGain.connect(this.masterMusicGain);
+        }
       }
-    }
 
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch {
+      // Ignore Web Audio restriction errors before user gesture
     }
   }
 
