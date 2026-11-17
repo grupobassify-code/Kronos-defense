@@ -109,6 +109,59 @@ export const UNITS: Record<string, UnitBlueprint> = {
     }
   },
 
+  zeker: {
+    id: 'zeker',
+    name: 'Zeker',
+    title: 'Cazador de Brechas Crono',
+    role: 'ataque',
+    rarity: 'especial',
+    cost: 115,
+    baseDamage: 26,
+    baseRange: 145,
+    baseAttackSpeed: 1.65,
+    projectileType: 'lightning',
+    projectileColor: '#38BDF8',
+    imageUrl: '/assets/images/hero_zeker_1794953003016.jpg',
+    description: 'Cazador crono-eléctrico inicial armado con dagas de arco voltaico. Ataca con velocidad relampagueante y desgarra enemigos en línea.',
+    showdownName: 'Tormenta de Filos Zeker',
+    showdownDescription: 'Ejecuta cortes crono-eléctricos a todos los invasores del mapa, infligiendo 340 de daño y aturdiéndolos por 2.5s.',
+    showdownCooldown: 30,
+    tiers: [
+      {
+        name: 'Dagas de Brecha I',
+        cost: 0,
+        damage: 26,
+        range: 145,
+        attackSpeed: 1.65,
+        description: 'Descargas rápidas de energía crono-eléctrica de gran precisión.'
+      },
+      {
+        name: 'Sobrecarga Voltaica II',
+        cost: 125,
+        damage: 54,
+        range: 165,
+        attackSpeed: 2.05,
+        description: 'Aumenta drásticamente la cadencia de ataque y el alcance táctico.',
+        bonusEffect: 'Cadencia +25% · Mayor alcance'
+      },
+      {
+        name: 'Señor del Relámpago III',
+        cost: 270,
+        damage: 118,
+        range: 190,
+        attackSpeed: 2.55,
+        description: 'Filos cargados al máximo que pulverizan exploradores y armaduras ligeras.',
+        bonusEffect: 'Velocidad relámpago máxima'
+      }
+    ],
+    colorTheme: {
+      primary: '#38BDF8',
+      secondary: '#4F46E5',
+      accent: '#E0F2FE',
+      bg: 'rgba(56, 189, 248, 0.16)'
+    }
+  },
+
   cryo_mage: {
     id: 'cryo_mage',
     name: 'Criomago Glacial',
@@ -2089,7 +2142,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 3.2,
     projectileType: 'multishot',
     projectileColor: '#F97316',
-    imageUrl: '/assets/images/hero_artillero_pesado.svg',
+    imageUrl: '/assets/images/hero_artillero_pesado_1794952269605.jpg',
     description: 'Soldado de infantería pesada con una ametralladora rotativa que dispara ráfagas incesantes contra un único objetivo.',
     showdownName: 'Sobrecarga de Tambor',
     showdownDescription: 'Dispara 30 proyectiles perforantes en 2 segundos infligiendo 620 de daño concentrado al objetivo prioritario.',
@@ -2195,7 +2248,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 0.45,
     projectileType: 'beam',
     projectileColor: '#A855F7',
-    imageUrl: '/assets/images/hero_francotirador_fantasma.svg',
+    imageUrl: '/assets/images/hero_francotirador_fantasma_1794952268932.jpg',
     description: 'Tirador de largo alcance con visión dimensional. Elimina enemigos individuales de un disparo certero desde distancias enormes.',
     showdownName: 'Disparo Espectral Mortal',
     showdownDescription: 'Dispara un haz espectral de penetración absoluta que causa 1600 de daño letal al enemigo más adelantado.',
@@ -2248,7 +2301,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.6,
     projectileType: 'laser',
     projectileColor: '#06B6D4',
-    imageUrl: '/assets/images/hero_ingeniero_mecanico.svg',
+    imageUrl: '/assets/images/hero_ingeniero_mecanico_1794952270220.jpg',
     description: 'Especialista en robótica bélica que despliega torretas automáticas compactas que vigilan el perímetro y acribillan a los enemigos.',
     showdownName: 'Despliegue de Centinelas',
     showdownDescription: 'Despliega 3 micro-torretas gemelas de plasma que disparan automáticamente infligiendo 450 de daño sostenido.',
@@ -2301,7 +2354,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.1,
     projectileType: 'resonance',
     projectileColor: '#10B981',
-    imageUrl: '/assets/images/hero_medico_combate.svg',
+    imageUrl: '/assets/images/hero_medico_combate_1794952270691.jpg',
     description: 'Especialista táctico que emite ondas bióticas para restaurar la integridad del Núcleo y acelerar la cadencia de las torres aliadas.',
     showdownName: 'Inyección de Adrenalina',
     showdownDescription: 'Restaura +25 de salud al Núcleo y potencia la velocidad de ataque de todas las torres aliadas un +60% por 6s.',
@@ -2354,7 +2407,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 2.1,
     projectileType: 'slash',
     projectileColor: '#9333EA',
-    imageUrl: '/assets/images/hero_ninja_sombrio.svg',
+    imageUrl: '/assets/images/hero_ninja_sombrio_1794952270855.jpg',
     description: 'Guerrero furtivo que arroja shurikens de sombra a velocidad relámpago, ignorando el 75% del blindaje y resistencia de los enemigos.',
     showdownName: 'Shuriken Umbrío Gigante',
     showdownDescription: 'Lanza un shuriken colosal que atraviesa todo el camino causando 580 de daño puro sin reducción de armadura.',
@@ -2407,7 +2460,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.2,
     projectileType: 'stun',
     projectileColor: '#38BDF8',
-    imageUrl: '/assets/images/hero_caballero_cristal.svg',
+    imageUrl: '/assets/images/hero_caballero_cristal_1794952272013.jpg',
     description: 'Paladín con armadura de cuarzo reflectante que resiste las embestidas y corta a los enemigos con filos de cristal ralentizantes.',
     showdownName: 'Bastión Prisma',
     showdownDescription: 'Erige un escudo cristalino que inmoviliza a los enemigos cercanos por 3.5 segundos y refleja 350 de daño.',
@@ -2513,7 +2566,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.15,
     projectileType: 'spore',
     projectileColor: '#22C55E',
-    imageUrl: '/assets/images/hero_druida_bosque.svg',
+    imageUrl: '/assets/images/hero_druida_bosque_1794952271421.jpg',
     description: 'Canalizadora de la fuerza silvestre que hace brotar zarzas del suelo, reduciendo la velocidad enemiga un 50% con cada impacto.',
     showdownName: 'Enredo Milenario',
     showdownDescription: 'Invoca raíces gigantescas en todo el camino que detienen completamente a los enemigos por 4.0 segundos.',
@@ -2566,7 +2619,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 0.9,
     projectileType: 'bullet',
     projectileColor: '#D97706',
-    imageUrl: '/assets/images/hero_invocador_golems.svg',
+    imageUrl: '/assets/images/hero_invocador_golems_1794952271501.jpg',
     description: 'Conjurador de la tierra que despierta entidades de granito que marchan directamente por el sendero combatiendo a los invasores cara a cara.',
     showdownName: 'Monolito Despertado',
     showdownDescription: 'Desciende un titán colosal de roca que aplasta el sendero causando 650 de daño y aturdiendo por 3.5s.',
@@ -2619,7 +2672,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.1,
     projectileType: 'coin',
     projectileColor: '#EAB308',
-    imageUrl: '/assets/images/hero_alquimista_dorado.svg',
+    imageUrl: '/assets/images/hero_alquimista_dorado_1794952272005.jpg',
     description: 'Erudito de la transmutación que rocía a los enemigos con elíxir dorado; cada enemigo derrotado bajo este efecto otorga oro adicional.',
     showdownName: 'Toque de Midas',
     showdownDescription: 'Convierte a los enemigos cercanos en estatuas de oro macizo y otorga +280 monedas de oro al instante.',
@@ -2675,7 +2728,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 0.8,
     projectileType: 'bullet',
     projectileColor: '#B45309',
-    imageUrl: '/assets/images/hero_canonero_pirata.svg',
+    imageUrl: '/assets/images/hero_canonero_pirata_1794952273250.jpg',
     description: 'Artillero corsario con cañón naval. Sus balas pesadas de hierro golpean en área y empujan a los agresores hacia atrás en el sendero.',
     showdownName: 'Andanada de Babor',
     showdownDescription: 'Dispara una andanada completa de cañones que empuja a todos los enemigos 80px e inflige 480 de daño explosivo.',
@@ -2728,7 +2781,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.25,
     projectileType: 'ice',
     projectileColor: '#06B6D4',
-    imageUrl: '/assets/images/hero_guardian_hielo.svg',
+    imageUrl: '/assets/images/hero_guardian_hielo_1794952273305.jpg',
     description: 'Guardián blindado con escudo de escarcha viva que desata ondas gélidas a corta distancia, congelando a los enemigos en seco por periodos breves.',
     showdownName: 'Ola de Frío Polar',
     showdownDescription: 'Desata un viento glacial que congela por completo a todos los enemigos en su radio por 3.5s y causa 420 de daño.',
@@ -2781,7 +2834,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.9,
     projectileType: 'slash',
     projectileColor: '#EF4444',
-    imageUrl: '/assets/images/hero_samurai_carmesi.svg',
+    imageUrl: '/assets/images/hero_samurai_carmesi_1794952274141.jpg',
     description: 'Espadachín de honor cuya katana sangrienta acelera y duplica su daño tras cada impacto consecutivo sobre el mismo grupo de agresores.',
     showdownName: 'Corte del Dragón Carmesí',
     showdownDescription: 'Desenvaina su hoja sagrada en un parpadeo, infligiendo 850 de daño letal y sangrado prolongado.',
@@ -2887,7 +2940,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.8,
     projectileType: 'multishot',
     projectileColor: '#06B6D4',
-    imageUrl: '/assets/images/hero_robot_centinela.svg',
+    imageUrl: '/assets/images/hero_robot_centinela_1794952274448.jpg',
     description: 'Ciborg de vigilancia táctica con radar omnidireccional. Escanea automáticamente el sendero y dispara ráfagas de láser concentrado de alta precisión.',
     showdownName: 'Modo Tormenta Balística',
     showdownDescription: 'Sobrecarga sus turbinas para disparar al triple de velocidad durante 6 segundos causando 420 de daño total.',
@@ -2993,7 +3046,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.4,
     projectileType: 'slash',
     projectileColor: '#F43F5E',
-    imageUrl: '/assets/images/hero_asesina_carmesi.svg',
+    imageUrl: '/assets/images/hero_asesina_carmesi_1794952275239.jpg',
     description: 'Cazadora letal armada con dagas ensangrentadas. Inflige un 75% más de daño contra enemigos con más de 1000 de vida y jefes.',
     showdownName: 'Sentencia Ejecutora',
     showdownDescription: 'Asesta un tajo demoledor al jefe o enemigo más fuerte en pantalla causando 1100 de daño letal directo.',
@@ -3152,7 +3205,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.1,
     projectileType: 'bullet',
     projectileColor: '#B45309',
-    imageUrl: '/assets/images/hero_domador_bestias.svg',
+    imageUrl: '/assets/images/hero_domador_bestias_1794952275346.jpg',
     description: 'Rastreador de los yermos que suelta feroces bestias de caza que corren por el sendero arrollando y mordiendo a los invasores a su paso.',
     showdownName: 'Carga de la Manada',
     showdownDescription: 'Libera una estampida de bestias colmilludas que recorren el camino causando 500 de daño de embestida.',
@@ -3205,7 +3258,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.0,
     projectileType: 'resonance',
     projectileColor: '#FBBF24',
-    imageUrl: '/assets/images/hero_sacerdote_solar.svg',
+    imageUrl: '/assets/images/hero_sacerdote_solar_1794952276073.jpg',
     description: 'Sacerdote que bendice a las torres defensivas adyacentes, otorgándoles un halo solar que amplifica su alcance un +25% y su velocidad de ataque.',
     showdownName: 'Bendición del Astro Rey',
     showdownDescription: 'Canaliza la gracia solar sobre todas las defensas del mapa, otorgándoles +100% cadencia de fuego por 7s.',
@@ -3258,7 +3311,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.2,
     projectileType: 'portal',
     projectileColor: '#818CF8',
-    imageUrl: '/assets/images/hero_viajero_tiempo.svg',
+    imageUrl: '/assets/images/hero_viajero_tiempo_1794952275720.jpg',
     description: 'Científico cronotemporal que proyecta campos de estasis temporal; los enemigos dentro del área sufren una ralentización masiva del 70%.',
     showdownName: 'Colapso del Tiempo',
     showdownDescription: 'Detiene por completo el tiempo para todos los invasores durante 4.5 segundos y los desplaza 100px hacia atrás.',
@@ -3311,7 +3364,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.3,
     projectileType: 'spore',
     projectileColor: '#16A34A',
-    imageUrl: '/assets/images/hero_reina_espinas.svg',
+    imageUrl: '/assets/images/hero_reina_espinas_1794952276730.jpg',
     description: 'Reina de la flora carnívora que siembra trampas de zarzas ponzoñosas en los caminos que perforan y envenenan a quienes las pisen.',
     showdownName: 'Jardín Mortífero',
     showdownDescription: 'Brotan zarzas letales a lo largo de 200px del sendero que infligen 520 de daño y 40 DPS de veneno a los agresores.',
@@ -3364,7 +3417,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 0.85,
     projectileType: 'shockwave',
     projectileColor: '#EA580C',
-    imageUrl: '/assets/images/hero_golem_magma.svg',
+    imageUrl: '/assets/images/hero_golem_magma_1794952277031.jpg',
     description: 'Coloso forjado en el núcleo terrestre que golpea el suelo con puños de basalto, creando ondas de choque volcánicas que revientan a todos los enemigos cercanos.',
     showdownName: 'Fisura Volcánica',
     showdownDescription: 'Abre una grieta sísmica en la tierra que aturde a todos los enemigos cercanos por 3.5s e inflige 680 de daño magmático.',
@@ -3417,7 +3470,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.4,
     projectileType: 'laser',
     projectileColor: '#06B6D4',
-    imageUrl: '/assets/images/hero_hacker_cibernetico.svg',
+    imageUrl: '/assets/images/hero_hacker_cibernetico_1794952278222.jpg',
     description: 'Especialista en ciberguerra táctica. Emite pulsos que desactivan habilidades especiales enemigas, cancelan auras elementales y reducen a cero la armadura.',
     showdownName: 'Pulso Electromagnético Total (PEM)',
     showdownDescription: 'Emite un pulso PEM que desconecta las defensas enemigas, neutraliza escudos y reduce la armadura un 100% por 6s.',
@@ -3517,6 +3570,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     title: 'Emperador del Tiempo y el Espacio',
     role: 'multiplicador',
     rarity: 'divinidad',
+    arenaUnlockLevel: 15,
     cost: 450,
     baseDamage: 160,
     baseRange: 195,
@@ -3590,4 +3644,42 @@ export function getAllDivinities(): UnitBlueprint[] {
 export function isCardLockedByArena(card: UnitBlueprint, highestArenaUnlocked: number): boolean {
   if (!card.arenaUnlockLevel) return false;
   return card.arenaUnlockLevel > highestArenaUnlocked;
+}
+
+const ARENA_GIFT_POOL: Record<number, string[]> = {
+  2: ['golem_magma', 'mago_fuego', 'inferno_dragon'],
+  3: ['hacker_cibernetico', 'ingeniero_mecanico', 'robot_centinela'],
+  4: ['viajero_tiempo', 'chrono_guardian', 'alquimista_dorado'],
+  5: ['lunar_huntress', 'shadow_assassin', 'francotirador_fantasma'],
+  6: ['guardian_hielo', 'caballero_cristal', 'lanzacohetes'],
+  7: ['chaman_electrico', 'electro_wizard', 'plasma_gunner'],
+  8: ['void_sniper', 'arcane_witch', 'cientifico_nuclear'],
+  9: ['sacerdote_solar', 'paladin_aegis', 'medico_combate'],
+  10: ['titan_tormenta', 'valkyrie_storm', 'valkyrie_blade'],
+  11: ['reina_espinas', 'druida_bosque', 'domador_bestias'],
+  12: ['mecha_artillery', 'artillero_pesado', 'canonero_pirata'],
+  13: ['resonator', 'invocador_golems', 'golem_sentinel'],
+  14: ['asesina_carmesi', 'ninja_sombrio', 'rey_slimes'],
+  15: ['samurai_carmesi', 'dragon_mecanico', 'arquera_elfica']
+};
+
+/**
+ * Picks 1 brand-new unowned character to gift the player when arriving at a newly unlocked Arena.
+ */
+export function getArenaGiftCharacter(arenaLevel: number, unlockedCardIds: string[]): UnitBlueprint | null {
+  const candidates = ARENA_GIFT_POOL[arenaLevel] || [];
+  for (const id of candidates) {
+    if (UNITS[id] && !unlockedCardIds.includes(id)) {
+      return UNITS[id];
+    }
+  }
+  // Fallback to any unowned non-divinity hero
+  const anyNonDivine = UNIT_LIST.find((u) => u.rarity !== 'divinidad' && !unlockedCardIds.includes(u.id));
+  if (anyNonDivine) return anyNonDivine;
+
+  // Final fallback: any unowned unit unlocked at or below this arena
+  const anyUnowned = UNIT_LIST.find(
+    (u) => (!u.arenaUnlockLevel || u.arenaUnlockLevel <= arenaLevel) && !unlockedCardIds.includes(u.id)
+  );
+  return anyUnowned || null;
 }

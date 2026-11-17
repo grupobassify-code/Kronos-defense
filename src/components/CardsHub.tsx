@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlayerProgression, Mission, PackReward } from '../types/game';
-import { UNITS, UNIT_LIST, getDivinityForArena, isCardLockedByArena } from '../data/units';
+import { UNITS, UNIT_LIST, isCardLockedByArena } from '../data/units';
 import { ENEMY_LIST } from '../data/enemies';
-import { getArenaForWave, getArenaByLevel, ARENAS } from '../data/maps';
-import { LEVEL_UP_COSTS, getLevelStatMultiplier, getKillsRequiredForPack } from '../utils/progression';
+import { getArenaForWave, getArenaByLevel } from '../data/maps';
+import {
+  LEVEL_UP_COSTS,
+  getLevelStatMultiplier,
+  getKillsRequiredForPack,
+  getCardShopPrice,
+  canBuyCardInShop,
+  SHOP_PACK_COIN_PRICE,
+  SHOP_SP_COIN_PRICE,
+  SHOP_SP_BUNDLE_AMOUNT
+} from '../utils/progression';
 import { getRarityMeta, RARITY_LIST, compareRarities } from '../utils/rarity';
 import { sounds } from '../utils/audio';
 import {
@@ -17,24 +26,22 @@ import {
   Sparkles,
   ArrowUp,
   Star,
-  Shield,
-  Flame,
-  Snowflake,
   Coins,
   CheckCircle2,
   Skull,
-  Crosshair,
   Plus,
   Search,
   X,
   Music,
-  Volume2,
-  VolumeX,
-  HardDrive
+  HardDrive,
+  ShoppingBag,
+  Wallet
 } from 'lucide-react';
 import { music } from '../utils/music';
 import { saveProgression } from '../utils/progression';
 import { GameImage } from './GameImage';
+
+type SubTabKey = 'DECK' | 'SHOP' | 'PACKS' | 'MISSIONS' | 'ALMANAC';
 
 interface CardsHubProps {
   progression: PlayerProgression;
@@ -44,6 +51,11 @@ interface CardsHubProps {
   onOpenPack: () => PackReward[];
   onSwitchToBattle: () => void;
   onToggleDeckCard?: (unitId: string) => void;
+  onBuyCardWithCoins?: (unitId: string) => void;
+  onBuyPackWithCoins?: () => void;
+  onBuySkillPointsWithCoins?: () => void;
+  requestedSubTab?: SubTabKey | null;
+  onConsumeRequestedSubTab?: () => void;
   currentWave?: number;
 }
 
@@ -55,14 +67,32 @@ export const CardsHub: React.FC<CardsHubProps> = ({
   onOpenPack,
   onSwitchToBattle,
   onToggleDeckCard,
+  onBuyCardWithCoins,
+  onBuyPackWithCoins,
+  onBuySkillPointsWithCoins,
+  requestedSubTab = null,
+  onConsumeRequestedSubTab,
   currentWave = 1
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'DECK' | 'PACKS' | 'MISSIONS' | 'ALMANAC'>('DECK');
+  const [activeSubTab, setActiveSubTab] = useState<SubTabKey>(requestedSubTab || 'DECK');
   const [selectedCardId, setSelectedCardId] = useState<string>(progression.unlockedCardIds[0] || 'vanguard_solar');
   const [selectedRarityFilter, setSelectedRarityFilter] = useState<string>('all');
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [raritySortAsc, setRaritySortAsc] = useState<boolean>(true); // true: Común -> Divinidad, false: Divinidad -> Común
+
+  // Card Shop filters
+  const [shopSearch, setShopSearch] = useState<string>('');
+  const [shopRarity, setShopRarity] = useState<string>('all');
+  const [shopRole, setShopRole] = useState<string>('all');
+  const [shopShowMode, setShopShowMode] = useState<'ALL' | 'UNOWNED'>('ALL');
+
+  useEffect(() => {
+    if (requestedSubTab) {
+      setActiveSubTab(requestedSubTab);
+      onConsumeRequestedSubTab?.();
+    }
+  }, [requestedSubTab, onConsumeRequestedSubTab]);
 
   // Pack opening sub-state
   const [isOpeningPack, setIsOpeningPack] = useState(false);
@@ -131,25 +161,36 @@ export const CardsHub: React.FC<CardsHubProps> = ({
           </button>
         </div>
 
-        {/* 100 Kills Tracker Pill with Live Progress Bar */}
-        <div className="flex items-center gap-2.5 bg-slate-900/90 px-3.5 py-1.5 rounded-2xl border border-purple-500/30 text-xs text-slate-300 shadow-sm">
-          <span className="text-purple-400 font-bold flex items-center gap-1">
-            <span>📦</span>
-            <span>Sobre cada 100 bajas:</span>
-          </span>
-          <div className="w-20 sm:w-24 h-2 bg-slate-950 rounded-full overflow-hidden border border-purple-500/30">
+        {/* Progressive Kills Tracker Pill */}
+        {(() => {
+          const claimed = progression.packsClaimedFromKills || 0;
+          const targetKills = getKillsRequiredForPack(claimed);
+          const currentKills = progression.killsTowardsNextPack || 0;
+          const pct = Math.min(100, Math.max(0, (currentKills / targetKills) * 100));
+          return (
             <div
-              className="h-full bg-gradient-to-r from-purple-500 to-amber-400 transition-all duration-300"
-              style={{ width: `${((progression.lifetimeKills % 100) / 100) * 100}%` }}
-            />
-          </div>
-          <span className="font-mono font-bold text-amber-300">
-            {progression.lifetimeKills % 100}/100
-          </span>
-          <span className="text-[10px] text-slate-400">
-            (faltan {100 - (progression.lifetimeKills % 100)})
-          </span>
-        </div>
+              onClick={() => setActiveSubTab('PACKS')}
+              className="flex items-center gap-2.5 bg-slate-900/90 px-3.5 py-1.5 rounded-2xl border border-purple-500/30 text-xs text-slate-300 shadow-sm cursor-pointer hover:border-purple-400 transition-colors"
+            >
+              <span className="text-purple-400 font-bold flex items-center gap-1">
+                <span>📦</span>
+                <span>Sobre #{claimed + 1}:</span>
+              </span>
+              <div className="w-20 sm:w-24 h-2 bg-slate-950 rounded-full overflow-hidden border border-purple-500/30">
+                <div
+                  className="h-full bg-gradient-to-r from-purple-500 to-amber-400 transition-all duration-300"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <span className="font-mono tabular-nums font-bold text-amber-300">
+                {currentKills}/{targetKills}
+              </span>
+              <span className="text-[10px] text-slate-400 hidden sm:inline">
+                (faltan {Math.max(0, targetKills - currentKills)})
+              </span>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Clash Royale Header Banner */}
@@ -159,14 +200,14 @@ export const CardsHub: React.FC<CardsHubProps> = ({
             <Layers className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-100 font-display tracking-tight flex items-center gap-2">
-              <span>Colección & Mazo de Batalla</span>
+            <h2 className="text-xl font-black text-slate-100 font-display tracking-tight flex items-center gap-2 flex-wrap">
+              <span>Colección, Tienda & Mazo</span>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-bold">
                 {currentArena.name}
               </span>
             </h2>
             <p className="text-xs text-slate-400">
-              Configura tu mazo de hasta 7 cartas para el combate y mejora sus atributos hasta el Nivel 10.
+              Compra las cartas que quieras con tus monedas guardadas, equipa hasta 7 héroes y súbelos al Nivel 10.
             </p>
           </div>
         </div>
@@ -178,8 +219,18 @@ export const CardsHub: React.FC<CardsHubProps> = ({
             <span>{currentArena.badge}</span>
           </div>
 
+          {/* Saved Vault Coins */}
+          <button
+            onClick={() => setActiveSubTab('SHOP')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-950/70 hover:bg-amber-900/70 border border-amber-500/50 text-amber-200 font-bold font-mono tabular-nums text-xs shadow-inner cursor-pointer transition-all whitespace-nowrap"
+            title="Ir a la Tienda de Cartas"
+          >
+            <Wallet className="w-4 h-4 text-amber-400" />
+            <span>{progression.savedCoins ?? 0} Monedas</span>
+          </button>
+
           {/* Skill Points */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-amber-500/30 text-amber-300 font-bold font-mono text-xs shadow-inner">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-amber-500/30 text-amber-300 font-bold font-mono tabular-nums text-xs shadow-inner">
             <Zap className="w-4 h-4 text-amber-400 fill-amber-400/20" />
             <span>{progression.skillPoints} pts</span>
           </div>
@@ -187,7 +238,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
           {/* Unopened Packs */}
           <button
             onClick={() => setActiveSubTab('PACKS')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               progression.unopenedPacks > 0
                 ? 'bg-purple-950/90 border-purple-500/60 text-purple-200 animate-pulse hover:bg-purple-900 shadow-md shadow-purple-950/50'
                 : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -203,7 +254,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
               const next = music.toggleMute();
               setIsMusicMuted(next);
             }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               isMusicMuted
                 ? 'bg-slate-950/70 border-slate-800 text-slate-500 hover:text-slate-300'
                 : 'bg-purple-950/80 border-purple-500/60 text-purple-300 shadow-md shadow-purple-950/40'
@@ -217,7 +268,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
           {/* Device Save Status Pill */}
           <button
             onClick={() => setShowSaveModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-emerald-500/40 text-emerald-300 font-bold text-xs shadow-inner cursor-pointer hover:bg-emerald-950/40 hover:border-emerald-400 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-emerald-500/40 text-emerald-300 font-bold text-xs shadow-inner cursor-pointer hover:bg-emerald-950/40 hover:border-emerald-400 transition-all whitespace-nowrap"
             title="Ver datos de progreso guardados en tu dispositivo"
           >
             <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
@@ -229,7 +280,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
       </div>
 
       {/* Secondary Nav Tabs */}
-      <div className="flex items-center gap-1 p-2 bg-slate-950/70 border-b border-slate-800 overflow-x-auto">
+      <div className="flex items-center gap-1.5 p-2 bg-slate-950/70 border-b border-slate-800 overflow-x-auto">
         <button
           onClick={() => setActiveSubTab('DECK')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
@@ -240,6 +291,18 @@ export const CardsHub: React.FC<CardsHubProps> = ({
         >
           <Layers className="w-4 h-4" />
           <span>Mazo & Cartas ({progression.activeDeckCardIds?.length || 0}/7)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('SHOP')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeSubTab === 'SHOP'
+              ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md shadow-amber-900/40 font-black'
+              : 'text-amber-300 hover:text-amber-200 hover:bg-amber-950/50 border border-amber-500/30'
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4" />
+          <span>Tienda de Cartas</span>
         </button>
 
         <button
@@ -936,6 +999,308 @@ export const CardsHub: React.FC<CardsHubProps> = ({
           </div>
         )}
 
+        {/* SUBTAB: CARD SHOP (DIRECT PURCHASE WITH SAVED COINS) */}
+        {activeSubTab === 'SHOP' && (
+          <div className="space-y-5">
+            {/* Vault Banner + Coin Bundles */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+              <div className="lg:col-span-5 bg-gradient-to-br from-amber-950/60 via-slate-950 to-slate-900 border border-amber-500/40 rounded-2xl p-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/50 flex items-center justify-center shrink-0">
+                    <Wallet className="w-6 h-6 text-amber-400" />
+                  </div>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wider font-bold text-amber-400">
+                      Bóveda del Comandante
+                    </div>
+                    <div className="text-2xl font-black font-mono tabular-nums text-amber-300">
+                      {progression.savedCoins ?? 0} <span className="text-xs font-normal text-amber-400/80">monedas</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Gana oro en batalla y guárdalo durante la arena o al completar rondas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bundle 1: Buy Chrono Pack */}
+              <div className="lg:col-span-3 bg-slate-950/90 border border-purple-500/40 rounded-2xl p-3.5 flex items-center justify-between gap-2.5">
+                <div className="min-w-0">
+                  <div className="text-xs font-black text-purple-300 flex items-center gap-1.5">
+                    <PackageOpen className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span className="truncate">+1 Sobre Crono</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">Contiene cartas + PH</div>
+                </div>
+                <button
+                  onClick={() => onBuyPackWithCoins?.()}
+                  disabled={(progression.savedCoins ?? 0) < SHOP_PACK_COIN_PRICE}
+                  className={`px-3 py-2 rounded-xl text-xs font-black font-mono tabular-nums whitespace-nowrap transition-all cursor-pointer ${
+                    (progression.savedCoins ?? 0) >= SHOP_PACK_COIN_PRICE
+                      ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-md active:scale-95'
+                      : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+                  }`}
+                >
+                  🪙 {SHOP_PACK_COIN_PRICE}
+                </button>
+              </div>
+
+              {/* Bundle 2: Buy Skill Points */}
+              <div className="lg:col-span-4 bg-slate-950/90 border border-emerald-500/40 rounded-2xl p-3.5 flex items-center justify-between gap-2.5">
+                <div className="min-w-0">
+                  <div className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
+                    <Zap className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="truncate">+{SHOP_SP_BUNDLE_AMOUNT} Puntos de Habilidad</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">Para mejorar tus cartas al Nv.10</div>
+                </div>
+                <button
+                  onClick={() => onBuySkillPointsWithCoins?.()}
+                  disabled={(progression.savedCoins ?? 0) < SHOP_SP_COIN_PRICE}
+                  className={`px-3 py-2 rounded-xl text-xs font-black font-mono tabular-nums whitespace-nowrap transition-all cursor-pointer ${
+                    (progression.savedCoins ?? 0) >= SHOP_SP_COIN_PRICE
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md active:scale-95'
+                      : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+                  }`}
+                >
+                  🪙 {SHOP_SP_COIN_PRICE}
+                </button>
+              </div>
+            </div>
+
+            {/* Shop Search & Filters */}
+            <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={shopSearch}
+                    onChange={(e) => setShopSearch(e.target.value)}
+                    placeholder="Busca cualquier carta para comprarla directamente (ej. Kronos, Fénix, Hacker)..."
+                    className="w-full pl-9 pr-8 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                  {shopSearch && (
+                    <button
+                      onClick={() => setShopSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 shrink-0">
+                  <button
+                    onClick={() => setShopShowMode('ALL')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      shopShowMode === 'ALL'
+                        ? 'bg-amber-500 text-slate-950 font-black'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Todas ({UNIT_LIST.length})
+                  </button>
+                  <button
+                    onClick={() => setShopShowMode('UNOWNED')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      shopShowMode === 'UNOWNED'
+                        ? 'bg-amber-500 text-slate-950 font-black'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Solo Faltantes ({UNIT_LIST.filter((u) => !progression.unlockedCardIds.includes(u.id)).length})
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                {RARITY_LIST.map((r) => (
+                  <button
+                    key={`shop_r_${r.key}`}
+                    onClick={() => setShopRarity(r.key)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      shopRarity === r.key
+                        ? 'bg-amber-500 text-slate-950 font-black shadow'
+                        : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-[11px]">
+                {[
+                  { key: 'all', label: 'Todos los Roles' },
+                  { key: 'ataque', label: '⚡ Ataque' },
+                  { key: 'area', label: '🔥 Área' },
+                  { key: 'control', label: '❄️ Control' },
+                  { key: 'invocador', label: '✨ Invocador' },
+                  { key: 'soporte', label: '🛡️ Soporte' },
+                  { key: 'economia', label: '🪙 Economía' }
+                ].map((roleItem) => (
+                  <button
+                    key={`shop_role_${roleItem.key}`}
+                    onClick={() => setShopRole(roleItem.key)}
+                    className={`px-2.5 py-0.5 rounded-lg font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      shopRole === roleItem.key
+                        ? 'bg-purple-600 text-white shadow'
+                        : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                    }`}
+                  >
+                    {roleItem.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Direct Card Purchase Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {UNIT_LIST
+                .filter((u) => {
+                  const owned = progression.unlockedCardIds.includes(u.id);
+                  if (shopShowMode === 'UNOWNED' && owned) return false;
+                  if (shopSearch.trim()) {
+                    const q = shopSearch.toLowerCase().trim();
+                    if (
+                      !u.name.toLowerCase().includes(q) &&
+                      !u.title.toLowerCase().includes(q) &&
+                      !u.description.toLowerCase().includes(q)
+                    ) {
+                      return false;
+                    }
+                  }
+                  if (shopRole !== 'all' && u.role !== shopRole) return false;
+                  if (shopRarity === 'all') return true;
+                  const normR = u.rarity === 'rara' ? 'especial' : u.rarity;
+                  return normR === shopRarity;
+                })
+                .sort((a, b) => {
+                  const aOwned = progression.unlockedCardIds.includes(a.id) ? 1 : 0;
+                  const bOwned = progression.unlockedCardIds.includes(b.id) ? 1 : 0;
+                  if (aOwned !== bOwned) return aOwned - bOwned; // Show unowned cards first
+                  return compareRarities(a.rarity, b.rarity);
+                })
+                .map((unit) => {
+                  const isOwned = progression.unlockedCardIds.includes(unit.id);
+                  const isInDeck = (progression.activeDeckCardIds || []).includes(unit.id);
+                  const rMeta = getRarityMeta(unit.rarity);
+                  const coinPrice = getCardShopPrice(unit);
+                  const canAfford = (progression.savedCoins ?? 0) >= coinPrice;
+                  const shopEligibility = canBuyCardInShop(unit, progression);
+                  const isDivinityLocked = !shopEligibility.allowed;
+
+                  return (
+                    <div
+                      key={`shop_card_${unit.id}`}
+                      className={`p-3 rounded-2xl border flex flex-col justify-between gap-2.5 transition-all ${
+                        isOwned
+                          ? 'bg-slate-950/60 border-emerald-500/30'
+                          : isDivinityLocked
+                          ? 'bg-slate-950/80 border-slate-800 opacity-90'
+                          : `${rMeta.cardBg} ${rMeta.cardBorder} shadow-lg`
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-2">
+                          <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-black ${rMeta.badgeClass}`}>
+                            {unit.rarity === 'divinidad' ? `👑 Divinidad A${unit.arenaUnlockLevel || 1}` : rMeta.badgeLabel}
+                          </span>
+                          <span className="text-[10px] font-mono text-amber-300 font-bold tabular-nums">
+                            {unit.cost} oro arena
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 mb-2">
+                          <div className={`w-16 h-16 rounded-xl overflow-hidden border-2 ${rMeta.cardBorder} bg-slate-900 shrink-0 relative`}>
+                            {unit.imageUrl && (
+                              <GameImage
+                                src={unit.imageUrl}
+                                alt={unit.name}
+                                loading="lazy"
+                                className={`w-full h-full object-cover ${isDivinityLocked && !isOwned ? 'grayscale opacity-50' : ''}`}
+                                fallback={
+                                  <div className="w-full h-full flex items-center justify-center bg-slate-800 text-xs font-bold text-slate-300">
+                                    {unit.name.slice(0, 2).toUpperCase()}
+                                  </div>
+                                }
+                              />
+                            )}
+                            {isDivinityLocked && !isOwned && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-slate-950/50">
+                                <Lock className="w-5 h-5 text-amber-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className={`text-sm font-black truncate ${rMeta.textColor}`}>{unit.name}</div>
+                            <div className="text-[11px] text-slate-400 truncate">{unit.title}</div>
+                            <div className="text-[10px] text-cyan-300 font-mono mt-0.5 capitalize">
+                              {unit.role} · {unit.baseDamage} daño · {unit.baseRange}px
+                            </div>
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">
+                          {unit.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2">
+                        {isOwned ? (
+                          <>
+                            <div className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>En Colección</span>
+                            </div>
+                            {!isInDeck && (progression.activeDeckCardIds?.length || 0) < 7 && onToggleDeckCard && (
+                              <button
+                                onClick={() => {
+                                  onToggleDeckCard(unit.id);
+                                  sounds.playPlace();
+                                }}
+                                className="px-2.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black cursor-pointer transition-colors whitespace-nowrap"
+                              >
+                                Equipar
+                              </button>
+                            )}
+                          </>
+                        ) : isDivinityLocked ? (
+                          <button
+                            disabled
+                            className="w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-slate-900 text-amber-300/80 border border-amber-500/30 cursor-not-allowed whitespace-nowrap"
+                            title={`Debes completar la Arena ${shopEligibility.requiredArena} primero para poder comprar este Divino`}
+                          >
+                            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span className="truncate font-mono tabular-nums">
+                              Completa Arena {shopEligibility.requiredArena} · {coinPrice} mon.
+                            </span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => onBuyCardWithCoins?.(unit.id)}
+                            disabled={!canAfford}
+                            className={`w-full py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                              canAfford
+                                ? 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 shadow-md active:scale-95'
+                                : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+                            }`}
+                          >
+                            <Coins className="w-3.5 h-3.5 shrink-0" />
+                            <span className="font-mono tabular-nums">
+                              {canAfford ? `Comprar · ${coinPrice} monedas` : `Faltan monedas (${coinPrice})`}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+
         {/* SUBTAB 2: PACK OPENING WITH PROBABILITIES */}
         {activeSubTab === 'PACKS' && (
           <div className="flex flex-col items-center text-center py-4 max-w-xl mx-auto space-y-4">
@@ -1390,10 +1755,17 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                 </div>
               </div>
 
-              <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800 col-span-2">
-                <div className="text-[10px] text-slate-400 font-sans">Oro Histórico Acumulado</div>
-                <div className="text-sm font-bold text-amber-400">
-                  🪙 {progression.lifetimeGold} de oro
+              <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div className="text-[10px] text-slate-400 font-sans">Monedas en Bóveda</div>
+                <div className="text-sm font-bold text-amber-300 tabular-nums">
+                  💰 {progression.savedCoins ?? 0}
+                </div>
+              </div>
+
+              <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div className="text-[10px] text-slate-400 font-sans">Oro Histórico</div>
+                <div className="text-sm font-bold text-amber-400 tabular-nums">
+                  🪙 {progression.lifetimeGold}
                 </div>
               </div>
             </div>

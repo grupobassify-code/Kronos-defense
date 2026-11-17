@@ -17,12 +17,13 @@ import {
   WaveConfig,
   PlayerProgression,
   Mission,
-  PackReward
+  PackReward,
+  UnitBlueprint
 } from './types/game';
-import { UNITS, getDivinityForArena } from './data/units';
+import { UNITS, getDivinityForArena, getArenaGiftCharacter } from './data/units';
 import { ENEMIES } from './data/enemies';
 import { MAPS, DEFAULT_MAP, getArenaForWave, getArenaByMapId, ARENAS, ArenaInfo } from './data/maps';
-import { getWaveConfig } from './data/waves';
+import { getWaveConfig, getWaveScaling } from './data/waves';
 import { calculateDetailedPath, getPositionAlongPath, isPathTile, isObstacleTile } from './utils/pathUtils';
 import { sounds } from './utils/audio';
 import { music } from './utils/music';
@@ -32,7 +33,12 @@ import {
   getLevelStatMultiplier,
   openBoosterPack,
   LEVEL_UP_COSTS,
-  getKillsRequiredForPack
+  getKillsRequiredForPack,
+  getCardShopPrice,
+  canBuyCardInShop,
+  SHOP_PACK_COIN_PRICE,
+  SHOP_SP_COIN_PRICE,
+  SHOP_SP_BUNDLE_AMOUNT
 } from './utils/progression';
 
 import { GameCanvas } from './components/GameCanvas';
@@ -81,6 +87,9 @@ export default function App() {
   const [baseHealth, setBaseHealth] = useState<number>(10);
   const [maxBaseHealth, setMaxBaseHealth] = useState<number>(10);
   const [gold, setGold] = useState<number>(220);
+  const [earnedGoldInMatch, setEarnedGoldInMatch] = useState<number>(0);
+  const [autoBankedCoinsInMatch, setAutoBankedCoinsInMatch] = useState<number>(0);
+  const [cardsHubSubTab, setCardsHubSubTab] = useState<'DECK' | 'SHOP' | 'PACKS' | 'MISSIONS' | 'ALMANAC' | null>(null);
 
   // Wave & Progress (Infinite mode: totalWaves = 0)
   const [currentWave, setCurrentWave] = useState<number>(1);
@@ -167,12 +176,15 @@ export default function App() {
     rewardGold: number;
     alchemistYield: number;
     enemiesDefeated: number;
+    savedCoinsEarned?: number;
   } | null>(null);
 
   // Clash Royale Arena Promotion state
   const [arenaPromotion, setArenaPromotion] = useState<{
     arena: ArenaInfo;
+    completedArenaLevel: number;
     wave: number;
+    giftedUnit: UnitBlueprint | null;
   } | null>(null);
   const [showMapSelectModal, setShowMapSelectModal] = useState<boolean>(true);
 
@@ -233,6 +245,7 @@ export default function App() {
     particles,
     damageNumbers,
     gold,
+    earnedGoldInMatch,
     baseHealth,
     isWaveActive,
     gameSpeed,
@@ -249,6 +262,7 @@ export default function App() {
       particles,
       damageNumbers,
       gold,
+      earnedGoldInMatch,
       baseHealth,
       isWaveActive,
       gameSpeed,
@@ -258,7 +272,7 @@ export default function App() {
     };
   });
 
-  // Start or restart infinite match (keeping all unlocked cards, levels, and packs)
+  // Start or restart infinite match (keeping all unlocked cards, levels, coins, and packs)
   const handleRestartInfiniteMatch = useCallback(() => {
     setCurrentMap(DEFAULT_MAP);
     detailedPathRef.current = calculateDetailedPath(DEFAULT_MAP);
@@ -267,6 +281,8 @@ export default function App() {
     setBaseHealth(10);
     setMaxBaseHealth(10);
     setGold(220);
+    setEarnedGoldInMatch(0);
+    setAutoBankedCoinsInMatch(0);
     setCurrentWave(1);
     setTotalWaves(0);
     setIsWaveActive(false);
@@ -280,7 +296,7 @@ export default function App() {
     setHoverTile(null);
     setActiveShowdownVFX(null);
     setTotalKills(0);
-    setTotalGoldEarned(650);
+    setTotalGoldEarned(220);
     setSummaryData(null);
     setArenaPromotion(null);
     setGameSpeed(1);
@@ -327,6 +343,8 @@ export default function App() {
     setBaseHealth(10);
     setMaxBaseHealth(10);
     setGold(260 + (nextArena.arenaLevel - 1) * 35);
+    setEarnedGoldInMatch(0);
+    setAutoBankedCoinsInMatch(0);
     setActiveBottomTab('BATTLE');
     sounds.playWaveStart();
   }, []);
@@ -340,21 +358,67 @@ export default function App() {
     // User request: "Cada vez que pazes de arena, se reinician tus rondas y los personajes que tenias"
     // "haz que la arena 2 del volcan no se desbloque , hasta que se termine la arena 1"
     if (currentWave >= currentArena.roundsRequired) {
-      const nextLevel = currentArena.arenaLevel + 1;
+      const nextLevel = Math.min(ARENAS.length, currentArena.arenaLevel + 1);
       const nextArena = ARENAS.find((a) => a.arenaLevel === nextLevel) || currentArena;
 
-      // Unlock next arena in player progression
-      setProgression((p) => ({
-        ...p,
-        highestArenaUnlocked: Math.max(p.highestArenaUnlocked || 1, nextLevel),
-        unopenedPacks: p.unopenedPacks + 1,
-        skillPoints: p.skillPoints + 60
-      }));
+      // Bank remaining earned arena gold + Arena Completion coin bonus
+      const bankableRemaining = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
+      const arenaBonusCoins = 120 + currentArena.arenaLevel * 40;
+      const totalAddedCoins = bankableRemaining + arenaBonusCoins;
+
+      setGold((g) => Math.max(0, g - bankableRemaining));
+      setEarnedGoldInMatch(0);
+
+      // Compute gift character if arriving at a new Arena whose gift hasn't been claimed yet
+      const currentProg = stateRef.current.progression;
+      const alreadyGifted = (currentProg.giftedArenaLevels || [1]).includes(nextLevel);
+      const giftedUnit =
+        nextLevel > currentArena.arenaLevel && !alreadyGifted
+          ? getArenaGiftCharacter(nextLevel, currentProg.unlockedCardIds)
+          : null;
+
+      // Unlock next arena, record completed arena (unlocks its Divinity in Shop), and grant 1 new character
+      setProgression((p) => {
+        const nextCompleted = Array.from(new Set([...(p.completedArenaLevels || []), currentArena.arenaLevel]));
+        const nextGifted = giftedUnit
+          ? Array.from(new Set([...(p.giftedArenaLevels || [1]), nextLevel]))
+          : p.giftedArenaLevels || [1];
+
+        let nextUnlocked = p.unlockedCardIds;
+        let nextDeck = p.activeDeckCardIds || [];
+        if (giftedUnit && !nextUnlocked.includes(giftedUnit.id)) {
+          nextUnlocked = [...nextUnlocked, giftedUnit.id];
+          if (nextDeck.length < 7 && !nextDeck.includes(giftedUnit.id)) {
+            nextDeck = [...nextDeck, giftedUnit.id];
+          }
+        }
+
+        return {
+          ...p,
+          highestArenaUnlocked: Math.max(p.highestArenaUnlocked || 1, nextLevel),
+          completedArenaLevels: nextCompleted,
+          giftedArenaLevels: nextGifted,
+          unlockedCardIds: nextUnlocked,
+          activeDeckCardIds: nextDeck,
+          unopenedPacks: p.unopenedPacks + 1,
+          skillPoints: p.skillPoints + 60,
+          savedCoins: (p.savedCoins ?? 0) + totalAddedCoins
+        };
+      });
+
+      setKillToast(
+        giftedUnit
+          ? `🎁 ¡Arena nueva! Regalo: ${giftedUnit.name} y +${totalAddedCoins} monedas en Bóveda.`
+          : `💰 ¡Arena superada! +${totalAddedCoins} monedas guardadas en tu Bóveda.`
+      );
+      setTimeout(() => setKillToast(null), 4500);
 
       sounds.playVictory();
       setArenaPromotion({
         arena: nextArena,
-        wave: currentWave
+        completedArenaLevel: currentArena.arenaLevel,
+        wave: currentWave,
+        giftedUnit
       });
       return;
     }
@@ -377,6 +441,7 @@ export default function App() {
     const finalGold = enemy.goldReward + goldBonus;
 
     setGold((g) => g + finalGold);
+    setEarnedGoldInMatch((e) => e + finalGold);
     setTotalGoldEarned((g) => g + finalGold);
     if (waveSpawnerRef.current) {
       waveSpawnerRef.current.waveKills++;
@@ -466,6 +531,16 @@ export default function App() {
             burnDps: 30
           }))
         );
+      } else if (bp.id === 'zeker') {
+        // Tormenta de Filos Zeker: 340 lightning damage + 2.5s stun
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((enemy) => ({
+            ...enemy,
+            currentHealth: Math.max(0, enemy.currentHealth - 340),
+            freezeUntil: Math.max(enemy.freezeUntil, enemy.isBoss ? 1.0 : 2.5)
+          }))
+        );
       } else if (bp.id === 'cryo_mage') {
         // Blizzard: freezes all enemies for 4.5s
         setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
@@ -482,6 +557,7 @@ export default function App() {
         setActiveShowdownVFX({ type: 'hyperdrive', progress: 0 });
         sounds.playCoin();
         setGold((g) => g + 220);
+        setEarnedGoldInMatch((e) => e + 220);
         setTotalGoldEarned((g) => g + 220);
       } else if (bp.id === 'resonator') {
         // Tactical Hyperdrive: boost all placed units
@@ -1546,6 +1622,87 @@ export default function App() {
     }));
   };
 
+  // Bank earned match gold into persistent saved Coins mid-arena
+  const handleBankMatchCoins = useCallback(() => {
+    const amount = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
+    if (amount <= 0) return;
+
+    sounds.playCoin();
+    setGold((g) => Math.max(0, g - amount));
+    setEarnedGoldInMatch((e) => Math.max(0, e - amount));
+    setProgression((prev) => ({
+      ...prev,
+      savedCoins: (prev.savedCoins ?? 0) + amount
+    }));
+    setKillToast(`💰 ¡+${amount} monedas guardadas en tu Bóveda permanente!`);
+    setTimeout(() => setKillToast(null), 3200);
+  }, []);
+
+  // Card Shop: Direct card purchase with saved Coins (Divinities require completing their arena first)
+  const handleBuyCardWithCoins = useCallback((unitId: string) => {
+    const unit = UNITS[unitId];
+    if (!unit) return;
+    const price = getCardShopPrice(unit);
+
+    setProgression((prev) => {
+      if (prev.unlockedCardIds.includes(unitId)) return prev;
+      const eligibility = canBuyCardInShop(unit, prev);
+      if (!eligibility.allowed) {
+        setKillToast(`🔒 Completa la Arena ${eligibility.requiredArena} para desbloquear a ${unit.name} en la Tienda.`);
+        setTimeout(() => setKillToast(null), 3500);
+        return prev;
+      }
+      if ((prev.savedCoins ?? 0) < price) return prev;
+
+      sounds.playUpgrade();
+      const nextUnlocked = [...prev.unlockedCardIds, unitId];
+      const currentDeck = prev.activeDeckCardIds || [];
+      const nextDeck = currentDeck.length < 7 && !currentDeck.includes(unitId)
+        ? [...currentDeck, unitId]
+        : currentDeck;
+
+      setKillToast(`🎴 ¡Compraste a ${unit.name}! Agregado a tu colección.`);
+      setTimeout(() => setKillToast(null), 3500);
+
+      return {
+        ...prev,
+        savedCoins: (prev.savedCoins ?? 0) - price,
+        unlockedCardIds: nextUnlocked,
+        activeDeckCardIds: nextDeck
+      };
+    });
+  }, []);
+
+  // Card Shop: Buy Chrono Booster Pack with saved Coins
+  const handleBuyPackWithCoins = useCallback(() => {
+    setProgression((prev) => {
+      if ((prev.savedCoins ?? 0) < SHOP_PACK_COIN_PRICE) return prev;
+      sounds.playCoin();
+      setKillToast('📦 ¡+1 Sobre Crono comprado! Ábrelo en la pestaña Abrir Sobres.');
+      setTimeout(() => setKillToast(null), 3200);
+      return {
+        ...prev,
+        savedCoins: (prev.savedCoins ?? 0) - SHOP_PACK_COIN_PRICE,
+        unopenedPacks: prev.unopenedPacks + 1
+      };
+    });
+  }, []);
+
+  // Card Shop: Buy Skill Points bundle with saved Coins
+  const handleBuySkillPointsWithCoins = useCallback(() => {
+    setProgression((prev) => {
+      if ((prev.savedCoins ?? 0) < SHOP_SP_COIN_PRICE) return prev;
+      sounds.playUpgrade();
+      setKillToast(`⚡ ¡+${SHOP_SP_BUNDLE_AMOUNT} Puntos de Habilidad agregados!`);
+      setTimeout(() => setKillToast(null), 3200);
+      return {
+        ...prev,
+        savedCoins: (prev.savedCoins ?? 0) - SHOP_SP_COIN_PRICE,
+        skillPoints: prev.skillPoints + SHOP_SP_BUNDLE_AMOUNT
+      };
+    });
+  }, []);
+
   // Key listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1609,27 +1766,35 @@ export default function App() {
             );
 
             if (spawner.spawnedCounts[idx] < targetSpawns) {
-              // Spawn enemy with arena scaling and specialized types!
-              // User request: "que cada arena mayor que la anterior se mas dificil, y que haya enemigos mas fuertes"
+              // Spawn enemy with progressive Wave + Arena scaling and kinetic shields on elites/bosses
               const bp = ENEMIES[seg.enemyType] || ENEMIES.soldier;
               const arenaInfo = getArenaByMapId(state.map.id);
               const aLevel = arenaInfo.arenaLevel;
-              const arenaHpMult = 1 + (aLevel - 1) * 0.45;
-              const arenaSpdMult = 1 + (aLevel - 1) * 0.05;
-              const arenaArmorBonus = (aLevel - 1) * 2;
-              const hpMultiplier = (state.difficulty === 'hard' ? 1.25 : 1.0) * arenaHpMult;
-              const spdMultiplier = (state.difficulty === 'hard' ? 1.2 : 1.0) * arenaSpdMult;
+              const scaling = getWaveScaling(spawner.waveNumber, aLevel, state.difficulty);
+              const scaledMaxHp = Math.round(bp.baseHealth * scaling.hpMult);
+              const scaledSpeed = Math.round(bp.speed * scaling.speedMult);
+              const hasKineticShield =
+                scaling.shieldRatio > 0 &&
+                (bp.isBoss ||
+                  seg.enemyType === 'special' ||
+                  seg.enemyType === 'void_reaver' ||
+                  seg.enemyType === 'cyber_dreadnought' ||
+                  seg.enemyType === 'tank' ||
+                  seg.enemyType === 'pyro_golem');
+              const maxShield = hasKineticShield ? Math.round(scaledMaxHp * scaling.shieldRatio) : 0;
 
               const newEnemy: ActiveEnemy = {
                 instanceId: `enemy_${Date.now()}_${Math.random()}`,
                 type: seg.enemyType,
                 name: bp.name,
-                currentHealth: Math.round(bp.baseHealth * hpMultiplier),
-                maxHealth: Math.round(bp.baseHealth * hpMultiplier),
-                speed: Math.round(bp.speed * spdMultiplier),
-                baseSpeed: Math.round(bp.speed * spdMultiplier),
-                armor: bp.armor + arenaArmorBonus,
-                goldReward: bp.goldReward + (aLevel - 1) * 2,
+                currentHealth: scaledMaxHp,
+                maxHealth: scaledMaxHp,
+                shield: maxShield,
+                maxShield,
+                speed: scaledSpeed,
+                baseSpeed: scaledSpeed,
+                armor: bp.armor + scaling.armorBonus,
+                goldReward: bp.goldReward + scaling.goldBonus,
                 coreDamage: bp.coreDamage,
                 size: bp.size + (aLevel > 1 ? 1 : 0),
                 color: bp.color,
@@ -1717,6 +1882,12 @@ export default function App() {
             setBaseHealth((hp) => {
               const nextHp = Math.max(0, hp - escapedDamage);
               if (nextHp <= 0) {
+                const bankableOnEnd = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
+                if (bankableOnEnd > 0) {
+                  setAutoBankedCoinsInMatch(bankableOnEnd);
+                  setGold((g) => Math.max(0, g - bankableOnEnd));
+                  setEarnedGoldInMatch(0);
+                }
                 setViewState('GAME_OVER');
                 setProgression((p) => {
                   const currentWaveReached = currentWave;
@@ -1724,6 +1895,7 @@ export default function App() {
                   const currentArenaBests = p.arenaBestWaves || {};
                   return {
                     ...p,
+                    savedCoins: (p.savedCoins ?? 0) + bankableOnEnd,
                     highScoreWave: nextHigh,
                     arenaBestWaves: {
                       ...currentArenaBests,
@@ -2016,7 +2188,14 @@ export default function App() {
                 // Ninja Sombrío ignores 75% enemy armor
                 const effectiveArmor = sourceBp?.id === 'ninja_sombrio' ? Math.floor(enemy.armor * 0.25) : enemy.armor;
                 const netDamage = Math.max(2, hitDamage - effectiveArmor);
-                const nextHp = enemy.currentHealth - netDamage;
+
+                // Kinetic shield absorbs damage first; Hacker Cibernético strips shields 2.2x faster
+                const prevShield = enemy.shield || 0;
+                const shieldBreakMult = sourceBp?.id === 'hacker_cibernetico' ? 2.2 : 1.0;
+                const shieldDamage = prevShield > 0 ? Math.min(prevShield, netDamage * shieldBreakMult) : 0;
+                const nextShield = Math.max(0, prevShield - shieldDamage);
+                const overflowDamage = prevShield > 0 ? Math.max(0, netDamage - shieldDamage / shieldBreakMult) : netDamage;
+                const nextHp = enemy.currentHealth - overflowDamage;
 
                 // Add damage number
                 setDamageNumbers((nums) => [
@@ -2028,7 +2207,7 @@ export default function App() {
                     value: Math.round(netDamage),
                     life: 0.6,
                     maxLife: 0.6,
-                    color: proj.color,
+                    color: prevShield > 0 ? '#38BDF8' : proj.color,
                     isCrit: netDamage > 80
                   }
                 ]);
@@ -2051,6 +2230,7 @@ export default function App() {
                   // Alquimista Dorado generates +2 bonus gold per kill
                   if (sourceBp?.id === 'alquimista_dorado') {
                     setGold((g) => g + 2);
+                    setEarnedGoldInMatch((e) => e + 2);
                     setTotalGoldEarned((g) => g + 2);
                   }
                 }
@@ -2070,19 +2250,18 @@ export default function App() {
                   newAura = undefined;
                 }
 
-                // Guardian de Hielo freezes on hit
+                // Guardian de Hielo freezes on hit; bosses resist 65% of hard stun/freeze duration
                 const extraFreeze = sourceBp?.id === 'guardian_hielo' ? 1.2 : 0;
+                const ccResistance = enemy.isBoss ? 0.35 : 1.0;
 
                 // Stun / freeze duration from projectile
-                const effectiveFreeze = Math.max(
-                  extraFreeze,
-                  proj.freezeDuration || 0,
-                  proj.stunDuration || 0
-                );
+                const effectiveFreeze =
+                  Math.max(extraFreeze, proj.freezeDuration || 0, proj.stunDuration || 0) * ccResistance;
 
                 return {
                   ...enemy,
                   currentHealth: nextHp,
+                  shield: nextShield,
                   armor: newArmor,
                   elementalAura: newAura,
                   distanceTraveled: newDist,
@@ -2166,7 +2345,11 @@ export default function App() {
           }
 
           setGold((g) => g + totalRoundGold);
+          setEarnedGoldInMatch((e) => e + totalRoundGold);
           setTotalGoldEarned((g) => g + totalRoundGold);
+
+          // Automatically save Vault Coins reward on every completed wave (keeps arena gold intact too)
+          const savedCoinsEarned = Math.max(15, Math.round(totalRoundGold * 0.45)) + (isBossWaveNow ? 35 : 0);
 
           // Update Story Mode Missions on Wave Clear
           setMissions((missionsList) =>
@@ -2188,7 +2371,7 @@ export default function App() {
             })
           );
 
-          // Update persistent lifetime stats, wave records, and milestones on user's device
+          // Update persistent lifetime stats, Vault Coins, wave records, and milestones on user's device
           setProgression((p) => {
             const nextWaves = (p.lifetimeWaves || 0) + 1;
             const nextGold = (p.lifetimeGold || 0) + totalRoundGold;
@@ -2204,6 +2387,7 @@ export default function App() {
 
             return {
               ...p,
+              savedCoins: (p.savedCoins ?? 0) + savedCoinsEarned,
               lifetimeWaves: nextWaves,
               lifetimeGold: nextGold,
               highScoreWave: nextHighScore,
@@ -2218,7 +2402,8 @@ export default function App() {
             waveNumber: currentWave,
             rewardGold,
             alchemistYield,
-            enemiesDefeated: spawner.waveKills
+            enemiesDefeated: spawner.waveKills,
+            savedCoinsEarned
           });
         }
       }
@@ -2246,15 +2431,20 @@ export default function App() {
 
       {/* Dynamic View: Top Navigation between Cartas and Jugar */}
       {activeBottomTab === 'CARDS' ? (
-        /* CARTAS, MAZO, SOBRES, MISIONES, CÓDICE */
+        /* CARTAS, TIENDA, MAZO, SOBRES, MISIONES, CÓDICE */
         <CardsHub
           progression={progression}
           missions={missions}
           currentWave={currentWave}
+          requestedSubTab={cardsHubSubTab}
+          onConsumeRequestedSubTab={() => setCardsHubSubTab(null)}
           onUpgradeCharacter={handleUpgradeCharacter}
           onClaimMission={handleClaimMission}
           onOpenPack={handleOpenPack}
           onToggleDeckCard={handleToggleDeckCard}
+          onBuyCardWithCoins={handleBuyCardWithCoins}
+          onBuyPackWithCoins={handleBuyPackWithCoins}
+          onBuySkillPointsWithCoins={handleBuySkillPointsWithCoins}
           onSwitchToBattle={() => {
             setActiveBottomTab('BATTLE');
             setShowMapSelectModal(true);
@@ -2268,6 +2458,9 @@ export default function App() {
             baseHealth={baseHealth}
             maxBaseHealth={maxBaseHealth}
             gold={gold}
+            savedCoins={progression.savedCoins ?? 0}
+            bankableGold={Math.min(gold, earnedGoldInMatch)}
+            waveHpMult={getWaveScaling(currentWave, getArenaByMapId(currentMap.id).arenaLevel, difficulty).hpMult}
             currentWave={currentWave}
             totalWaves={totalWaves}
             isWaveActive={isWaveActive}
@@ -2278,7 +2471,7 @@ export default function App() {
             arenaName={getArenaByMapId(currentMap.id).name}
             arenaBadge={getArenaByMapId(currentMap.id).badge}
             arenaRoundsRequired={getArenaByMapId(currentMap.id).roundsRequired}
-            arenaDifficulty={`Tier ${getArenaByMapId(currentMap.id).arenaLevel} (+${(getArenaByMapId(currentMap.id).arenaLevel - 1) * 45}% Dif)`}
+            arenaDifficulty={`Tier ${getArenaByMapId(currentMap.id).arenaLevel}`}
             killsTowardsNextPack={progression.killsTowardsNextPack || 0}
             killsRequiredForNextPack={getKillsRequiredForPack(progression.packsClaimedFromKills || 0)}
             packsClaimed={progression.packsClaimedFromKills || 0}
@@ -2299,10 +2492,27 @@ export default function App() {
             onToggleMusic={handleToggleMusic}
             autoWave={autoWave}
             onToggleAutoWave={() => setAutoWave(!autoWave)}
-            onOpenAlmanac={() => setActiveBottomTab('CARDS')}
-            onOpenArmory={() => setActiveBottomTab('CARDS')}
-            onOpenMissions={() => setActiveBottomTab('CARDS')}
-            onOpenPacks={() => setActiveBottomTab('CARDS')}
+            onOpenAlmanac={() => {
+              setCardsHubSubTab('ALMANAC');
+              setActiveBottomTab('CARDS');
+            }}
+            onOpenArmory={() => {
+              setCardsHubSubTab('DECK');
+              setActiveBottomTab('CARDS');
+            }}
+            onOpenMissions={() => {
+              setCardsHubSubTab('MISSIONS');
+              setActiveBottomTab('CARDS');
+            }}
+            onOpenPacks={() => {
+              setCardsHubSubTab('PACKS');
+              setActiveBottomTab('CARDS');
+            }}
+            onOpenShop={() => {
+              setCardsHubSubTab('SHOP');
+              setActiveBottomTab('CARDS');
+            }}
+            onBankCoins={handleBankMatchCoins}
             onOpenMenu={() => setShowMapSelectModal(true)}
           />
 
@@ -2365,6 +2575,7 @@ export default function App() {
           rewardGold={summaryData.rewardGold}
           alchemistYield={summaryData.alchemistYield}
           enemiesDefeated={summaryData.enemiesDefeated}
+          savedCoinsEarned={summaryData.savedCoinsEarned}
           packRewardGranted={summaryData.waveNumber % 10 === 0}
           onNextRound={handleNextRound}
         />
@@ -2420,9 +2631,41 @@ export default function App() {
               </div>
             </div>
 
-            {/* Newly Unlocked Divinity for this Arena */}
+            {/* Gifted Hero for arriving at this New Arena */}
+            {arenaPromotion.giftedUnit && (
+              <div className="p-3 bg-gradient-to-r from-emerald-950/90 via-cyan-950/70 to-slate-900 border-2 border-emerald-400/70 rounded-2xl flex items-center gap-3 text-left shadow-xl">
+                <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-emerald-400 bg-slate-950 shrink-0 shadow-md">
+                  {arenaPromotion.giftedUnit.imageUrl ? (
+                    <GameImage
+                      src={arenaPromotion.giftedUnit.imageUrl}
+                      alt={arenaPromotion.giftedUnit.name}
+                      className="w-full h-full object-cover"
+                      fallback={<div className="w-full h-full flex items-center justify-center text-xl">🎁</div>}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xl">🎁</div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-black uppercase text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/50">
+                      🎁 REGALO POR LLEGAR A ESTA ARENA
+                    </span>
+                  </div>
+                  <div className="text-sm font-black text-white truncate mt-0.5">{arenaPromotion.giftedUnit.name}</div>
+                  <div className="text-[11px] text-cyan-300 truncate">
+                    {arenaPromotion.giftedUnit.title}
+                  </div>
+                  <div className="text-[10px] text-emerald-300 mt-0.5 font-semibold">
+                    ¡Desbloqueado gratis y añadido a tu colección!
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Divinity Unlocked in Card Shop & Packs by completing the previous Arena */}
             {(() => {
-              const divUnit = getDivinityForArena(arenaPromotion.arena.arenaLevel);
+              const divUnit = getDivinityForArena(arenaPromotion.completedArenaLevel);
               if (!divUnit) return null;
               return (
                 <div className="p-3 bg-gradient-to-r from-amber-950/90 via-purple-950/70 to-slate-900 border-2 border-amber-400/70 rounded-2xl flex items-center gap-3 text-left shadow-xl">
@@ -2441,7 +2684,7 @@ export default function App() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-black uppercase text-amber-300 bg-amber-950/90 px-1.5 py-0.5 rounded border border-amber-500/50">
-                        👑 NUEVA DIVINIDAD DESBLOQUEADA
+                        👑 DIVINIDAD DISPONIBLE EN TIENDA
                       </span>
                     </div>
                     <div className="text-sm font-black text-white truncate mt-0.5">{divUnit.name}</div>
@@ -2449,7 +2692,7 @@ export default function App() {
                       Habilidad Única: <span className="font-bold text-white">{divUnit.showdownName}</span>
                     </div>
                     <div className="text-[10px] text-purple-300/90 mt-0.5">
-                      ¡Ya disponible en tus Sobres! (Regla: Máx 1 Divino en el campo)
+                      Arena {arenaPromotion.completedArenaLevel} completada: ya puedes comprarla en Tienda o conseguirla en Sobres.
                     </div>
                   </div>
                 </div>
@@ -2474,6 +2717,44 @@ export default function App() {
           onSelectAndStart={(selectedArena, chosenDifficulty) => {
             setShowMapSelectModal(false);
             if (selectedArena.map.id !== currentMap.id) {
+              // Automatically bank earned gold from previous arena and gift new-arena hero if not yet claimed
+              const bankableSwitch = Math.min(gold, earnedGoldInMatch);
+              const targetLvl = selectedArena.arenaLevel;
+              const notYetGifted = targetLvl > 1 && !(progression.giftedArenaLevels || [1]).includes(targetLvl);
+              const arrivalGift = notYetGifted ? getArenaGiftCharacter(targetLvl, progression.unlockedCardIds) : null;
+
+              if (bankableSwitch > 0 || arrivalGift) {
+                setProgression((p) => {
+                  let nextUnlocked = p.unlockedCardIds;
+                  let nextDeck = p.activeDeckCardIds || [];
+                  const nextGifted = arrivalGift
+                    ? Array.from(new Set([...(p.giftedArenaLevels || [1]), targetLvl]))
+                    : p.giftedArenaLevels || [1];
+
+                  if (arrivalGift && !nextUnlocked.includes(arrivalGift.id)) {
+                    nextUnlocked = [...nextUnlocked, arrivalGift.id];
+                    if (nextDeck.length < 7 && !nextDeck.includes(arrivalGift.id)) {
+                      nextDeck = [...nextDeck, arrivalGift.id];
+                    }
+                  }
+
+                  return {
+                    ...p,
+                    savedCoins: (p.savedCoins ?? 0) + bankableSwitch,
+                    unlockedCardIds: nextUnlocked,
+                    activeDeckCardIds: nextDeck,
+                    giftedArenaLevels: nextGifted
+                  };
+                });
+
+                if (arrivalGift) {
+                  setKillToast(`🎁 ¡Llegaste a ${selectedArena.name}! Recibes gratis a ${arrivalGift.name}.`);
+                  setTimeout(() => setKillToast(null), 4200);
+                } else if (bankableSwitch > 0) {
+                  setKillToast(`💰 ¡+${bankableSwitch} monedas guardadas en tu Bóveda al cambiar de arena!`);
+                  setTimeout(() => setKillToast(null), 3200);
+                }
+              }
               setCurrentMap(selectedArena.map);
               detailedPathRef.current = calculateDetailedPath(selectedArena.map);
               // User request: "Cada vez que pazes de arena, se reinician tus rondas y los personajes que tenias"
@@ -2489,6 +2770,8 @@ export default function App() {
               setBaseHealth(10);
               setMaxBaseHealth(10);
               setGold(260 + (selectedArena.arenaLevel - 1) * 35);
+              setEarnedGoldInMatch(0);
+              setAutoBankedCoinsInMatch(0);
             }
             setDifficulty(chosenDifficulty);
             setActiveBottomTab('BATTLE');
@@ -2505,11 +2788,14 @@ export default function App() {
           totalWaves={totalWaves}
           totalKills={totalKills}
           totalGoldEarned={totalGoldEarned}
+          savedCoinsBalance={progression.savedCoins ?? 0}
+          autoBankedCoins={autoBankedCoinsInMatch}
           mapName={currentMap.name}
           highScoreWave={progression.highScoreWave || currentWave}
           onRestart={handleRestartInfiniteMatch}
           onGoToCards={() => {
             setViewState('PLAYING');
+            setCardsHubSubTab('SHOP');
             setActiveBottomTab('CARDS');
           }}
         />

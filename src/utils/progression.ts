@@ -1,4 +1,4 @@
-import { PlayerProgression, PackReward, Mission } from '../types/game';
+import { PlayerProgression, PackReward, Mission, UnitBlueprint } from '../types/game';
 import { UNITS } from '../data/units';
 import { INITIAL_MISSIONS } from '../data/missions';
 
@@ -41,12 +41,13 @@ const defaultMasteryLevels: Record<string, number> = Object.keys(UNITS).reduce((
 }, {} as Record<string, number>);
 
 export const INITIAL_PROGRESSION: PlayerProgression = {
-  // Starts with EXACTLY 3 cards as requested
-  unlockedCardIds: ['vanguard_solar', 'pyromancer', 'cryo_mage'],
-  // Battle deck holds up to 7 cards (starts with the 3 unlocked)
-  activeDeckCardIds: ['vanguard_solar', 'pyromancer', 'cryo_mage'],
+  // Starts with Vanguardia Solar, Piromante, Criomago and Zeker
+  unlockedCardIds: ['vanguard_solar', 'pyromancer', 'cryo_mage', 'zeker'],
+  // Battle deck holds up to 7 cards (starts with the 4 starter heroes)
+  activeDeckCardIds: ['vanguard_solar', 'pyromancer', 'cryo_mage', 'zeker'],
   cardMasteryLevels: defaultMasteryLevels,
   skillPoints: 50,
+  savedCoins: 180,
   unopenedPacks: 2, // Welcome packs so player can test pulling new cards immediately
   completedMissionIds: [],
   claimedMissionIds: [],
@@ -55,6 +56,8 @@ export const INITIAL_PROGRESSION: PlayerProgression = {
   lifetimeGold: 0,
   currentStoryChapter: 1,
   highestArenaUnlocked: 1, // Arena 1 initially; Arena 2 requires passing Arena 1!
+  completedArenaLevels: [],
+  giftedArenaLevels: [1],
   killsTowardsNextPack: 0, // Kills accumulated for current pack
   packsClaimedFromKills: 0, // Total packs earned via kill milestones
   highScoreWave: 0,
@@ -83,16 +86,44 @@ export function loadProgression(): { progression: PlayerProgression; missions: M
       const validUnlocked = Array.isArray(rawProg.unlockedCardIds)
         ? rawProg.unlockedCardIds.filter((id: unknown): id is string => typeof id === 'string' && Boolean(UNITS[id]))
         : [];
-      const unlocked = validUnlocked.length > 0 ? validUnlocked : INITIAL_PROGRESSION.unlockedCardIds;
+      const unlockedBase = validUnlocked.length > 0 ? validUnlocked : INITIAL_PROGRESSION.unlockedCardIds;
+      // Ensure starter hero 'zeker' is unlocked for all players from the start
+      const unlocked = unlockedBase.includes('zeker') ? unlockedBase : [...unlockedBase, 'zeker'];
 
       const rawDeck = Array.isArray(rawProg.activeDeckCardIds)
         ? rawProg.activeDeckCardIds.filter((id: unknown): id is string => typeof id === 'string' && unlocked.includes(id)).slice(0, 7)
         : [];
+      const activeDeck =
+        rawDeck.length > 0
+          ? !rawDeck.includes('zeker') && !validUnlocked.includes('zeker') && rawDeck.length < 7
+            ? [...rawDeck, 'zeker']
+            : rawDeck
+          : unlocked.slice(0, 7);
+
+      const highestArena = Math.max(1, Number(rawProg.highestArenaUnlocked) || 1);
+      const savedCompleted = Array.isArray(rawProg.completedArenaLevels)
+        ? rawProg.completedArenaLevels.filter((n: unknown): n is number => typeof n === 'number' && n >= 1 && n <= 15)
+        : [];
+      const migratedCompleted = new Set<number>(savedCompleted);
+      for (let lvl = 1; lvl < highestArena; lvl++) {
+        migratedCompleted.add(lvl);
+      }
+
+      const savedGifted = Array.isArray(rawProg.giftedArenaLevels)
+        ? rawProg.giftedArenaLevels.filter((n: unknown): n is number => typeof n === 'number' && n >= 1 && n <= 15)
+        : [];
+      const migratedGifted = Array.from(new Set<number>([1, ...savedGifted]));
 
       const prog: PlayerProgression = {
         ...INITIAL_PROGRESSION,
         ...rawProg,
-        highestArenaUnlocked: Math.max(1, Number(rawProg.highestArenaUnlocked) || 1),
+        highestArenaUnlocked: highestArena,
+        completedArenaLevels: Array.from(migratedCompleted),
+        giftedArenaLevels: migratedGifted,
+        savedCoins:
+          typeof rawProg.savedCoins === 'number' && !Number.isNaN(rawProg.savedCoins)
+            ? Math.max(0, Math.floor(rawProg.savedCoins))
+            : Math.max(180, Math.min(800, Math.floor((Number(rawProg.lifetimeGold) || 0) * 0.25))),
         killsTowardsNextPack: Number(rawProg.killsTowardsNextPack) || 0,
         packsClaimedFromKills: Number(rawProg.packsClaimedFromKills) || 0,
         lifetimeKills: Number(rawProg.lifetimeKills) || 0,
@@ -107,7 +138,7 @@ export function loadProgression(): { progression: PlayerProgression; missions: M
           ...(rawProg.settings && typeof rawProg.settings === 'object' ? rawProg.settings : {})
         },
         unlockedCardIds: unlocked,
-        activeDeckCardIds: rawDeck.length > 0 ? rawDeck : unlocked.slice(0, 7),
+        activeDeckCardIds: activeDeck,
         cardMasteryLevels: {
           ...INITIAL_PROGRESSION.cardMasteryLevels,
           ...(rawProg.cardMasteryLevels && typeof rawProg.cardMasteryLevels === 'object' ? rawProg.cardMasteryLevels : {})
@@ -287,4 +318,54 @@ export function openBoosterPack(currentUnlockedIds: string[], highestArenaUnlock
   }
 
   return rewards;
+}
+
+export const SHOP_PACK_COIN_PRICE = 520;
+export const SHOP_SP_COIN_PRICE = 300;
+export const SHOP_SP_BUNDLE_AMOUNT = 100;
+
+/**
+ * Checks whether an arena has been beaten/completed at least once.
+ */
+export function isArenaCompleted(progression: PlayerProgression, arenaLevel: number): boolean {
+  if (arenaLevel < (progression.highestArenaUnlocked || 1)) return true;
+  return (progression.completedArenaLevels || []).includes(arenaLevel);
+}
+
+/**
+ * Validates whether a card can currently be bought directly in the Card Shop.
+ * Divinities cannot be purchased until the player has completed their Arena.
+ */
+export function canBuyCardInShop(
+  unit: UnitBlueprint,
+  progression: PlayerProgression
+): { allowed: boolean; requiredArena?: number } {
+  if (unit.rarity === 'divinidad') {
+    const reqArena = unit.arenaUnlockLevel || 1;
+    if (!isArenaCompleted(progression, reqArena)) {
+      return { allowed: false, requiredArena: reqArena };
+    }
+  }
+  return { allowed: true };
+}
+
+/**
+ * Computes direct Card Shop purchase price in persistent saved Coins.
+ */
+export function getCardShopPrice(unit: UnitBlueprint): number {
+  switch (unit.rarity) {
+    case 'comun':
+      return 280;
+    case 'especial':
+    case 'rara':
+      return 550;
+    case 'epica':
+      return 1100;
+    case 'legendaria':
+      return 2100;
+    case 'divinidad':
+      return 3500 + Math.max(0, (unit.arenaUnlockLevel || 1) - 1) * 400;
+    default:
+      return 450;
+  }
 }

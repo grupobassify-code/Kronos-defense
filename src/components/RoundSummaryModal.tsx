@@ -6,6 +6,7 @@ interface RoundSummaryModalProps {
   rewardGold: number;
   alchemistYield: number;
   enemiesDefeated: number;
+  savedCoinsEarned?: number;
   packRewardGranted?: boolean;
   onNextRound: () => void;
 }
@@ -15,6 +16,7 @@ export const RoundSummaryModal: React.FC<RoundSummaryModalProps> = ({
   rewardGold,
   alchemistYield,
   enemiesDefeated,
+  savedCoinsEarned = 0,
   packRewardGranted,
   onNextRound
 }) => {
@@ -70,6 +72,13 @@ export const RoundSummaryModal: React.FC<RoundSummaryModalProps> = ({
             <span>Enemigos repelidos</span>
             <span className="font-mono text-emerald-400 font-semibold">{enemiesDefeated}</span>
           </div>
+
+          {savedCoinsEarned > 0 && (
+            <div className="flex items-center justify-between text-xs text-slate-200">
+              <span className="text-amber-300 font-medium">Guardado en Bóveda de Cartas</span>
+              <span className="font-mono text-amber-300 font-bold">+{savedCoinsEarned} monedas</span>
+            </div>
+          )}
 
           <div className="h-px bg-slate-800 pt-1" />
 

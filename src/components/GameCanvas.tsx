@@ -828,20 +828,20 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: ActiveEnemy) {
   ctx.save();
   ctx.rotate(angle);
 
-  // Check if Boss has AI sprite image!
+  // Check if Enemy/Boss has AI sprite image!
   const enemyBp = ENEMIES[enemy.type];
-  const bossImg = isBoss && enemyBp?.imageUrl ? getImage(enemyBp.imageUrl) : null;
+  const enemyImg = enemyBp?.imageUrl ? getImage(enemyBp.imageUrl) : null;
 
-  if (bossImg) {
+  if (enemyImg) {
     ctx.beginPath();
     ctx.arc(0, 0, size, 0, Math.PI * 2);
     ctx.save();
     ctx.clip();
-    safeDrawImage(ctx, bossImg, -size, -size, size * 2, size * 2);
+    safeDrawImage(ctx, enemyImg, -size, -size, size * 2, size * 2);
     ctx.restore();
 
     ctx.strokeStyle = accentColor;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = isBoss ? 3 : 2;
     ctx.stroke();
   } else if (isBoss || enemy.type === 'boss_infernal') {
     ctx.fillStyle = color;
@@ -954,11 +954,25 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: ActiveEnemy) {
   ctx.lineWidth = 1;
   ctx.strokeRect(-barW / 2, barY, barW, barH);
 
+  // Kinetic Shield bar & aura indicator if enemy has shield
+  if (enemy.shield && enemy.shield > 0) {
+    const shieldMax = enemy.maxShield || maxHealth * 0.45;
+    const shieldPct = Math.min(1, enemy.shield / Math.max(1, shieldMax));
+    ctx.fillStyle = '#38BDF8';
+    ctx.fillRect(-barW / 2, barY - 3, barW * shieldPct, 2);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, size + 5, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
   if (isBoss) {
     ctx.font = 'bold 9px system-ui';
     ctx.fillStyle = '#FFFFFF';
     ctx.textAlign = 'center';
-    ctx.fillText(enemy.name, 0, barY - 4);
+    ctx.fillText(enemy.name, 0, barY - (enemy.shield && enemy.shield > 0 ? 7 : 4));
   }
 
   ctx.restore();

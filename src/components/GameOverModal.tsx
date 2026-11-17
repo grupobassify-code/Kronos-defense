@@ -7,6 +7,8 @@ interface GameOverModalProps {
   totalWaves: number;
   totalKills: number;
   totalGoldEarned: number;
+  savedCoinsBalance?: number;
+  autoBankedCoins?: number;
   mapName: string;
   highScoreWave?: number;
   onRestart: () => void;
@@ -19,6 +21,8 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   totalWaves,
   totalKills,
   totalGoldEarned,
+  savedCoinsBalance = 0,
+  autoBankedCoins = 0,
   mapName,
   highScoreWave = 0,
   onRestart,
@@ -53,7 +57,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         </h2>
         <p className="text-xs text-slate-400 mb-6">
           Defendiste tu base hasta la <strong className="text-cyan-300">Oleada Infinita {waveReached}</strong> en {mapName}.
-          Todos tus sobres ganados y puntos de habilidad se han conservado.
+          Todos tus sobres ganados, monedas guardadas y puntos de habilidad se han conservado.
         </p>
 
         {/* Stats Grid */}
@@ -81,15 +85,20 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           </div>
 
           <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
-            <div className="text-[11px] text-slate-400">Oro Acumulado</div>
-            <div className="text-lg font-bold font-mono text-amber-300">{totalGoldEarned}</div>
+            <div className="text-[11px] text-slate-400">Monedas en Bóveda</div>
+            <div className="text-lg font-bold font-mono text-amber-300">
+              {savedCoinsBalance}
+              {autoBankedCoins > 0 && (
+                <span className="text-[10px] text-emerald-400 ml-1.5 font-sans font-semibold">+{autoBankedCoins}</span>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Device Persistence Notice */}
         <div className="mb-6 px-3 py-2 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 text-[11px] flex items-center justify-center gap-1.5 font-medium">
           <span>💾</span>
-          <span>Progreso y desbloqueos guardados automáticamente en tu celular</span>
+          <span>Progreso, monedas y cartas guardados en tu celular</span>
         </div>
 
         {/* Action Buttons */}

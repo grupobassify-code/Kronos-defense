@@ -15,7 +15,10 @@ import {
   Layers,
   Maximize,
   Minimize,
-  Music
+  Music,
+  ShoppingBag,
+  Wallet,
+  PiggyBank
 } from 'lucide-react';
 import { GameSpeed } from '../types/game';
 
@@ -41,6 +44,9 @@ interface HUDProps {
   packsClaimed?: number;
   unopenedPacks: number;
   skillPoints: number;
+  savedCoins?: number;
+  bankableGold?: number;
+  waveHpMult?: number;
   claimableMissionsCount: number;
   totalKills: number;
   activeBottomTab?: 'CARDS' | 'BATTLE';
@@ -58,6 +64,8 @@ interface HUDProps {
   onOpenArmory: () => void;
   onOpenMissions: () => void;
   onOpenPacks: () => void;
+  onOpenShop?: () => void;
+  onBankCoins?: () => void;
   onOpenMenu: () => void;
 }
 
@@ -86,6 +94,9 @@ export const HUD: React.FC<HUDProps> = ({
   packsClaimed = 0,
   unopenedPacks,
   skillPoints,
+  savedCoins = 0,
+  bankableGold = 0,
+  waveHpMult = 1,
   claimableMissionsCount,
   totalKills,
   activeBottomTab = 'BATTLE',
@@ -100,6 +111,8 @@ export const HUD: React.FC<HUDProps> = ({
   onOpenArmory,
   onOpenMissions,
   onOpenPacks,
+  onOpenShop,
+  onBankCoins,
   onOpenMenu
 }) => {
   const hpRatio = Math.max(0, baseHealth / maxBaseHealth);
@@ -223,17 +236,40 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           </div>
 
-          {/* Gold Balance */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-amber-950/60 border border-amber-800/60 flex items-center justify-center text-amber-400 shrink-0 shadow-sm">
-              <Coins className="w-4 h-4 text-amber-400" />
-            </div>
-            <div>
-              <div className="text-[11px] font-medium text-slate-400">Fondos</div>
-              <div className="text-sm sm:text-base font-bold font-mono tabular-nums text-amber-300 tracking-tight leading-tight">
-                {gold} <span className="text-[10px] font-normal text-amber-400/80">oro</span>
+          {/* Gold Balance + Vault Banking */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-amber-950/60 border border-amber-800/60 flex items-center justify-center text-amber-400 shrink-0 shadow-sm">
+                <Coins className="w-4 h-4 text-amber-400" />
+              </div>
+              <div>
+                <div className="text-[11px] font-medium text-slate-400">Fondos Arena</div>
+                <div className="text-sm sm:text-base font-bold font-mono tabular-nums text-amber-300 tracking-tight leading-tight">
+                  {gold} <span className="text-[10px] font-normal text-amber-400/80">oro</span>
+                </div>
               </div>
             </div>
+
+            {onBankCoins && bankableGold > 0 && (
+              <button
+                onClick={onBankCoins}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 font-bold text-xs shadow-sm transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+                title="Guardar el oro ganado durante la arena en tu Bóveda permanente de Monedas para comprar cartas en la Tienda"
+              >
+                <PiggyBank className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="tabular-nums">Guardar (+{bankableGold})</span>
+              </button>
+            )}
+
+            <button
+              onClick={onOpenShop}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-amber-500/40 hover:border-amber-400 text-amber-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+              title="Monedas guardadas en tu dispositivo para comprar cualquier carta en la Tienda"
+            >
+              <Wallet className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-slate-400 font-medium hidden sm:inline">Bóveda:</span>
+              <span className="font-mono tabular-nums text-amber-300">{savedCoins}</span>
+            </button>
           </div>
         </div>
 
@@ -249,9 +285,14 @@ export const HUD: React.FC<HUDProps> = ({
               <span className="text-slate-200 font-extrabold truncate max-w-[120px] sm:max-w-none">
                 {arenaName || mapName}
               </span>
-              <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 ml-1">
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 ml-1 whitespace-nowrap">
                 {arenaDifficulty || '15 Arenas'}
               </span>
+              {waveHpMult > 1.05 && (
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-rose-950 border border-rose-700/70 text-rose-300 font-mono tabular-nums whitespace-nowrap">
+                  Amenaza x{waveHpMult.toFixed(1)}
+                </span>
+              )}
               {isBossWave && (
                 <span className="text-red-400 font-bold flex items-center gap-0.5 ml-1 animate-pulse">
                   <ShieldAlert className="w-3 h-3 inline" /> ¡JEFE!
@@ -265,7 +306,7 @@ export const HUD: React.FC<HUDProps> = ({
           </button>
 
           {isWaveActive && (
-            <div className="text-xs text-slate-400 bg-slate-950/60 px-2.5 py-1.5 rounded-lg border border-slate-800/80 font-mono tabular-nums">
+            <div className="text-xs text-slate-400 bg-slate-950/60 px-2.5 py-1.5 rounded-lg border border-slate-800/80 font-mono tabular-nums whitespace-nowrap">
               Restantes: <span className="text-emerald-400 font-semibold">{enemiesRemaining}</span>
             </div>
           )}
@@ -305,7 +346,7 @@ export const HUD: React.FC<HUDProps> = ({
           {/* Armory / Character Deck Button */}
           <button
             onClick={onOpenArmory}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/70 border border-slate-800 text-slate-200 hover:border-slate-700 hover:bg-slate-800/80 text-xs font-semibold transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/70 border border-slate-800 text-slate-200 hover:border-slate-700 hover:bg-slate-800/80 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
             title="Colección de cartas y subida de nivel de unidades"
           >
             <Layers className="w-3.5 h-3.5 text-cyan-400" />
@@ -315,6 +356,18 @@ export const HUD: React.FC<HUDProps> = ({
               <span>{skillPoints}</span>
             </div>
           </button>
+
+          {/* Direct Card Shop Button */}
+          {onOpenShop && (
+            <button
+              onClick={onOpenShop}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-950/60 hover:bg-amber-900/70 border border-amber-500/40 text-amber-200 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
+              title="Abrir Tienda de Cartas para comprar cartas directamente con tus monedas"
+            >
+              <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
+              <span>Tienda</span>
+            </button>
+          )}
 
           {/* Game Speed Controls */}
           <div className="flex items-center bg-slate-950/80 p-0.5 rounded-xl border border-slate-800">

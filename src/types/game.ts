@@ -137,6 +137,7 @@ export interface ActiveEnemy {
   burnUntil: number; // seconds remaining
   burnDps: number;
   shield?: number;
+  maxShield?: number;
   angle: number;
   elementalAura?: 'fire' | 'cyber' | 'void' | 'ice';
   arenaLevel?: number;
@@ -284,10 +285,11 @@ export interface PackReward {
 }
 
 export interface PlayerProgression {
-  unlockedCardIds: string[]; // Initially ['vanguard_solar', 'pyromancer', 'cryo_mage']
+  unlockedCardIds: string[]; // Initially ['vanguard_solar', 'pyromancer', 'cryo_mage', 'zeker']
   activeDeckCardIds: string[]; // Battle deck of up to 7 cards selected by the player
   cardMasteryLevels: Record<string, number>; // Level 1 to 10
   skillPoints: number; // For upgrading levels
+  savedCoins: number; // Persistent coins saved during or after arenas to buy cards in the Shop
   unopenedPacks: number; // Number of booster packs
   completedMissionIds: string[];
   claimedMissionIds: string[];
@@ -296,6 +298,8 @@ export interface PlayerProgression {
   lifetimeGold: number;
   currentStoryChapter: number;
   highestArenaUnlocked: number; // 1 to 15 (Arena 1 initially unlocked, Arena 2 requires passing Arena 1)
+  completedArenaLevels?: number[]; // Arenas beaten at least once (unlocks that arena's Divinities in Card Shop)
+  giftedArenaLevels?: number[]; // Arenas whose arrival gift character has already been granted
   killsTowardsNextPack: number; // Progress towards current booster pack (100, 200, 250, etc.)
   packsClaimedFromKills: number; // Total booster packs awarded via kill milestones
   highScoreWave?: number; // Highest wave reached across all matches
