@@ -134,6 +134,7 @@ export interface ActiveEnemy {
   slowUntil: number; // seconds remaining
   slowMultiplier: number;
   freezeUntil: number; // seconds remaining
+  cryoParalyzed?: boolean; // Criomago can only paralyze each enemy once
   burnUntil: number; // seconds remaining
   burnDps: number;
   shield?: number;
@@ -178,6 +179,7 @@ export interface Projectile {
   slowDuration?: number;
   slowFactor?: number;
   freezeDuration?: number;
+  fromCryoMage?: boolean;
   burnDuration?: number;
   burnDps?: number;
   stunDuration?: number;

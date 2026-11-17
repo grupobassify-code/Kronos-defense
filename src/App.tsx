@@ -49,7 +49,7 @@ import { RoundSummaryModal } from './components/RoundSummaryModal';
 import { GameOverModal } from './components/GameOverModal';
 import { CardsHub } from './components/CardsHub';
 import { MapSelectModal } from './components/MapSelectModal';
-import { GameImage } from './components/GameImage';
+import { ArenaUnlockCeremonyModal } from './components/ArenaUnlockCeremonyModal';
 
 export default function App() {
   // Story Mode Persistent Progression & Missions
@@ -185,6 +185,7 @@ export default function App() {
     completedArenaLevel: number;
     wave: number;
     giftedUnit: UnitBlueprint | null;
+    coinsEarned: number;
   } | null>(null);
   const [showMapSelectModal, setShowMapSelectModal] = useState<boolean>(true);
 
@@ -418,7 +419,8 @@ export default function App() {
         arena: nextArena,
         completedArenaLevel: currentArena.arenaLevel,
         wave: currentWave,
-        giftedUnit
+        giftedUnit,
+        coinsEarned: totalAddedCoins
       });
       return;
     }
@@ -542,15 +544,21 @@ export default function App() {
           }))
         );
       } else if (bp.id === 'cryo_mage') {
-        // Blizzard: freezes all enemies for 4.5s
+        // Ventisca Cero (Nerfed): freezes each enemy at most ONCE for 2.0s (0.8s bosses) and slows all enemies
         setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
         setActiveEnemies((prevEnemies) =>
-          prevEnemies.map((enemy) => ({
-            ...enemy,
-            freezeUntil: 4.5,
-            slowUntil: 7.0,
-            slowMultiplier: 0.35
-          }))
+          prevEnemies.map((enemy) => {
+            const canParalyze = !enemy.cryoParalyzed;
+            const freezeTime = canParalyze ? (enemy.isBoss ? 0.8 : 2.0) : 0;
+            return {
+              ...enemy,
+              currentHealth: Math.max(0, enemy.currentHealth - 35),
+              freezeUntil: freezeTime > 0 ? Math.max(enemy.freezeUntil, freezeTime) : enemy.freezeUntil,
+              cryoParalyzed: enemy.cryoParalyzed || canParalyze,
+              slowUntil: Math.max(enemy.slowUntil, 4.5),
+              slowMultiplier: 0.45
+            };
+          })
         );
       } else if (bp.id === 'alchemist') {
         // Midas Touch: gives +220 gold immediately
@@ -1807,6 +1815,7 @@ export default function App() {
                 slowUntil: 0,
                 slowMultiplier: 1,
                 freezeUntil: 0,
+                cryoParalyzed: false,
                 burnUntil: 0,
                 burnDps: 0,
                 angle: 0,
@@ -2073,9 +2082,35 @@ export default function App() {
                   splashRadius,
                   type: bp.projectileType,
                   color: bp.projectileColor,
-                  slowDuration: bp.role === 'control' || bp.projectileType === 'spore' ? 2.5 : undefined,
-                  slowFactor: bp.role === 'control' ? (unit.level === 3 ? 0.3 : 0.5) : bp.projectileType === 'spore' ? 0.6 : undefined,
-                  freezeDuration: (bp.role === 'control' && unit.level === 3) || bp.projectileType === 'ice' ? 1.4 : undefined,
+                  slowDuration:
+                    bp.id === 'cryo_mage'
+                      ? 2.2
+                      : bp.role === 'control' || bp.projectileType === 'spore'
+                      ? 2.5
+                      : undefined,
+                  slowFactor:
+                    bp.id === 'cryo_mage'
+                      ? unit.level === 1
+                        ? 0.65
+                        : unit.level === 2
+                        ? 0.5
+                        : 0.4
+                      : bp.role === 'control'
+                      ? unit.level === 3
+                        ? 0.3
+                        : 0.5
+                      : bp.projectileType === 'spore'
+                      ? 0.6
+                      : undefined,
+                  freezeDuration:
+                    bp.id === 'cryo_mage'
+                      ? unit.level === 3
+                        ? 0.8
+                        : undefined
+                      : (bp.role === 'control' && unit.level === 3) || bp.projectileType === 'ice'
+                      ? 1.4
+                      : undefined,
+                  fromCryoMage: bp.id === 'cryo_mage',
                   stunDuration,
                   burnDuration: (bp.role === 'area' && unit.level >= 2) || bp.projectileType === 'fireball' ? 4.0 : undefined,
                   burnDps: (bp.role === 'area' && unit.level >= 2) || bp.projectileType === 'fireball' ? 18 : undefined
@@ -2251,12 +2286,20 @@ export default function App() {
                 }
 
                 // Guardian de Hielo freezes on hit; bosses resist 65% of hard stun/freeze duration
+                // Criomago Glacial can only paralyze/freeze each enemy ONCE and for shorter duration
+                const isCryoShot = !!proj.fromCryoMage || sourceBp?.id === 'cryo_mage';
                 const extraFreeze = sourceBp?.id === 'guardian_hielo' ? 1.2 : 0;
                 const ccResistance = enemy.isBoss ? 0.35 : 1.0;
 
+                const rawFreezeFromProj = isCryoShot
+                  ? !enemy.cryoParalyzed
+                    ? proj.freezeDuration || 0
+                    : 0
+                  : Math.max(extraFreeze, proj.freezeDuration || 0);
+
                 // Stun / freeze duration from projectile
-                const effectiveFreeze =
-                  Math.max(extraFreeze, proj.freezeDuration || 0, proj.stunDuration || 0) * ccResistance;
+                const effectiveFreeze = Math.max(rawFreezeFromProj, proj.stunDuration || 0) * ccResistance;
+                const appliedCryoFreeze = isCryoShot && !enemy.cryoParalyzed && (proj.freezeDuration || 0) > 0;
 
                 return {
                   ...enemy,
@@ -2268,6 +2311,7 @@ export default function App() {
                   slowUntil: proj.slowDuration ? Math.max(enemy.slowUntil, proj.slowDuration) : enemy.slowUntil,
                   slowMultiplier: proj.slowFactor ? proj.slowFactor : enemy.slowMultiplier,
                   freezeUntil: effectiveFreeze > 0 ? Math.max(enemy.freezeUntil, effectiveFreeze) : enemy.freezeUntil,
+                  cryoParalyzed: enemy.cryoParalyzed || appliedCryoFreeze,
                   burnUntil: proj.burnDuration ? Math.max(enemy.burnUntil, proj.burnDuration) : enemy.burnUntil,
                   burnDps: proj.burnDps ? proj.burnDps : enemy.burnDps
                 };
@@ -2581,132 +2625,18 @@ export default function App() {
         />
       )}
 
-      {/* Clash Royale Arena Ascension Celebration Modal */}
+      {/* Animated Arena Unlock Ceremony: Arenas Menu Slide + Padlock Vibration/Break + Message + Gift Character -> Continue Playing */}
       {arenaPromotion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 border-2 border-amber-400/80 rounded-3xl p-6 sm:p-8 shadow-2xl relative text-center space-y-4">
-            <div className="inline-block px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 font-extrabold text-xs uppercase tracking-wider animate-pulse">
-              👑 ¡NUEVA ARENA DESBLOQUEADA!
-            </div>
-
-            <div className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-500 font-display">
-              {arenaPromotion.arena.name}
-            </div>
-
-            <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
-              ¡Has superado la arena anterior! Tus rondas se reinician a la <span className="text-cyan-300 font-bold">Ronda 1</span> y tu tablero de personajes se reinicia para defender la nueva arena desde cero con mayor dificultad.
-            </p>
-
-            {/* Arena Preview Image */}
-            {arenaPromotion.arena.map.bgImageUrl && (
-              <div className="w-full h-40 sm:h-48 rounded-2xl overflow-hidden border-2 border-slate-700/80 shadow-inner relative my-2">
-                <GameImage
-                  src={arenaPromotion.arena.map.bgImageUrl}
-                  alt={arenaPromotion.arena.name}
-                  className="w-full h-full object-cover"
-                  fallback={<div className="w-full h-full bg-slate-900" />}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end justify-between p-3">
-                  <span className="text-xs font-bold text-amber-300">{arenaPromotion.arena.badge}</span>
-                  <span className="text-xs font-mono text-slate-200">{arenaPromotion.arena.map.name}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Bonus Rewards */}
-            <div className="grid grid-cols-2 gap-3 p-3 bg-slate-900/90 rounded-2xl border border-purple-500/30">
-              <div className="flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-xl">
-                <span className="text-2xl">📦</span>
-                <div className="text-left">
-                  <div className="text-[10px] text-slate-400">Recompensa</div>
-                  <div className="text-xs font-black text-purple-300">+1 Sobre Crono</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-xl">
-                <span className="text-2xl">⚡</span>
-                <div className="text-left">
-                  <div className="text-[10px] text-slate-400">Puntos de Habilidad</div>
-                  <div className="text-xs font-black text-amber-300">+60 Puntos</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Gifted Hero for arriving at this New Arena */}
-            {arenaPromotion.giftedUnit && (
-              <div className="p-3 bg-gradient-to-r from-emerald-950/90 via-cyan-950/70 to-slate-900 border-2 border-emerald-400/70 rounded-2xl flex items-center gap-3 text-left shadow-xl">
-                <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-emerald-400 bg-slate-950 shrink-0 shadow-md">
-                  {arenaPromotion.giftedUnit.imageUrl ? (
-                    <GameImage
-                      src={arenaPromotion.giftedUnit.imageUrl}
-                      alt={arenaPromotion.giftedUnit.name}
-                      className="w-full h-full object-cover"
-                      fallback={<div className="w-full h-full flex items-center justify-center text-xl">🎁</div>}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xl">🎁</div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-black uppercase text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/50">
-                      🎁 REGALO POR LLEGAR A ESTA ARENA
-                    </span>
-                  </div>
-                  <div className="text-sm font-black text-white truncate mt-0.5">{arenaPromotion.giftedUnit.name}</div>
-                  <div className="text-[11px] text-cyan-300 truncate">
-                    {arenaPromotion.giftedUnit.title}
-                  </div>
-                  <div className="text-[10px] text-emerald-300 mt-0.5 font-semibold">
-                    ¡Desbloqueado gratis y añadido a tu colección!
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Divinity Unlocked in Card Shop & Packs by completing the previous Arena */}
-            {(() => {
-              const divUnit = getDivinityForArena(arenaPromotion.completedArenaLevel);
-              if (!divUnit) return null;
-              return (
-                <div className="p-3 bg-gradient-to-r from-amber-950/90 via-purple-950/70 to-slate-900 border-2 border-amber-400/70 rounded-2xl flex items-center gap-3 text-left shadow-xl">
-                  <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-amber-400 bg-slate-950 shrink-0 shadow-md">
-                    {divUnit.imageUrl ? (
-                      <GameImage
-                        src={divUnit.imageUrl}
-                        alt={divUnit.name}
-                        className="w-full h-full object-cover"
-                        fallback={<div className="w-full h-full flex items-center justify-center text-xl">👑</div>}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xl">👑</div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-black uppercase text-amber-300 bg-amber-950/90 px-1.5 py-0.5 rounded border border-amber-500/50">
-                        👑 DIVINIDAD DISPONIBLE EN TIENDA
-                      </span>
-                    </div>
-                    <div className="text-sm font-black text-white truncate mt-0.5">{divUnit.name}</div>
-                    <div className="text-[11px] text-amber-300 truncate">
-                      Habilidad Única: <span className="font-bold text-white">{divUnit.showdownName}</span>
-                    </div>
-                    <div className="text-[10px] text-purple-300/90 mt-0.5">
-                      Arena {arenaPromotion.completedArenaLevel} completada: ya puedes comprarla en Tienda o conseguirla en Sobres.
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            <button
-              onClick={() => handleProceedToNextArena(arenaPromotion.arena)}
-              className="w-full py-3.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-sm rounded-2xl shadow-xl shadow-amber-950/60 transition-all cursor-pointer transform active:scale-98"
-            >
-              ¡Entrar a la Batalla en la Nueva Arena!
-            </button>
-          </div>
-        </div>
+        <ArenaUnlockCeremonyModal
+          arena={arenaPromotion.arena}
+          completedArena={
+            ARENAS.find((a) => a.arenaLevel === arenaPromotion.completedArenaLevel) || ARENAS[0]
+          }
+          giftedUnit={arenaPromotion.giftedUnit}
+          divinityUnit={getDivinityForArena(arenaPromotion.completedArenaLevel) || null}
+          coinsEarned={arenaPromotion.coinsEarned}
+          onContinuePlaying={() => handleProceedToNextArena(arenaPromotion.arena)}
+        />
       )}
 
       {/* 15 Arenas Carousel Menu Modal */}
