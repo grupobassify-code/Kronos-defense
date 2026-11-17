@@ -17,7 +17,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     showdownImageUrl: '/assets/images/attack_meteor_1791483757694.jpg',
     description: 'Guardián ágil que dispara ráfagas de energía solar de alta precisión.',
     showdownName: 'Lluvia de Meteoros',
-    showdownDescription: 'Convoca 6 meteoros ardientes sobre el camino que infligen 260 de daño y aturden a los enemigos por 2.5s.',
+    showdownDescription: 'Convoca 6 meteoros ardientes sobre el camino que infligen 260 de daño y aturden a los enemigos por 1.2s.',
     showdownCooldown: 32,
     tiers: [
       {
@@ -124,7 +124,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     imageUrl: '/assets/images/hero_zeker_1794953003016.jpg',
     description: 'Cazador crono-eléctrico inicial armado con dagas de arco voltaico. Ataca con velocidad relampagueante y desgarra enemigos en línea.',
     showdownName: 'Tormenta de Filos Zeker',
-    showdownDescription: 'Ejecuta cortes crono-eléctricos a todos los invasores del mapa, infligiendo 340 de daño y aturdiéndolos por 2.5s.',
+    showdownDescription: 'Ejecuta cortes crono-eléctricos a todos los invasores del mapa, infligiendo 340 de daño y aturdiéndolos por 1.1s.',
     showdownCooldown: 30,
     tiers: [
       {
@@ -177,7 +177,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     imageUrl: '/assets/images/hero_cryo_mage_1791483643403.jpg',
     description: 'Dispara esquirlas de escarcha que ralentizan a los enemigos y los paraliza una sola vez por breve tiempo.',
     showdownName: 'Ventisca Cero',
-    showdownDescription: 'Paraliza durante 2.0s (0.8s a jefes) a enemigos aún no congelados por Criomago y ralentiza a todo el mapa.',
+    showdownDescription: 'Paraliza durante 1.5s (0.6s a jefes) a enemigos aún no congelados por Criomago y ralentiza a todo el mapa.',
     showdownCooldown: 44,
     tiers: [
       {
@@ -203,8 +203,8 @@ export const UNITS: Record<string, UnitBlueprint> = {
         damage: 72,
         range: 165,
         attackSpeed: 1.65,
-        description: 'Ralentiza un 60% y paraliza al enemigo una única vez por 0.8s.',
-        bonusEffect: 'Parálisis única (0.8s)'
+        description: 'Ralentiza un 60% y paraliza al enemigo una única vez por 0.6s.',
+        bonusEffect: 'Parálisis única (0.6s)'
       }
     ],
     colorTheme: {
@@ -738,7 +738,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
         range: 165,
         attackSpeed: 1.8,
         description: 'Ondas expansivas de bendición que aturden a los enemigos al alcanzarlos.',
-        bonusEffect: 'Aturdimiento sagrado 1.5s'
+        bonusEffect: 'Aturdimiento sagrado breve (0.7s)'
       }
     ],
     colorTheme: {
@@ -762,9 +762,9 @@ export const UNITS: Record<string, UnitBlueprint> = {
     projectileType: 'fireball',
     projectileColor: '#F97316',
     imageUrl: '/assets/images/hero_geomancer_titan_1791556415947.jpg',
-    description: 'Gigante telúrico ancestral que arroja peñascos masivos que aplastan y aturden a los invasores.',
+    description: 'Gigante telúrico ancestral que arroja peñascos masivos que aplastan y aturden brevemente a los invasores.',
     showdownName: 'Fisura Sísmica',
-    showdownDescription: 'Abre una falla tectónica a lo largo de todo el camino, aturdiendo a todos los enemigos por 4s y ralentizándolos 60% por 8s.',
+    showdownDescription: 'Abre una falla tectónica a lo largo de todo el camino, aturdiendo a todos los enemigos por 1.6s y ralentizándolos 60% por 6s.',
     showdownCooldown: 35,
     tiers: [
       {
@@ -1475,7 +1475,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     showdownImageUrl: '/assets/images/attack_orbital_beam_1791483770365.jpg',
     description: 'Divinidad de las Cumbres Glaciares. Controla la temperatura del cero absoluto congelando glaciares sobre el campo.',
     showdownName: 'Cero Absoluto',
-    showdownDescription: 'Desata una ventisca ártica colosal que congela a TODOS los enemigos del mapa durante 5.5s y les inflige 700 de daño de escarcha perforante.',
+    showdownDescription: 'Desata una ventisca ártica colosal que congela a TODOS los enemigos del mapa durante 2.4s y les inflige 750 de daño de escarcha perforante.',
     showdownCooldown: 30,
     tiers: [
       {
@@ -1502,7 +1502,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
         range: 215,
         attackSpeed: 1.8,
         description: 'La ventisca quebraja las armaduras congeladas: los enemigos reciben +40% de daño mientras estén congelados.',
-        bonusEffect: 'Cero Absoluto dura 7 segundos'
+        bonusEffect: 'Cero Absoluto dura 3.2 segundos'
       }
     ],
     colorTheme: {
@@ -2784,7 +2784,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     imageUrl: '/assets/images/hero_guardian_hielo_1794952273305.jpg',
     description: 'Guardián blindado con escudo de escarcha viva que desata ondas gélidas a corta distancia, congelando a los enemigos en seco por periodos breves.',
     showdownName: 'Ola de Frío Polar',
-    showdownDescription: 'Desata un viento glacial que congela por completo a todos los enemigos en su radio por 3.5s y causa 420 de daño.',
+    showdownDescription: 'Desata un viento glacial que congela por completo a todos los enemigos en su radio por 1.5s y causa 420 de daño.',
     showdownCooldown: 38,
     tiers: [
       {
@@ -2801,8 +2801,8 @@ export const UNITS: Record<string, UnitBlueprint> = {
         damage: 65,
         range: 130,
         attackSpeed: 1.55,
-        description: 'Congela a los enemigos durante 1.2 segundos con cada impacto directo.',
-        bonusEffect: 'Congelación de 1.2s'
+        description: 'Congela a los enemigos durante 0.55 segundos con cada impacto directo.',
+        bonusEffect: 'Congelación breve de 0.55s'
       },
       {
         name: 'Glaciación Total III',

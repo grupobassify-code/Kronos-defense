@@ -513,13 +513,13 @@ export default function App() {
 
       // Ability logic per blueprint
       if (bp.id === 'vanguard_solar') {
-        // Meteor Shower: 6 meteors along path
+        // Meteor Shower: 6 meteors along path (shortened stun)
         setActiveShowdownVFX({ type: 'meteor', progress: 0 });
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((enemy) => ({
             ...enemy,
             currentHealth: Math.max(0, enemy.currentHealth - 260),
-            freezeUntil: Math.max(enemy.freezeUntil, 2.5)
+            freezeUntil: Math.max(enemy.freezeUntil, enemy.isBoss ? 0.6 : 1.2)
           }))
         );
       } else if (bp.id === 'pyromancer') {
@@ -534,22 +534,22 @@ export default function App() {
           }))
         );
       } else if (bp.id === 'zeker') {
-        // Tormenta de Filos Zeker: 340 lightning damage + 2.5s stun
+        // Tormenta de Filos Zeker: 340 lightning damage + 1.1s stun (0.5s boss)
         setActiveShowdownVFX({ type: 'orbital', progress: 0 });
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((enemy) => ({
             ...enemy,
             currentHealth: Math.max(0, enemy.currentHealth - 340),
-            freezeUntil: Math.max(enemy.freezeUntil, enemy.isBoss ? 1.0 : 2.5)
+            freezeUntil: Math.max(enemy.freezeUntil, enemy.isBoss ? 0.5 : 1.1)
           }))
         );
       } else if (bp.id === 'cryo_mage') {
-        // Ventisca Cero (Nerfed): freezes each enemy at most ONCE for 2.0s (0.8s bosses) and slows all enemies
+        // Ventisca Cero (Nerfed): freezes each enemy at most ONCE for 1.5s (0.6s bosses) and slows all enemies
         setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((enemy) => {
             const canParalyze = !enemy.cryoParalyzed;
-            const freezeTime = canParalyze ? (enemy.isBoss ? 0.8 : 2.0) : 0;
+            const freezeTime = canParalyze ? (enemy.isBoss ? 0.6 : 1.5) : 0;
             return {
               ...enemy,
               currentHealth: Math.max(0, enemy.currentHealth - 35),
@@ -603,13 +603,13 @@ export default function App() {
           }))
         );
       } else if (bp.id === 'valkyrie_storm') {
-        // Tormenta de Relámpagos: 480 damage to all enemies and 3.0s stun
+        // Tormenta de Relámpagos: 480 damage to all enemies and 1.4s stun (0.7s boss)
         setActiveShowdownVFX({ type: 'supernova', progress: 0 });
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 480),
-            freezeUntil: Math.max(e.freezeUntil, 3.0)
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.7 : 1.4)
           }))
         );
       } else if (bp.id === 'toxic_shaman') {
@@ -669,13 +669,13 @@ export default function App() {
           }))
         );
       } else if (bp.id === 'geomancer_titan') {
-        // Fisura Sísmica: 650 damage and 4s stun
+        // Fisura Sísmica: 650 damage and 1.6s stun (0.8s boss)
         setActiveShowdownVFX({ type: 'orbital', progress: 0 });
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 650),
-            freezeUntil: 4.0
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.8 : 1.6)
           }))
         );
       } else if (bp.id === 'arcane_witch') {
@@ -701,13 +701,13 @@ export default function App() {
           }))
         );
       } else if (bp.id === 'electro_wizard') {
-        // Tormenta Galvánica: 480 electric damage and 3.5s stun
+        // Tormenta Galvánica: 480 electric damage and 1.4s stun (0.7s boss)
         setActiveShowdownVFX({ type: 'meteor', progress: 0 });
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 480),
-            freezeUntil: 3.5
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.7 : 1.4)
           }))
         );
       } else if (bp.id === 'goblin_demolitionist') {
@@ -720,13 +720,13 @@ export default function App() {
           }))
         );
       } else if (bp.id === 'valkyrie_blade') {
-        // Torbellino Inmortal: 560 damage and 2.5s stun
+        // Torbellino Inmortal: 560 damage and 1.1s stun
         setActiveShowdownVFX({ type: 'orbital', progress: 0 });
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 560),
-            freezeUntil: 2.5
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.5 : 1.1)
           }))
         );
       } else if (bp.id === 'lunar_huntress') {
@@ -739,13 +739,13 @@ export default function App() {
           }))
         );
       } else if (bp.id === 'golem_sentinel') {
-        // Pulso Telúrico Cuántico: 820 damage and 4s stun
+        // Pulso Telúrico Cuántico: 820 damage and 1.6s stun
         setActiveShowdownVFX({ type: 'orbital', progress: 0 });
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 820),
-            freezeUntil: 4.0
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.8 : 1.6)
           }))
         );
       } else if (bp.id === 'aureon_sun_king') {
@@ -797,23 +797,22 @@ export default function App() {
         );
       } else if (bp.id === 'cygnus_prime_ai') {
         // Divinidad Arena 3: Cygnus-0, la IA Suprema — Sobrecarga EMP Global
-        // Desconecta los sistemas motrices: paraliza a todos por 4.5s, anula 100% armadura por 8s y desata 700 daño de descarga
+        // Paraliza brevemente (2.0s / 1.0s jefes), anula armadura y desata 700 daño
         setActiveShowdownVFX({ type: 'orbital', progress: 0 });
         sounds.playShoot('laser');
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 700),
-            freezeUntil: 4.5,
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 1.0 : 2.0),
             armor: 0
           }))
         );
       } else if (bp.id === 'chronax_time_guardian') {
         // Divinidad Arena 4: Chronax, el Guardián del Tiempo — Tiempo Cero
-        // Detiene el tiempo 4s (5s nivel 2+) y rebobina su posición 140px (200px nivel 3)
         setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
         sounds.playShoot('beam');
-        const freezeSec = unit.level >= 2 ? 5.0 : 4.0;
+        const freezeSec = unit.level >= 2 ? 2.6 : 2.0;
         const rewindDist = unit.level >= 3 ? 200 : 140;
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => {
@@ -829,7 +828,7 @@ export default function App() {
             return {
               ...e,
               distanceTraveled: newDist,
-              freezeUntil: freezeSec
+              freezeUntil: Math.max(e.freezeUntil, freezeSec)
             };
           })
         );
@@ -849,15 +848,14 @@ export default function App() {
         );
       } else if (bp.id === 'ymir_frost_sovereign') {
         // Divinidad Arena 6: Ymir, Soberano del Hielo Eterno — Cero Absoluto
-        // Ventisca ártica colosal que congela a TODOS los enemigos por 5.5s (7s nivel 3) e inflige 750 de daño de escarcha perforante
         setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
         sounds.playShoot('ice');
-        const freezeDuration = unit.level >= 3 ? 7.0 : 5.5;
+        const freezeDuration = unit.level >= 3 ? 3.2 : 2.4;
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 750),
-            freezeUntil: freezeDuration,
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? freezeDuration * 0.5 : freezeDuration),
             slowUntil: freezeDuration + 3.0,
             slowMultiplier: 0.35
           }))
@@ -910,7 +908,6 @@ export default function App() {
         );
       } else if (bp.id === 'thorin_storm_overlord') {
         // Divinidad Arena 10: Thorin, Señor del Trueno Primigenio — Tormenta Cataclísmica
-        // 8 relámpagos masivos: 1350 (1900 nivel 3) de daño eléctrico y 4s de parálisis
         setActiveShowdownVFX({ type: 'meteor', progress: 0 });
         sounds.playShoot('resonance');
         const stormDmg = unit.level >= 3 ? 1900 : 1350;
@@ -918,12 +915,11 @@ export default function App() {
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - stormDmg),
-            freezeUntil: 4.0
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.9 : 1.8)
           }))
         );
       } else if (bp.id === 'gaia_world_heart') {
         // Divinidad Arena 11: Gaia, el Corazón Primordial — Ira de la Tierra
-        // Raíces colosales que inmovilizan por 6s, infligen 700 de daño y extraen +180 (+280 nivel 3) de oro inmediato
         setActiveShowdownVFX({ type: 'hyperdrive', progress: 0 });
         sounds.playCoin();
         const extractedGold = unit.level >= 3 ? 280 : 180;
@@ -933,7 +929,7 @@ export default function App() {
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 700),
-            freezeUntil: 6.0
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 1.2 : 2.5)
           }))
         );
       } else if (bp.id === 'ignis_tartarus_colossus') {
@@ -1100,14 +1096,14 @@ export default function App() {
           }))
         );
       } else if (bp.id === 'caballero_cristal') {
-        // Bastión Prisma: 350 daño y congela/detiene por 3.5s
+        // Bastión Prisma: 350 daño y congela/detiene brevemente por 1.5s (0.7s boss)
         setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
         sounds.playShoot('ice');
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 350),
-            freezeUntil: 3.5
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.7 : 1.5)
           }))
         );
       } else if (bp.id === 'lanzacohetes') {
@@ -1121,25 +1117,25 @@ export default function App() {
           }))
         );
       } else if (bp.id === 'druida_bosque') {
-        // Enredo Milenario: inmoviliza por 4s y 320 daño
+        // Enredo Milenario: inmoviliza por 1.6s y 320 daño
         setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
         sounds.playShoot('ice');
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 320),
-            freezeUntil: 4.0
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.8 : 1.6)
           }))
         );
       } else if (bp.id === 'invocador_golems') {
-        // Monolito Despertado: 650 daño y aturdimiento 3.5s
+        // Monolito Despertado: 650 daño y aturdimiento 1.5s
         setActiveShowdownVFX({ type: 'orbital', progress: 0 });
         sounds.playShoot('bullet');
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 650),
-            freezeUntil: 3.5
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.7 : 1.5)
           }))
         );
       } else if (bp.id === 'alquimista_dorado') {
@@ -1166,16 +1162,16 @@ export default function App() {
           }))
         );
       } else if (bp.id === 'guardian_hielo') {
-        // Ola de Frío Polar: 420 daño y congela 3.5s
+        // Ola de Frío Polar: 420 daño y congela 1.5s (0.7s boss)
         setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
         sounds.playShoot('ice');
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 420),
-            freezeUntil: 3.5,
-            slowUntil: 6.0,
-            slowMultiplier: 0.3
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.7 : 1.5),
+            slowUntil: 5.0,
+            slowMultiplier: 0.35
           }))
         );
       } else if (bp.id === 'samurai_carmesi') {
@@ -1221,7 +1217,7 @@ export default function App() {
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 540),
-            freezeUntil: 2.0
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.5 : 1.0)
           }))
         );
       } else if (bp.id === 'asesina_carmesi') {
@@ -1285,13 +1281,13 @@ export default function App() {
             u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult : u.showdownCooldownTimer
         }));
       } else if (bp.id === 'viajero_tiempo') {
-        // Colapso del Tiempo: congela 4.5s y rebobina 100px
+        // Colapso del Tiempo: congela 2.0s y rebobina 100px
         setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
         sounds.playShoot('beam');
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
-            freezeUntil: 4.5,
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 1.0 : 2.0),
             distanceTraveled: Math.max(0, e.distanceTraveled - 100)
           }))
         );
@@ -1308,14 +1304,14 @@ export default function App() {
           }))
         );
       } else if (bp.id === 'golem_magma') {
-        // Fisura Volcánica: 680 daño magmático y aturdimiento 3.5s
+        // Fisura Volcánica: 680 daño magmático y aturdimiento 1.5s
         setActiveShowdownVFX({ type: 'supernova', progress: 0 });
         sounds.playShoot('fireball');
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 680),
-            freezeUntil: 3.5
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.7 : 1.5)
           }))
         );
       } else if (bp.id === 'hacker_cibernetico') {
@@ -1340,18 +1336,18 @@ export default function App() {
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 920),
-            freezeUntil: 2.5
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.6 : 1.2)
           }))
         );
       } else if (bp.id === 'kronos_dimensiones') {
-        // Fractura Multidimensional: 1500 daño masivo y congelación
+        // Fractura Multidimensional: 1500 daño masivo y congelación breve
         setActiveShowdownVFX({ type: 'supernova', progress: 0 });
         sounds.playShowdown();
         setActiveEnemies((prevEnemies) =>
           prevEnemies.map((e) => ({
             ...e,
             currentHealth: Math.max(0, e.currentHealth - 1500),
-            freezeUntil: 5.0,
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 1.2 : 2.4),
             distanceTraveled: Math.max(0, e.distanceTraveled - 120)
           }))
         );
@@ -2041,7 +2037,7 @@ export default function App() {
               const isSplash = bp.role === 'area' || bp.projectileType === 'shockwave' || bp.projectileType === 'stun';
               const splashRadius = isSplash ? (bp.projectileType === 'shockwave' ? 70 + (unit.level - 1) * 25 : 55 + (unit.level - 1) * 20) : 0;
               const isStunner = bp.projectileType === 'stun' || bp.id === 'golem_magma' || bp.id === 'caballero_cristal';
-              const stunDuration = isStunner ? (unit.level === 3 ? 1.6 : 1.0) : undefined;
+              const stunDuration = isStunner ? (unit.level === 3 ? 0.75 : 0.45) : undefined;
 
               if (bp.projectileType === 'multishot' || bp.id === 'artillero_pesado') {
                 // Fire a volley of 3 staggered rounds
@@ -2105,10 +2101,10 @@ export default function App() {
                   freezeDuration:
                     bp.id === 'cryo_mage'
                       ? unit.level === 3
-                        ? 0.8
+                        ? 0.6
                         : undefined
                       : (bp.role === 'control' && unit.level === 3) || bp.projectileType === 'ice'
-                      ? 1.4
+                      ? 0.65
                       : undefined,
                   fromCryoMage: bp.id === 'cryo_mage',
                   stunDuration,
@@ -2288,7 +2284,7 @@ export default function App() {
                 // Guardian de Hielo freezes on hit; bosses resist 65% of hard stun/freeze duration
                 // Criomago Glacial can only paralyze/freeze each enemy ONCE and for shorter duration
                 const isCryoShot = !!proj.fromCryoMage || sourceBp?.id === 'cryo_mage';
-                const extraFreeze = sourceBp?.id === 'guardian_hielo' ? 1.2 : 0;
+                const extraFreeze = sourceBp?.id === 'guardian_hielo' ? 0.55 : 0;
                 const ccResistance = enemy.isBoss ? 0.35 : 1.0;
 
                 const rawFreezeFromProj = isCryoShot

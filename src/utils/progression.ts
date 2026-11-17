@@ -320,8 +320,8 @@ export function openBoosterPack(currentUnlockedIds: string[], highestArenaUnlock
   return rewards;
 }
 
-export const SHOP_PACK_COIN_PRICE = 520;
-export const SHOP_SP_COIN_PRICE = 300;
+export const SHOP_PACK_COIN_PRICE = 850;
+export const SHOP_SP_COIN_PRICE = 480;
 export const SHOP_SP_BUNDLE_AMOUNT = 100;
 
 /**
@@ -355,17 +355,17 @@ export function canBuyCardInShop(
 export function getCardShopPrice(unit: UnitBlueprint): number {
   switch (unit.rarity) {
     case 'comun':
-      return 280;
+      return 480;
     case 'especial':
     case 'rara':
-      return 550;
+      return 950;
     case 'epica':
-      return 1100;
+      return 1850;
     case 'legendaria':
-      return 2100;
+      return 3400;
     case 'divinidad':
-      return 3500 + Math.max(0, (unit.arenaUnlockLevel || 1) - 1) * 400;
+      return 5500 + Math.max(0, (unit.arenaUnlockLevel || 1) - 1) * 650;
     default:
-      return 450;
+      return 750;
   }
 }

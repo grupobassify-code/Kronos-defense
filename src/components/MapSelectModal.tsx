@@ -45,25 +45,25 @@ export const MapSelectModal: React.FC<MapSelectModalProps> = ({
   const handlePrev = () => handleScrollToArena(activeArenaIndex - 1);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/95 backdrop-blur-xl animate-fade-in overflow-y-auto">
-      <div className="w-full max-w-5xl bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 border-2 border-slate-800 rounded-3xl p-3 sm:p-6 shadow-2xl flex flex-col max-h-[96vh] overflow-y-auto my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/95 backdrop-blur-xl animate-fade-in">
+      <div className="w-full max-w-5xl max-h-[92dvh] bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 border-2 border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden">
         
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-950/50">
+        {/* Pinned Header */}
+        <div className="shrink-0 flex items-center justify-between border-b border-slate-800 px-3.5 py-3 sm:px-6 sm:py-4 gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-amber-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-950/50 shrink-0">
               <Swords className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs uppercase font-extrabold tracking-wider text-amber-400">
-                  SELECCIONADOR DE ARENAS (15 TOTAL)
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] sm:text-xs uppercase font-extrabold tracking-wider text-amber-400 truncate">
+                  SELECCIONADOR DE ARENAS (15)
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-800 text-[10px] text-cyan-300 font-bold">
+                <span className="text-[11px] text-cyan-300 font-bold tabular-nums">
                   Arena {activeArenaIndex + 1} de 15
                 </span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-100 font-display">
+              <h2 className="text-lg sm:text-2xl font-black text-slate-100 font-display truncate">
                 Arenas de Combate Táctico
               </h2>
             </div>
@@ -72,15 +72,17 @@ export const MapSelectModal: React.FC<MapSelectModalProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white border border-slate-800 hover:bg-slate-800 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white border border-slate-700 hover:bg-slate-800 transition-colors cursor-pointer whitespace-nowrap shrink-0 min-h-[36px]"
             >
               Cerrar (✕)
             </button>
           )}
         </div>
 
+        {/* Scrollable Middle Viewport */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-6 py-2.5">
         {/* Horizontal Carousel Viewport with 15 Arenas (AI scenery) */}
-        <div className="relative w-full flex-1 min-h-[300px] flex flex-col justify-center">
+        <div className="relative w-full flex flex-col justify-center">
           {/* Left Arrow Button */}
           <button
             onClick={handlePrev}
@@ -140,7 +142,7 @@ export const MapSelectModal: React.FC<MapSelectModalProps> = ({
                   </div>
 
                   {/* AI Generated Arena Artwork (16:9 widescreen) */}
-                  <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden border border-slate-700/80 bg-slate-900 shadow-inner my-1">
+                  <div className="relative w-full h-36 sm:h-48 rounded-2xl overflow-hidden border border-slate-700/80 bg-slate-900 shadow-inner my-1">
                     {arena.map.bgImageUrl ? (
                       <GameImage
                         src={arena.map.bgImageUrl}
@@ -243,24 +245,25 @@ export const MapSelectModal: React.FC<MapSelectModalProps> = ({
             ))}
           </div>
         </div>
+        </div>
 
-        {/* Selected Arena Action Card */}
-        <div className="mt-3 bg-slate-950 border border-slate-800 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl">
-          <div className="text-left w-full sm:w-auto">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-black text-amber-300 font-display">
+        {/* Pinned Selected Arena Action Card (always visible and tappable at bottom) */}
+        <div className="shrink-0 bg-slate-950 border-t border-slate-800 px-3.5 sm:px-6 pt-3 pb-[max(0.875rem,env(safe-area-inset-bottom))] flex flex-col sm:flex-row items-center justify-between gap-2.5 shadow-xl">
+          <div className="text-left w-full sm:w-auto min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-black text-amber-300 font-display truncate">
                 {activeArena.name}
               </span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-850 text-slate-300 border border-slate-700">
+              <span className="text-xs text-slate-400 font-medium">
                 {activeArena.badge}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 line-clamp-2">
               {isLocked
                 ? activeArena.arenaLevel === 2
-                  ? '🔒 La Arena 2 (Cañón de Magma) está bloqueada. Debes completar las 20 rondas de la Arena 1 (Valle Esmeralda) para desbloquearla.'
-                  : `🔒 Debes superar las ${ARENAS[activeArena.arenaLevel - 2]?.roundsRequired || 20} rondas de la Arena ${activeArena.arenaLevel - 1} para desbloquear esta arena.`
-                : `Jugarás en esta arena hasta superar sus ${activeArena.roundsRequired} rondas requeridas. Dificultad: Tier ${activeArena.arenaLevel} (+${(activeArena.arenaLevel - 1) * 45}% dificultad).`}
+                  ? '🔒 La Arena 2 (Cañón de Magma) está bloqueada. Completa las 20 rondas de la Arena 1 para desbloquearla.'
+                  : `🔒 Debes superar las ${ARENAS[activeArena.arenaLevel - 2]?.roundsRequired || 20} rondas de la Arena ${activeArena.arenaLevel - 1}.`
+                : `Rondas requeridas: ${activeArena.roundsRequired} · Tier ${activeArena.arenaLevel} (+${(activeArena.arenaLevel - 1) * 45}% dificultad).`}
             </p>
             {(() => {
               const divUnit = getDivinityForArena(activeArena.arenaLevel);
@@ -269,14 +272,14 @@ export const MapSelectModal: React.FC<MapSelectModalProps> = ({
                 <div className="mt-1 text-[11px] flex items-center gap-1.5 text-amber-300 font-medium flex-wrap">
                   <span>👑 Divinidad:</span>
                   <strong className="text-white">{divUnit.name}</strong>
-                  <span className="text-purple-300">({divUnit.showdownName})</span>
+                  <span className="text-slate-400">·</span>
                   {isLocked ? (
-                    <span className="text-[9px] text-amber-400 bg-amber-950/80 px-1 py-0.2 rounded border border-amber-500/40">
-                      🔒 Bloqueado hasta esta arena
+                    <span className="text-[10px] text-amber-400">
+                      Bloqueada hasta esta arena
                     </span>
                   ) : (
-                    <span className="text-[9px] text-emerald-300 bg-emerald-950/80 px-1 py-0.2 rounded border border-emerald-500/40">
-                      ✨ Desbloqueado en Sobres
+                    <span className="text-[10px] text-emerald-300">
+                      Disponible en Sobres
                     </span>
                   )}
                 </div>
@@ -284,11 +287,11 @@ export const MapSelectModal: React.FC<MapSelectModalProps> = ({
             })()}
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
             <button
               disabled={isLocked}
               onClick={() => onSelectAndStart(activeArena, selectedDifficulty)}
-              className={`w-full sm:w-auto px-7 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2.5 transition-all shadow-xl cursor-pointer ${
+              className={`w-full sm:w-auto min-h-[48px] px-6 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-xl cursor-pointer whitespace-nowrap ${
                 isLocked
                   ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-60'
                   : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 shadow-emerald-950/60 active:scale-95'
@@ -296,7 +299,7 @@ export const MapSelectModal: React.FC<MapSelectModalProps> = ({
             >
               {isLocked ? (
                 <>
-                  <Lock className="w-4 h-4 text-amber-400" />
+                  <Lock className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>
                     {activeArena.arenaLevel === 2
                       ? 'Bloqueada (Termina Arena 1)'
@@ -305,7 +308,7 @@ export const MapSelectModal: React.FC<MapSelectModalProps> = ({
                 </>
               ) : (
                 <>
-                  <Play className="w-4 h-4 fill-current" />
+                  <Play className="w-4 h-4 fill-current shrink-0" />
                   <span>JUGAR EN ESTA ARENA</span>
                 </>
               )}
