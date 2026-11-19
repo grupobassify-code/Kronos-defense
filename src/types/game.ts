@@ -284,6 +284,19 @@ export interface Mission {
   category: MissionCategory;
 }
 
+export type TacticalToolId = 'shovel' | 'hammer' | 'battery' | 'bomb' | 'core_shield' | 'wrench';
+
+export interface TacticalToolDefinition {
+  id: TacticalToolId;
+  name: string;
+  shortName: string;
+  unlockArena: number;
+  cooldownRounds: number;
+  requiresMapTarget: boolean;
+  description: string;
+  usageHint: string;
+}
+
 export type ShopPackTierId = 'classic' | 'elite' | 'royal' | 'cosmic';
 
 export interface ShopPackDefinition {

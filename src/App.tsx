@@ -19,9 +19,11 @@ import {
   Mission,
   PackReward,
   UnitBlueprint,
-  ShopPackTierId
+  ShopPackTierId,
+  TacticalToolId
 } from './types/game';
 import { UNITS, getDivinityForArena, getArenaGiftCharacter } from './data/units';
+import { TACTICAL_TOOL_MAP, getToolUnlockedAtArena } from './data/tools';
 import { ENEMIES } from './data/enemies';
 import { MAPS, DEFAULT_MAP, getArenaForWave, getArenaByMapId, ARENAS, ArenaInfo } from './data/maps';
 import { getWaveConfig, getWaveScaling } from './data/waves';
@@ -59,6 +61,16 @@ import { GameOverModal } from './components/GameOverModal';
 import { CardsHub } from './components/CardsHub';
 import { MapSelectModal } from './components/MapSelectModal';
 import { ArenaUnlockCeremonyModal } from './components/ArenaUnlockCeremonyModal';
+import { ToolsBar } from './components/ToolsBar';
+
+const INITIAL_TOOL_COOLDOWNS: Record<TacticalToolId, number> = {
+  shovel: 0,
+  hammer: 0,
+  battery: 0,
+  bomb: 0,
+  core_shield: 0,
+  wrench: 0
+};
 
 export default function App() {
   // Story Mode Persistent Progression & Missions
@@ -165,10 +177,23 @@ export default function App() {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [damageNumbers, setDamageNumbers] = useState<DamageNumber[]>([]);
 
-  // Selection & Placement
+  // Selection, Placement & Tactical Tools
   const [selectedBlueprintId, setSelectedBlueprintId] = useState<string | null>(null);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [hoverTile, setHoverTile] = useState<{ x: number; y: number } | null>(null);
+  const [activeToolId, setActiveToolId] = useState<TacticalToolId | null>(null);
+  const [removedObstacles, setRemovedObstacles] = useState<{ x: number; y: number }[]>([]);
+  const [toolCooldowns, setToolCooldowns] = useState<Record<TacticalToolId, number>>(INITIAL_TOOL_COOLDOWNS);
+
+  const effectiveMap = React.useMemo<MapData>(() => {
+    if (removedObstacles.length === 0) return currentMap;
+    return {
+      ...currentMap,
+      obstacles: currentMap.obstacles.filter(
+        (obs) => !removedObstacles.some((rem) => rem.x === obs.x && rem.y === obs.y)
+      )
+    };
+  }, [currentMap, removedObstacles]);
 
   // VFX
   const [activeShowdownVFX, setActiveShowdownVFX] = useState<{ type: string; progress: number } | null>(null);
@@ -274,7 +299,7 @@ export default function App() {
     isWaveActive,
     gameSpeed,
     difficulty,
-    map: currentMap,
+    map: effectiveMap,
     progression
   });
 
@@ -291,7 +316,7 @@ export default function App() {
       isWaveActive,
       gameSpeed,
       difficulty,
-      map: currentMap,
+      map: effectiveMap,
       progression
     };
   });
@@ -318,6 +343,9 @@ export default function App() {
     setSelectedBlueprintId(null);
     setSelectedUnitId(null);
     setHoverTile(null);
+    setActiveToolId(null);
+    setRemovedObstacles([]);
+    setToolCooldowns(INITIAL_TOOL_COOLDOWNS);
     setActiveShowdownVFX(null);
     setTotalKills(0);
     setTotalGoldEarned(220);
@@ -364,6 +392,9 @@ export default function App() {
     setSelectedBlueprintId(null);
     setSelectedUnitId(null);
     setHoverTile(null);
+    setActiveToolId(null);
+    setRemovedObstacles([]);
+    setToolCooldowns(INITIAL_TOOL_COOLDOWNS);
     setBaseHealth(10);
     setMaxBaseHealth(10);
     setGold(260 + (nextArena.arenaLevel - 1) * 35);
@@ -450,6 +481,13 @@ export default function App() {
 
     const nextWaveNum = currentWave + 1;
     setCurrentWave(nextWaveNum);
+    setToolCooldowns((prev) => {
+      const next = { ...prev };
+      (Object.keys(next) as TacticalToolId[]).forEach((k) => {
+        if (next[k] > 0) next[k] = next[k] - 1;
+      });
+      return next;
+    });
 
     if (autoWave) {
       setTimeout(() => {
@@ -1789,8 +1827,213 @@ export default function App() {
     }
   }, [autoShowdown, isWaveActive, activeEnemies.length, placedUnits, progression.cardMasteryLevels, handleTriggerShowdown]);
 
-  // Place unit
+  // Select Tactical Tool
+  const handleSelectTool = useCallback(
+    (toolId: TacticalToolId) => {
+      const tool = TACTICAL_TOOL_MAP[toolId];
+      if (!tool) return;
+      if ((progression.highestArenaUnlocked || 1) < tool.unlockArena) return;
+      if ((toolCooldowns[toolId] || 0) > 0) return;
+
+      if (toolId === 'core_shield') {
+        if (baseHealth >= maxBaseHealth) {
+          setKillToast(`❤️ El Núcleo ya tiene todas sus vidas (${baseHealth}/${maxBaseHealth}).`);
+          setTimeout(() => setKillToast(null), 2600);
+          return;
+        }
+        sounds.playGiftReveal();
+        setBaseHealth((hp) => Math.min(maxBaseHealth, hp + 2));
+        setToolCooldowns((prev) => ({ ...prev, core_shield: tool.cooldownRounds }));
+        setActiveToolId(null);
+        setKillToast('🛡️ ¡Sello del Núcleo activado! +2 Vidas restauradas.');
+        setTimeout(() => setKillToast(null), 3000);
+        return;
+      }
+
+      setSelectedBlueprintId(null);
+      setSelectedUnitId(null);
+      setActiveToolId((prev) => (prev === toolId ? null : toolId));
+    },
+    [progression.highestArenaUnlocked, toolCooldowns, baseHealth, maxBaseHealth]
+  );
+
+  // Place unit or apply active Tactical Tool
   const handleTileClick = (gridX: number, gridY: number) => {
+    if (activeToolId) {
+      const tool = TACTICAL_TOOL_MAP[activeToolId];
+      if (activeToolId === 'shovel') {
+        const targetUnit = placedUnits.find((u) => u.gridX === gridX && u.gridY === gridY);
+        if (!targetUnit) {
+          setKillToast('🪏 Haz clic sobre una carta colocada para retirarla y recuperar 100% del oro.');
+          setTimeout(() => setKillToast(null), 2800);
+          return;
+        }
+        const bpTarget = UNITS[targetUnit.blueprintId];
+        const refund = targetUnit.totalInvestment;
+        setGold((g) => g + refund);
+        sounds.playShovelDig();
+        setPlacedUnits((prev) => prev.filter((u) => u.instanceId !== targetUnit.instanceId));
+        if (selectedUnitId === targetUnit.instanceId) setSelectedUnitId(null);
+        setParticles((prev) => [
+          ...prev,
+          ...Array.from({ length: 10 }).map((_, idx) => {
+            const a = (idx / 10) * Math.PI * 2;
+            return {
+              x: targetUnit.pixelX,
+              y: targetUnit.pixelY,
+              vx: Math.cos(a) * 65,
+              vy: Math.sin(a) * 65,
+              life: 0.45,
+              maxLife: 0.45,
+              size: 3.5,
+              color: '#FACC15',
+              alpha: 1
+            };
+          })
+        ]);
+        setToolCooldowns((prev) => ({ ...prev, shovel: tool.cooldownRounds }));
+        setActiveToolId(null);
+        setKillToast(`🪏 ¡${bpTarget?.name || 'Carta'} retirada con Pala! Recuperaste +${refund} oro (100%).`);
+        setTimeout(() => setKillToast(null), 3200);
+        return;
+      }
+
+      if (activeToolId === 'hammer') {
+        if (!isObstacleTile(effectiveMap, gridX, gridY)) {
+          setKillToast('🔨 Haz clic sobre una piedra del mapa para destruirla.');
+          setTimeout(() => setKillToast(null), 2800);
+          return;
+        }
+        const px = gridX * effectiveMap.tileSize + effectiveMap.tileSize / 2;
+        const py = gridY * effectiveMap.tileSize + effectiveMap.tileSize / 2;
+        sounds.playHammerSmash();
+        setRemovedObstacles((prev) => [...prev, { x: gridX, y: gridY }]);
+        setParticles((prev) => [
+          ...prev,
+          ...Array.from({ length: 14 }).map((_, idx) => {
+            const a = (idx / 14) * Math.PI * 2;
+            const spd = 45 + (idx % 3) * 28;
+            return {
+              x: px,
+              y: py,
+              vx: Math.cos(a) * spd,
+              vy: Math.sin(a) * spd,
+              life: 0.5,
+              maxLife: 0.5,
+              size: 4,
+              color: idx % 2 === 0 ? '#94A3B8' : '#FB923C',
+              alpha: 1,
+              shape: 'square' as const
+            };
+          })
+        ]);
+        setToolCooldowns((prev) => ({ ...prev, hammer: tool.cooldownRounds }));
+        setActiveToolId(null);
+        setKillToast('🔨 ¡Piedra destruida! Nueva casilla liberada (Martillo listo en 5 rondas).');
+        setTimeout(() => setKillToast(null), 3400);
+        return;
+      }
+
+      if (activeToolId === 'battery') {
+        const targetUnit = placedUnits.find((u) => u.gridX === gridX && u.gridY === gridY);
+        if (!targetUnit) {
+          setKillToast('🔋 Haz clic sobre una unidad aliada para recargarla.');
+          setTimeout(() => setKillToast(null), 2600);
+          return;
+        }
+        const bpTarget = UNITS[targetUnit.blueprintId];
+        const cardLv = progression.cardMasteryLevels[targetUnit.blueprintId] || 1;
+        const canSd = canUseUnitShowdown(cardLv, targetUnit.level);
+        sounds.playShowdown();
+        setPlacedUnits((prev) =>
+          prev.map((u) =>
+            u.instanceId === targetUnit.instanceId
+              ? {
+                  ...u,
+                  showdownCooldownTimer: canSd ? 0 : u.showdownCooldownTimer,
+                  showdownReady: canSd ? true : u.showdownReady,
+                  boostedUntil: Math.max(u.boostedUntil || 0, 8.0)
+                }
+              : u
+          )
+        );
+        setToolCooldowns((prev) => ({ ...prev, battery: tool.cooldownRounds }));
+        setActiveToolId(null);
+        setKillToast(
+          canSd
+            ? `🔋 ¡${bpTarget?.name || 'Unidad'} cargada! Showdown listo e iluminación amarilla activa.`
+            : `🔋 ¡${bpTarget?.name || 'Unidad'} sobrecargada (+50% vel. 8s)!`
+        );
+        setTimeout(() => setKillToast(null), 3200);
+        return;
+      }
+
+      if (activeToolId === 'bomb') {
+        const px = gridX * effectiveMap.tileSize + effectiveMap.tileSize / 2;
+        const py = gridY * effectiveMap.tileSize + effectiveMap.tileSize / 2;
+        const blastDmg = 380 + currentWave * 45;
+        sounds.playHit(true);
+        setActiveEnemies((prev) =>
+          prev.map((e) => {
+            const dx = e.x - px;
+            const dy = e.y - py;
+            if (dx * dx + dy * dy <= 115 * 115) {
+              return {
+                ...e,
+                currentHealth: Math.max(0, e.currentHealth - blastDmg),
+                distanceTraveled: Math.max(0, e.distanceTraveled - 60),
+                freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.45 : 0.9)
+              };
+            }
+            return e;
+          })
+        );
+        setParticles((prev) => [
+          ...prev,
+          ...Array.from({ length: 16 }).map((_, idx) => {
+            const a = (idx / 16) * Math.PI * 2;
+            const spd = 60 + (idx % 4) * 35;
+            return {
+              x: px,
+              y: py,
+              vx: Math.cos(a) * spd,
+              vy: Math.sin(a) * spd,
+              life: 0.48,
+              maxLife: 0.48,
+              size: 4.5,
+              color: idx % 2 === 0 ? '#EF4444' : '#FACC15',
+              alpha: 1
+            };
+          })
+        ]);
+        setToolCooldowns((prev) => ({ ...prev, bomb: tool.cooldownRounds }));
+        setActiveToolId(null);
+        setKillToast(`💣 ¡Carga Sísmica detonada! (-${blastDmg} daño en área)`);
+        setTimeout(() => setKillToast(null), 3000);
+        return;
+      }
+
+      if (activeToolId === 'wrench') {
+        const targetUnit = placedUnits.find((u) => u.gridX === gridX && u.gridY === gridY);
+        if (!targetUnit || targetUnit.level >= MAX_IN_MATCH_LEVEL) {
+          setKillToast(`🔧 Selecciona una unidad aliada por debajo de Nivel ${MAX_IN_MATCH_LEVEL}.`);
+          setTimeout(() => setKillToast(null), 2800);
+          return;
+        }
+        const bpTarget = UNITS[targetUnit.blueprintId];
+        const nextLv = targetUnit.level + 1;
+        sounds.playUpgrade();
+        setPlacedUnits((prev) =>
+          prev.map((u) => (u.instanceId === targetUnit.instanceId ? { ...u, level: nextLv } : u))
+        );
+        setToolCooldowns((prev) => ({ ...prev, wrench: tool.cooldownRounds }));
+        setActiveToolId(null);
+        setKillToast(`🔧 ¡${bpTarget?.name || 'Unidad'} mejorada GRATIS a Nivel ${nextLv}!`);
+        setTimeout(() => setKillToast(null), 3200);
+        return;
+      }
+    }
+
     if (!selectedBlueprintId) {
       // Check if clicked placed unit
       const unit = placedUnits.find((u) => u.gridX === gridX && u.gridY === gridY);
@@ -1818,8 +2061,8 @@ export default function App() {
     }
 
     // Check validity
-    const isPath = isPathTile(currentMap, gridX, gridY);
-    const isObstacle = isObstacleTile(currentMap, gridX, gridY);
+    const isPath = isPathTile(effectiveMap, gridX, gridY);
+    const isObstacle = isObstacleTile(effectiveMap, gridX, gridY);
     const isOccupied = placedUnits.some((u) => u.gridX === gridX && u.gridY === gridY);
 
     if (isPath || isObstacle || isOccupied) {
@@ -1842,8 +2085,8 @@ export default function App() {
       blueprintId: bp.id,
       gridX,
       gridY,
-      pixelX: gridX * currentMap.tileSize + currentMap.tileSize / 2,
-      pixelY: gridY * currentMap.tileSize + currentMap.tileSize / 2,
+      pixelX: gridX * effectiveMap.tileSize + effectiveMap.tileSize / 2,
+      pixelY: gridY * effectiveMap.tileSize + effectiveMap.tileSize / 2,
       level: 1,
       totalInvestment: bp.cost,
       damageDealt: 0,
@@ -1875,9 +2118,9 @@ export default function App() {
       for (const offset of neighbors) {
         const nx = gridX + offset.dx;
         const ny = gridY + offset.dy;
-        if (nx >= 0 && nx < currentMap.cols && ny >= 0 && ny < currentMap.rows) {
-          const pathCheck = isPathTile(currentMap, nx, ny);
-          const obsCheck = isObstacleTile(currentMap, nx, ny);
+        if (nx >= 0 && nx < effectiveMap.cols && ny >= 0 && ny < effectiveMap.rows) {
+          const pathCheck = isPathTile(effectiveMap, nx, ny);
+          const obsCheck = isObstacleTile(effectiveMap, nx, ny);
           const occCheck = placedUnits.some((u) => u.gridX === nx && u.gridY === ny);
           if (!pathCheck && !obsCheck && !occCheck) {
             unitsToAdd.push({
@@ -1885,8 +2128,8 @@ export default function App() {
               blueprintId: bp.id,
               gridX: nx,
               gridY: ny,
-              pixelX: nx * currentMap.tileSize + currentMap.tileSize / 2,
-              pixelY: ny * currentMap.tileSize + currentMap.tileSize / 2,
+              pixelX: nx * effectiveMap.tileSize + effectiveMap.tileSize / 2,
+              pixelY: ny * effectiveMap.tileSize + effectiveMap.tileSize / 2,
               level: 1,
               totalInvestment: 0,
               damageDealt: 0,
@@ -2266,6 +2509,7 @@ export default function App() {
       if (e.key === 'Escape') {
         setSelectedBlueprintId(null);
         setSelectedUnitId(null);
+        setActiveToolId(null);
       } else if (e.key === ' ') {
         e.preventDefault();
         if (!isWaveActive && viewState === 'PLAYING') {
@@ -3138,7 +3382,7 @@ export default function App() {
           {/* Central Arena Canvas */}
           <div className="w-full flex flex-col items-center justify-center relative">
             <GameCanvas
-              map={currentMap}
+              map={effectiveMap}
               placedUnits={placedUnits}
               activeEnemies={activeEnemies}
               projectiles={projectiles}
@@ -3146,16 +3390,27 @@ export default function App() {
               damageNumbers={damageNumbers}
               selectedUnit={selectedUnit}
               placementBlueprintId={selectedBlueprintId}
+              activeToolId={activeToolId}
               hoverTile={hoverTile}
               baseHealth={baseHealth}
               maxBaseHealth={maxBaseHealth}
               activeShowdownVFX={activeShowdownVFX}
               onTileClick={handleTileClick}
               onSelectUnit={(u) => setSelectedUnitId(u ? u.instanceId : null)}
+              onTriggerShowdown={handleTriggerShowdown}
               onHoverTileChange={setHoverTile}
               canAffordPlacement={canAffordPlacement}
             />
           </div>
+
+          {/* Tactical Tools Bar (unlocked progressively by Arena) */}
+          <ToolsBar
+            highestArenaUnlocked={progression.highestArenaUnlocked || 1}
+            activeToolId={activeToolId}
+            toolCooldowns={toolCooldowns}
+            onSelectTool={handleSelectTool}
+            onCancelTool={() => setActiveToolId(null)}
+          />
 
           {/* Quick-Cast Showdown Bar: 1-Click activation + [Q] + Auto-Showdown */}
           {placedUnits.length > 0 && (() => {
@@ -3270,6 +3525,7 @@ export default function App() {
               onSelectBlueprint={(id) => {
                 setSelectedBlueprintId(id);
                 setSelectedUnitId(null);
+                setActiveToolId(null);
               }}
               onOpenArmory={() => setActiveBottomTab('CARDS')}
             />
@@ -3299,6 +3555,7 @@ export default function App() {
           }
           giftedUnit={arenaPromotion.giftedUnit}
           divinityUnit={getDivinityForArena(arenaPromotion.completedArenaLevel) || null}
+          unlockedTool={getToolUnlockedAtArena(arenaPromotion.arena.arenaLevel)}
           coinsEarned={arenaPromotion.coinsEarned}
           onContinuePlaying={() => handleProceedToNextArena(arenaPromotion.arena)}
         />
@@ -3362,6 +3619,9 @@ export default function App() {
               setSelectedBlueprintId(null);
               setSelectedUnitId(null);
               setHoverTile(null);
+              setActiveToolId(null);
+              setRemovedObstacles([]);
+              setToolCooldowns(INITIAL_TOOL_COOLDOWNS);
               setBaseHealth(10);
               setMaxBaseHealth(10);
               setGold(260 + (selectedArena.arenaLevel - 1) * 35);

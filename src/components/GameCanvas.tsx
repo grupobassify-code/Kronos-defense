@@ -5,13 +5,14 @@ import {
   ActiveEnemy,
   Projectile,
   Particle,
-  DamageNumber
+  DamageNumber,
+  TacticalToolId
 } from '../types/game';
 import { UNITS } from '../data/units';
 import { ENEMIES } from '../data/enemies';
 import { isPathTile, isObstacleTile } from '../utils/pathUtils';
 import { resolveAssetUrl } from '../utils/assets';
-import { getInMatchUnitTier } from '../utils/progression';
+import { getInMatchUnitTier, MAX_IN_MATCH_LEVEL } from '../utils/progression';
 
 interface GameCanvasProps {
   map: MapData;
@@ -22,12 +23,14 @@ interface GameCanvasProps {
   damageNumbers: DamageNumber[];
   selectedUnit: PlacedUnit | null;
   placementBlueprintId: string | null;
+  activeToolId?: TacticalToolId | null;
   hoverTile: { x: number; y: number } | null;
   baseHealth: number;
   maxBaseHealth: number;
   activeShowdownVFX: { type: string; progress: number } | null;
   onTileClick: (gridX: number, gridY: number) => void;
   onSelectUnit: (unit: PlacedUnit | null) => void;
+  onTriggerShowdown?: (instanceId: string) => void;
   onHoverTileChange: (tile: { x: number; y: number } | null) => void;
   canAffordPlacement: boolean;
 }
@@ -91,12 +94,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   damageNumbers,
   selectedUnit,
   placementBlueprintId,
+  activeToolId = null,
   hoverTile,
   baseHealth,
   maxBaseHealth,
   activeShowdownVFX,
   onTileClick,
   onSelectUnit,
+  onTriggerShowdown,
   onHoverTileChange,
   canAffordPlacement
 }) => {
@@ -166,10 +171,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (gridX >= 0 && gridX < map.cols && gridY >= 0 && gridY < map.rows) {
       // Check if clicked on placed unit
       const clickedUnit = placedUnits.find((u) => u.gridX === gridX && u.gridY === gridY);
-      if (placementBlueprintId) {
-        // Placement attempt
+      if (activeToolId || placementBlueprintId) {
+        // Tool or placement attempt
         onTileClick(gridX, gridY);
       } else if (clickedUnit) {
+        if (clickedUnit.showdownReady && onTriggerShowdown) {
+          onTriggerShowdown(clickedUnit.instanceId);
+        }
         onSelectUnit(clickedUnit);
       } else {
         // Clicked empty or path tile
@@ -196,9 +204,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     if (gridX >= 0 && gridX < map.cols && gridY >= 0 && gridY < map.rows) {
       const clickedUnit = placedUnits.find((u) => u.gridX === gridX && u.gridY === gridY);
-      if (placementBlueprintId) {
+      if (activeToolId || placementBlueprintId) {
         onTileClick(gridX, gridY);
       } else if (clickedUnit) {
+        if (clickedUnit.showdownReady && onTriggerShowdown) {
+          onTriggerShowdown(clickedUnit.instanceId);
+        }
         onSelectUnit(clickedUnit);
       } else {
         onTileClick(gridX, gridY);
@@ -216,23 +227,24 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
     // 1. Draw Grid Background (with AI scenery image if available)
-    drawGrid(ctx, map, hoverTile, placementBlueprintId, placedUnits, canAffordPlacement);
+    drawGrid(ctx, map, hoverTile, placementBlueprintId, activeToolId, placedUnits, canAffordPlacement);
 
     // 2. Draw Path & Waypoints
     drawPath(ctx, map);
 
-    // 3. Draw Obstacles
-    drawObstacles(ctx, map);
+    // 3. Draw Obstacles (rocks / stones smashable by Hammer)
+    drawObstacles(ctx, map, hoverTile, activeToolId);
 
     // 4. Draw Spawn Portal and Core Citadel
     drawSpawnAndBase(ctx, map, baseHealth, maxBaseHealth);
 
-    // 5. Draw Range Indicator if selected or placing
-    drawRangeOverlays(ctx, map, selectedUnit, placementBlueprintId, hoverTile);
+    // 5. Draw Range / Tool Radius Indicator if selected, placing, or bombing
+    drawRangeOverlays(ctx, map, selectedUnit, placementBlueprintId, activeToolId, hoverTile);
 
-    // 6. Draw Placed Units (with AI character sprites)
+    // 6. Draw Placed Units (with AI character sprites & Yellow Showdown Glow)
     placedUnits.forEach((unit) => {
-      drawUnit(ctx, unit, selectedUnit?.instanceId === unit.instanceId);
+      const isHovered = !!hoverTile && hoverTile.x === unit.gridX && hoverTile.y === unit.gridY;
+      drawUnit(ctx, unit, selectedUnit?.instanceId === unit.instanceId, isHovered);
     });
 
     // 7. Draw Active Enemies (with AI boss portraits)
@@ -261,6 +273,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     }
   });
 
+  const hoveredUnit = hoverTile
+    ? placedUnits.find((u) => u.gridX === hoverTile.x && u.gridY === hoverTile.y)
+    : undefined;
+  const cursorClass = hoveredUnit && !placementBlueprintId && !activeToolId
+    ? 'cursor-pointer'
+    : 'cursor-crosshair';
+
   return (
     <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-950 flex items-center justify-center select-none">
       <canvas
@@ -271,7 +290,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         onMouseLeave={handleMouseLeave}
         onClick={handleClick}
         onTouchEnd={handleTouch}
-        className="block cursor-crosshair max-w-full h-auto aspect-[18/11] touch-manipulation"
+        className={`block ${cursorClass} max-w-full h-auto aspect-[18/11] touch-manipulation`}
       />
     </div>
   );
@@ -284,6 +303,7 @@ function drawGrid(
   map: MapData,
   hoverTile: { x: number; y: number } | null,
   placementBlueprintId: string | null,
+  activeToolId: TacticalToolId | null,
   placedUnits: PlacedUnit[],
   canAffordPlacement: boolean
 ) {
@@ -307,7 +327,8 @@ function drawGrid(
     for (let r = 0; r < map.rows; r++) {
       const isPath = isPathTile(map, c, r);
       const isObstacle = isObstacleTile(map, c, r);
-      const hasUnit = placedUnits.some((u) => u.gridX === c && u.gridY === r);
+      const unitOnTile = placedUnits.find((u) => u.gridX === c && u.gridY === r);
+      const hasUnit = Boolean(unitOnTile);
 
       const px = c * ts;
       const py = r * ts;
@@ -328,7 +349,31 @@ function drawGrid(
 
       // Hover highlight
       if (hoverTile && hoverTile.x === c && hoverTile.y === r) {
-        if (placementBlueprintId) {
+        if (activeToolId) {
+          let isValidTarget = false;
+          let accentColor = '#EF4444';
+          if (activeToolId === 'shovel') {
+            isValidTarget = hasUnit;
+            accentColor = '#F59E0B';
+          } else if (activeToolId === 'hammer') {
+            isValidTarget = isObstacle;
+            accentColor = '#F97316';
+          } else if (activeToolId === 'battery') {
+            isValidTarget = hasUnit;
+            accentColor = '#22D3EE';
+          } else if (activeToolId === 'wrench') {
+            isValidTarget = Boolean(unitOnTile && unitOnTile.level < MAX_IN_MATCH_LEVEL);
+            accentColor = '#10B981';
+          } else if (activeToolId === 'bomb') {
+            isValidTarget = true;
+            accentColor = '#EF4444';
+          }
+          ctx.fillStyle = isValidTarget ? `${accentColor}44` : 'rgba(239, 68, 68, 0.25)';
+          ctx.fillRect(px + 1, py + 1, ts - 2, ts - 2);
+          ctx.strokeStyle = isValidTarget ? accentColor : '#EF4444';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(px + 1, py + 1, ts - 2, ts - 2);
+        } else if (placementBlueprintId) {
           const isValid = !isPath && !isObstacle && !hasUnit && canAffordPlacement;
           ctx.fillStyle = isValid ? 'rgba(34, 197, 94, 0.35)' : 'rgba(239, 68, 68, 0.4)';
           ctx.fillRect(px + 1, py + 1, ts - 2, ts - 2);
@@ -386,27 +431,70 @@ function drawPath(ctx: CanvasRenderingContext2D, map: MapData) {
   ctx.setLineDash([]);
 }
 
-function drawObstacles(ctx: CanvasRenderingContext2D, map: MapData) {
+function drawObstacles(
+  ctx: CanvasRenderingContext2D,
+  map: MapData,
+  hoverTile: { x: number; y: number } | null,
+  activeToolId: TacticalToolId | null
+) {
   const ts = map.tileSize;
   const half = ts / 2;
 
   map.obstacles.forEach((obs) => {
     const px = obs.x * ts + half;
     const py = obs.y * ts + half;
+    const isHammerMode = activeToolId === 'hammer';
+    const isHovered = isHammerMode && hoverTile && hoverTile.x === obs.x && hoverTile.y === obs.y;
 
-    ctx.fillStyle = '#1E293B';
+    ctx.save();
+    // Base boulder shadow
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.65)';
     ctx.beginPath();
-    ctx.arc(px, py, half * 0.72, 0, Math.PI * 2);
+    ctx.ellipse(px, py + 4, half * 0.72, half * 0.56, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = '#64748B';
-    ctx.lineWidth = 2;
+    // Rugged multi-faceted rock body
+    const r = half * 0.72;
+    ctx.fillStyle = '#334155';
+    ctx.strokeStyle = isHovered ? '#FB923C' : isHammerMode ? '#F59E0B' : '#64748B';
+    ctx.lineWidth = isHovered ? 3 : 2;
+    ctx.beginPath();
+    ctx.moveTo(px - r * 0.75, py - r * 0.25);
+    ctx.lineTo(px - r * 0.25, py - r * 0.85);
+    ctx.lineTo(px + r * 0.55, py - r * 0.7);
+    ctx.lineTo(px + r * 0.88, py + r * 0.05);
+    ctx.lineTo(px + r * 0.48, py + r * 0.76);
+    ctx.lineTo(px - r * 0.55, py + r * 0.72);
+    ctx.closePath();
+    ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#94A3B8';
+    // Rock facets highlight
+    ctx.fillStyle = '#475569';
     ctx.beginPath();
-    ctx.rect(px - 4, py - 4, 8, 8);
+    ctx.moveTo(px - r * 0.25, py - r * 0.85);
+    ctx.lineTo(px + r * 0.55, py - r * 0.7);
+    ctx.lineTo(px + r * 0.1, py);
+    ctx.lineTo(px - r * 0.55, py - r * 0.15);
+    ctx.closePath();
     ctx.fill();
+
+    // Cracks
+    ctx.strokeStyle = '#1E293B';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px - 5, py - 8);
+    ctx.lineTo(px + 2, py + 1);
+    ctx.lineTo(px - 3, py + 9);
+    ctx.stroke();
+
+    if (isHammerMode) {
+      ctx.font = 'bold 9px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = isHovered ? '#FDE047' : '#FDBA74';
+      ctx.fillText(isHovered ? 'ROMPER' : 'PIEDRA', px, py - r - 4);
+    }
+    ctx.restore();
   });
 }
 
@@ -514,12 +602,13 @@ function drawRangeOverlays(
   map: MapData,
   selectedUnit: PlacedUnit | null,
   placementBlueprintId: string | null,
+  activeToolId: TacticalToolId | null,
   hoverTile: { x: number; y: number } | null
 ) {
   const ts = map.tileSize;
   const half = ts / 2;
 
-  if (selectedUnit) {
+  if (selectedUnit && !activeToolId) {
     const bp = UNITS[selectedUnit.blueprintId];
     if (bp) {
       const tier = getInMatchUnitTier(bp, selectedUnit.level);
@@ -537,6 +626,22 @@ function drawRangeOverlays(
       ctx.setLineDash([]);
       ctx.restore();
     }
+  }
+
+  if (activeToolId === 'bomb' && hoverTile) {
+    const px = hoverTile.x * ts + half;
+    const py = hoverTile.y * ts + half;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(px, py, 115, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.22)';
+    ctx.fill();
+    ctx.strokeStyle = '#F97316';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
 
   if (placementBlueprintId && hoverTile) {
@@ -561,7 +666,7 @@ function drawRangeOverlays(
   }
 }
 
-function drawUnit(ctx: CanvasRenderingContext2D, unit: PlacedUnit, isSelected: boolean) {
+function drawUnit(ctx: CanvasRenderingContext2D, unit: PlacedUnit, isSelected: boolean, isHovered: boolean) {
   const bp = UNITS[unit.blueprintId];
   if (!bp) return;
 
@@ -580,14 +685,37 @@ function drawUnit(ctx: CanvasRenderingContext2D, unit: PlacedUnit, isSelected: b
     ctx.stroke();
   }
 
-  // Showdown Ready Pulse
+  // Showdown Ready: Bright Yellow Illumination Aura (click directly on character to launch!)
   if (showdownReady) {
-    const sdPulse = 1 + Math.sin(Date.now() / 160) * 0.08;
+    const t = Date.now();
+    const sdPulse = 1 + Math.sin(t / 160) * 0.1;
+    const auraR = (haloRadius + 10) * sdPulse;
+
+    const grad = ctx.createRadialGradient(0, 0, 8, 0, 0, auraR);
+    grad.addColorStop(0, 'rgba(254, 240, 138, 0.72)');
+    grad.addColorStop(0.55, 'rgba(250, 204, 21, 0.42)');
+    grad.addColorStop(1, 'rgba(250, 204, 21, 0)');
     ctx.beginPath();
-    ctx.arc(0, 0, (haloRadius - 1) * sdPulse, 0, Math.PI * 2);
-    ctx.strokeStyle = '#F59E0B';
-    ctx.lineWidth = 3;
+    ctx.arc(0, 0, auraR, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Bright outer pulsing yellow ring
+    ctx.beginPath();
+    ctx.arc(0, 0, (haloRadius + 1) * sdPulse, 0, Math.PI * 2);
+    ctx.strokeStyle = '#FACC15';
+    ctx.lineWidth = isHovered ? 4 : 3;
     ctx.stroke();
+
+    // Orbiting bright yellow sparks
+    const rot = (t / 700) % (Math.PI * 2);
+    ctx.fillStyle = '#FEF08A';
+    for (let i = 0; i < 4; i++) {
+      const a = rot + (i * Math.PI) / 2;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * (haloRadius + 2), Math.sin(a) * (haloRadius + 2), 2.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // DYNAMIC EVOLVING BASE PLATE (PLACA BASE):
@@ -833,12 +961,16 @@ function drawUnit(ctx: CanvasRenderingContext2D, unit: PlacedUnit, isSelected: b
     ctx.arc(0, 0, 15.5, 0, Math.PI * 2);
     ctx.clip();
     safeDrawImage(ctx, heroImg, -16, -16, 32, 32);
+    if (showdownReady) {
+      ctx.fillStyle = 'rgba(250, 204, 21, 0.26)';
+      ctx.fillRect(-16, -16, 32, 32);
+    }
     ctx.restore();
   } else {
     // Vector fallback
     ctx.beginPath();
     ctx.arc(0, 0, 12, 0, Math.PI * 2);
-    ctx.fillStyle = bp.colorTheme.secondary;
+    ctx.fillStyle = showdownReady ? '#FACC15' : bp.colorTheme.secondary;
     ctx.fill();
   }
 
@@ -890,6 +1022,30 @@ function drawUnit(ctx: CanvasRenderingContext2D, unit: PlacedUnit, isSelected: b
     ctx.fillText('★', 0, 17);
   }
   ctx.restore();
+
+  // Crisp Showdown Click Prompt above character when glowing yellow
+  if (showdownReady) {
+    ctx.save();
+    const label = isHovered ? '⚡ ¡LANZAR!' : '⚡ LISTO';
+    ctx.font = 'bold 9px system-ui';
+    const textW = ctx.measureText(label).width;
+    const boxW = textW + 8;
+    const boxH = 14;
+    const boxY = -haloRadius - 10;
+    ctx.fillStyle = '#FACC15';
+    ctx.beginPath();
+    ctx.roundRect(-boxW / 2, boxY - boxH / 2, boxW, boxH, 5);
+    ctx.fill();
+    ctx.strokeStyle = '#713F12';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = '#0F172A';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, 0, boxY + 0.5);
+    ctx.restore();
+  }
 
   ctx.restore();
 }

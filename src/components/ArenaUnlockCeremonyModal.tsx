@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { ArenaInfo } from '../data/maps';
-import { UnitBlueprint } from '../types/game';
+import { TacticalToolDefinition, UnitBlueprint } from '../types/game';
 import { GameImage } from './GameImage';
 import { sounds } from '../utils/audio';
-import { CheckCircle2, ChevronRight, Crown, Gift, Lock, Play, Sparkles, Swords, Unlock } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Crown, Gift, Lock, Play, Sparkles, Swords, Unlock, Wrench } from 'lucide-react';
 
 interface ArenaUnlockCeremonyModalProps {
   arena: ArenaInfo;
   completedArena: ArenaInfo;
   giftedUnit: UnitBlueprint | null;
   divinityUnit: UnitBlueprint | null;
+  unlockedTool?: TacticalToolDefinition | null;
   coinsEarned: number;
   onContinuePlaying: () => void;
 }
@@ -21,6 +22,7 @@ export const ArenaUnlockCeremonyModal: React.FC<ArenaUnlockCeremonyModalProps> =
   completedArena,
   giftedUnit,
   divinityUnit,
+  unlockedTool = null,
   coinsEarned,
   onContinuePlaying
 }) => {
@@ -291,6 +293,14 @@ export const ArenaUnlockCeremonyModal: React.FC<ArenaUnlockCeremonyModalProps> =
                       <Crown className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate">
                         Divinidad en Tienda: <strong className="text-white">{divinityUnit.name}</strong>
+                      </span>
+                    </div>
+                  )}
+                  {unlockedTool && (
+                    <div className="pt-1.5 border-t border-slate-800 flex items-start gap-2 text-xs text-cyan-300">
+                      <Wrench className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <span>
+                        Nueva Herramienta: <strong className="text-white">{unlockedTool.name}</strong> — {unlockedTool.description}
                       </span>
                     </div>
                   )}

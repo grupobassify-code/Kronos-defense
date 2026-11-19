@@ -511,6 +511,59 @@ class SoundEngine {
       osc.stop(noteT + 0.42);
     });
   }
+
+  public playHammerSmash() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx || !this.masterGain) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, t);
+    osc.frequency.exponentialRampToValueAtTime(38, t + 0.28);
+    gain.gain.setValueAtTime(0.36, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+    osc.start(t);
+    osc.stop(t + 0.3);
+
+    const crack = this.ctx.createOscillator();
+    const crackGain = this.ctx.createGain();
+    crack.connect(crackGain);
+    crackGain.connect(this.masterGain);
+    crack.type = 'square';
+    crack.frequency.setValueAtTime(320, t + 0.04);
+    crack.frequency.exponentialRampToValueAtTime(95, t + 0.16);
+    crackGain.gain.setValueAtTime(0.16, t + 0.04);
+    crackGain.gain.exponentialRampToValueAtTime(0.01, t + 0.16);
+    crack.start(t + 0.04);
+    crack.stop(t + 0.16);
+  }
+
+  public playShovelDig() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx || !this.masterGain) return;
+
+    const t = this.ctx.currentTime;
+    const scoop = this.ctx.createOscillator();
+    const scoopGain = this.ctx.createGain();
+    scoop.connect(scoopGain);
+    scoopGain.connect(this.masterGain);
+    scoop.type = 'triangle';
+    scoop.frequency.setValueAtTime(240, t);
+    scoop.frequency.exponentialRampToValueAtTime(420, t + 0.1);
+    scoopGain.gain.setValueAtTime(0.2, t);
+    scoopGain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+    scoop.start(t);
+    scoop.stop(t + 0.12);
+
+    this.playCoin();
+  }
 }
 
 export const sounds = new SoundEngine();
