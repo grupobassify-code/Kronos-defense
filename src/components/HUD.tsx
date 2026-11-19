@@ -254,10 +254,10 @@ export const HUD: React.FC<HUDProps> = ({
               <button
                 onClick={onBankCoins}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 font-bold text-xs shadow-sm transition-all cursor-pointer active:scale-95 whitespace-nowrap"
-                title="Guardar el oro ganado durante la arena en tu Bóveda permanente de Monedas para comprar cartas en la Tienda"
+                title="Transfiere el 50% de tu oro ganado en partida a tu Bóveda permanente de Monedas (la otra mitad se conserva en la arena)"
               >
                 <PiggyBank className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="tabular-nums">Guardar (+{bankableGold})</span>
+                <span className="tabular-nums">Guardar 50% (+{bankableGold})</span>
               </button>
             )}
 

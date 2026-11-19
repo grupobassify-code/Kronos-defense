@@ -632,12 +632,14 @@ export function isArenaCompleted(progression: PlayerProgression, arenaLevel: num
 export function canBuyCardInShop(
   unit: UnitBlueprint,
   progression: PlayerProgression
-): { allowed: boolean; requiredArena?: number } {
-  if (unit.rarity === 'divinidad') {
-    const reqArena = unit.arenaUnlockLevel || 1;
-    if (!isArenaCompleted(progression, reqArena)) {
-      return { allowed: false, requiredArena: reqArena };
-    }
+): { allowed: boolean; requiredArena?: number; reason?: 'unlock_arena' | 'beat_arena' } {
+  const reqArena = unit.arenaUnlockLevel || 1;
+  const highestUnlocked = progression.highestArenaUnlocked || 1;
+  if (highestUnlocked < reqArena) {
+    return { allowed: false, requiredArena: reqArena, reason: 'unlock_arena' };
+  }
+  if (unit.rarity === 'divinidad' && !isArenaCompleted(progression, reqArena)) {
+    return { allowed: false, requiredArena: reqArena, reason: 'beat_arena' };
   }
   return { allowed: true };
 }

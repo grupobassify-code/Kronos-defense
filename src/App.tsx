@@ -74,7 +74,7 @@ const INITIAL_TOOL_COOLDOWNS: Record<TacticalToolId, number> = {
   wrench: 0
 };
 
-const SHOWDOWN_COOLDOWN_SCALE = 1.6;
+const SHOWDOWN_COOLDOWN_SCALE = 2.0;
 
 export default function App() {
   // Story Mode Persistent Progression & Missions
@@ -437,8 +437,9 @@ export default function App() {
       const nextLevel = Math.min(ARENAS.length, currentArena.arenaLevel + 1);
       const nextArena = ARENAS.find((a) => a.arenaLevel === nextLevel) || currentArena;
 
-      // Bank remaining earned arena gold + Arena Completion coin bonus
-      const bankableRemaining = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
+      // Bank 50% of remaining earned arena gold + Arena Completion coin bonus
+      const rawBankableRemaining = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
+      const bankableRemaining = Math.floor(rawBankableRemaining * 0.5);
       const arenaBonusCoins = 120 + currentArena.arenaLevel * 40;
       const totalAddedCoins = bankableRemaining + arenaBonusCoins;
 
@@ -2114,7 +2115,7 @@ export default function App() {
       kills: 0,
       targetStrategy: 'first',
       attackCooldown: 0,
-      showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * 1.15,
+      showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * 1.35,
       showdownReady: false,
       angle: 0,
       lastTargetId: null
@@ -2157,7 +2158,7 @@ export default function App() {
               kills: 0,
               targetStrategy: 'first',
               attackCooldown: 0.2,
-              showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * 1.15,
+              showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * 1.35,
               showdownReady: false,
               angle: 0,
               lastTargetId: null
@@ -2372,23 +2373,24 @@ export default function App() {
     }));
   };
 
-  // Bank earned match gold into persistent saved Coins mid-arena
+  // Bank 50% of earned match gold into persistent saved Coins mid-arena (other 50% stays in match funds)
   const handleBankMatchCoins = useCallback(() => {
-    const amount = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
-    if (amount <= 0) return;
+    const rawBankable = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
+    const transferCoins = Math.floor(rawBankable * 0.5);
+    if (transferCoins <= 0) return;
 
     sounds.playCoin();
-    setGold((g) => Math.max(0, g - amount));
-    setEarnedGoldInMatch((e) => Math.max(0, e - amount));
+    setGold((g) => Math.max(0, g - transferCoins));
+    setEarnedGoldInMatch(0);
     setProgression((prev) => ({
       ...prev,
-      savedCoins: (prev.savedCoins ?? 0) + amount
+      savedCoins: (prev.savedCoins ?? 0) + transferCoins
     }));
-    setKillToast(`💰 ¡+${amount} monedas guardadas en tu Bóveda permanente!`);
+    setKillToast(`💰 ¡+${transferCoins} monedas (50%) guardadas en tu Bóveda permanente!`);
     setTimeout(() => setKillToast(null), 3200);
   }, []);
 
-  // Card Shop: Direct card purchase with saved Coins (Divinities require completing their arena first)
+  // Card Shop: Direct card purchase with saved Coins (cards require unlocking their Arena; Divinities require completing it)
   const handleBuyCardWithCoins = useCallback((unitId: string) => {
     const unit = UNITS[unitId];
     if (!unit) return;
@@ -2399,7 +2401,11 @@ export default function App() {
       if (prev.unlockedCardIds.includes(unitId)) return prev;
       const eligibility = canBuyCardInShop(unit, prev);
       if (!eligibility.allowed) {
-        setKillToast(`🔒 Completa la Arena ${eligibility.requiredArena} para desbloquear a ${unit.name} en la Tienda.`);
+        setKillToast(
+          eligibility.reason === 'beat_arena'
+            ? `🔒 Completa la Arena ${eligibility.requiredArena} para desbloquear la Divinidad ${unit.name}.`
+            : `🔒 Desbloquea la Arena ${eligibility.requiredArena} para poder comprar a ${unit.name}.`
+        );
         setTimeout(() => setKillToast(null), 3500);
         return prev;
       }
@@ -2592,7 +2598,8 @@ export default function App() {
         const currentArena = getArenaByMapId(currentMap.id);
         const nextLevel = Math.min(ARENAS.length, currentArena.arenaLevel + 1);
         const nextArena = ARENAS.find((a) => a.arenaLevel === nextLevel) || currentArena;
-        const bankableRemaining = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
+        const rawBankableRemaining = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
+        const bankableRemaining = Math.floor(rawBankableRemaining * 0.5);
         const arenaBonusCoins = 120 + currentArena.arenaLevel * 40;
         const totalAddedCoins = bankableRemaining + arenaBonusCoins;
 
@@ -3082,12 +3089,13 @@ export default function App() {
             setBaseHealth((hp) => {
               const nextHp = Math.max(0, hp - escapedDamage);
               if (nextHp <= 0) {
-                const bankableOnEnd = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
+                const rawBankableOnEnd = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
+                const bankableOnEnd = Math.floor(rawBankableOnEnd * 0.5);
                 if (bankableOnEnd > 0) {
                   setAutoBankedCoinsInMatch(bankableOnEnd);
                   setGold((g) => Math.max(0, g - bankableOnEnd));
-                  setEarnedGoldInMatch(0);
                 }
+                setEarnedGoldInMatch(0);
                 setViewState('GAME_OVER');
                 setProgression((p) => {
                   const currentWaveReached = currentWave;
@@ -3165,7 +3173,7 @@ export default function App() {
           const mastery = getLevelStatMultiplier(cardLevel);
 
           let cd = Math.max(0, unit.attackCooldown - dt);
-          const cdChargeMult = unit.level >= 6 ? 1.0 : 0.78;
+          const cdChargeMult = unit.level >= 6 ? 0.92 : 0.72;
           let showdownCd = Math.max(0, unit.showdownCooldownTimer - dt * cdChargeMult);
 
           // Showdown unlocks from Card Nv.3 OR Match Unit Nv.3!
@@ -3584,8 +3592,8 @@ export default function App() {
           setEarnedGoldInMatch((e) => e + totalRoundGold);
           setTotalGoldEarned((g) => g + totalRoundGold);
 
-          // Automatically save Vault Coins reward on every completed wave (keeps arena gold intact too)
-          const savedCoinsEarned = Math.max(15, Math.round(totalRoundGold * 0.45)) + (isBossWaveNow ? 35 : 0);
+          // Automatically save balanced Vault Coins reward on every completed wave (keeps arena gold intact too)
+          const savedCoinsEarned = Math.max(10, Math.round(totalRoundGold * 0.25)) + (isBossWaveNow ? 20 : 0);
 
           // Update Story Mode Missions on Wave Clear
           setMissions((missionsList) =>
@@ -3700,7 +3708,7 @@ export default function App() {
             maxBaseHealth={maxBaseHealth}
             gold={gold}
             savedCoins={progression.savedCoins ?? 0}
-            bankableGold={Math.min(gold, earnedGoldInMatch)}
+            bankableGold={Math.floor(Math.min(gold, earnedGoldInMatch) * 0.5)}
             waveHpMult={getWaveScaling(currentWave, getArenaByMapId(currentMap.id).arenaLevel, difficulty).hpMult}
             currentWave={currentWave}
             totalWaves={totalWaves}
@@ -3947,8 +3955,9 @@ export default function App() {
           onSelectAndStart={(selectedArena, chosenDifficulty) => {
             setShowMapSelectModal(false);
             if (selectedArena.map.id !== currentMap.id) {
-              // Automatically bank earned gold from previous arena and gift new-arena hero if not yet claimed
-              const bankableSwitch = Math.min(gold, earnedGoldInMatch);
+              // Automatically bank 50% of earned gold from previous arena and gift new-arena hero if not yet claimed
+              const rawBankableSwitch = Math.min(gold, earnedGoldInMatch);
+              const bankableSwitch = Math.floor(rawBankableSwitch * 0.5);
               const targetLvl = selectedArena.arenaLevel;
               const notYetGifted = targetLvl > 1 && !(progression.giftedArenaLevels || [1]).includes(targetLvl);
               const arrivalGift = notYetGifted ? getArenaGiftCharacter(targetLvl, progression.unlockedCardIds) : null;

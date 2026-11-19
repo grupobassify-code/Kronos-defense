@@ -5386,6 +5386,146 @@ export const UNITS: Record<string, UnitBlueprint> = {
 
 };
 
+export const CARD_ARENA_LEVELS: Record<string, number> = {
+  // Arena 1 (7): Starters + early Commons + Sun King
+  vanguard_solar: 1,
+  pyromancer: 1,
+  zeker: 1,
+  cryo_mage: 1,
+  centinela_acero: 1,
+  ballestero_real: 1,
+  aureon_sun_king: 1,
+
+  // Arena 2 (7): Volcán de Magma
+  granadero_tactico: 2,
+  espadachin_hierro: 2,
+  golem_magma: 2,
+  mago_fuego: 2,
+  pirotecnico_brasa: 2,
+  inferno_dragon: 2,
+  vulcanox_magma_lord: 2,
+
+  // Arena 3 (7): Núcleo Cibernético
+  vigia_bosque: 3,
+  robot_centinela: 3,
+  hacker_cibernetico: 3,
+  torre_tesla_v2: 3,
+  soldado_plasma: 3,
+  ingeniero_mecanico: 3,
+  cygnus_prime_ai: 3,
+
+  // Arena 4 (7): Templo Cronos
+  mercader_rondas: 4,
+  alchemist: 4,
+  viajero_tiempo: 4,
+  banquero_crono: 4,
+  chrono_guardian: 4,
+  alquimista_dorado: 4,
+  chronax_time_guardian: 4,
+
+  // Arena 5 (7): Bosque Sombrío
+  arquera_elfica: 5,
+  zapador_mina: 5,
+  lunar_huntress: 5,
+  cazador_sombras: 5,
+  shadow_assassin: 5,
+  francotirador_fantasma: 5,
+  eclipse_divided: 5,
+
+  // Arena 6 (7): Glaciar Perpetuo
+  escudero_luz: 6,
+  goblin_demolitionist: 6,
+  guardian_hielo: 6,
+  criomante_abismo: 6,
+  caballero_cristal: 6,
+  lanzacohetes: 6,
+  ymir_frost_sovereign: 6,
+
+  // Arena 7 (7): Metrópolis Neon
+  toxic_shaman: 7,
+  valkyrie_blade: 7,
+  chaman_electrico: 7,
+  emperador_rayo: 7,
+  electro_wizard: 7,
+  plasma_gunner: 7,
+  kira_synthwave_empress: 7,
+
+  // Arena 8 (7): Abismo Astral
+  rey_slimes: 8,
+  artillero_doble: 8,
+  void_sniper: 8,
+  arquitecto_vacio: 8,
+  arcane_witch: 8,
+  cientifico_nuclear: 8,
+  nacar_abyssal_fish: 8,
+
+  // Arena 9 (7): Santuario del Alba
+  canonero_pirata: 9,
+  lancero_solar: 9,
+  sacerdote_solar: 9,
+  paladin_estelar: 9,
+  paladin_aegis: 9,
+  medico_combate: 9,
+  seraphina_dawn_archon: 9,
+
+  // Arena 10 (6): Cumbres de Tormenta
+  domador_bestias: 10,
+  titan_tormenta: 10,
+  maestro_tormenta: 10,
+  valkyrie_storm: 10,
+  valquiria_aurora: 10,
+  thorin_storm_overlord: 10,
+
+  // Arena 11 (6): Selva Primordial
+  geomancer_titan: 11,
+  reina_espinas: 11,
+  botanico_veneno: 11,
+  alquimista_esmeralda: 11,
+  druida_bosque: 11,
+  gaia_world_heart: 11,
+
+  // Arena 12 (7): Forja del Tártaro
+  senor_cenizas: 12,
+  mecha_artillery: 12,
+  bombardero_orbital: 12,
+  forjador_titanio: 12,
+  artillero_pesado: 12,
+  ignis_tartarus_colossus: 12,
+  helios_celestial: 12,
+
+  // Arena 13 (6): Observatorio Astral
+  golem_sentinel: 13,
+  resonator: 13,
+  maestro_runas: 13,
+  invocador_golems: 13,
+  coloso_obsidiana: 13,
+  astrea_constellation_weaver: 13,
+
+  // Arena 14 (6): Dominio Umbrío
+  asesina_carmesi: 14,
+  asesino_espectral: 14,
+  francotirador_pulsar: 14,
+  ninja_sombrio: 14,
+  thanatos_underworld_herald: 14,
+  nyx_abismo_eterno: 14,
+
+  // Arena 15 (6): Cumbre Dimensional
+  samurai_carmesi: 15,
+  invocador_fenix: 15,
+  dragon_mecanico: 15,
+  cazadora_viento: 15,
+  fenix_golden_phoenix: 15,
+  kronos_dimensiones: 15
+};
+
+Object.values(UNITS).forEach((unit) => {
+  if (!unit.arenaUnlockLevel && CARD_ARENA_LEVELS[unit.id]) {
+    unit.arenaUnlockLevel = CARD_ARENA_LEVELS[unit.id];
+  } else if (!unit.arenaUnlockLevel) {
+    unit.arenaUnlockLevel = 1;
+  }
+});
+
 export const UNIT_LIST = Object.values(UNITS);
 
 /**
@@ -5408,8 +5548,8 @@ export function getAllDivinities(): UnitBlueprint[] {
  * Checks if a card is locked because the player has not yet reached its required arena.
  */
 export function isCardLockedByArena(card: UnitBlueprint, highestArenaUnlocked: number): boolean {
-  if (!card.arenaUnlockLevel) return false;
-  return card.arenaUnlockLevel > highestArenaUnlocked;
+  const req = card.arenaUnlockLevel || 1;
+  return req > highestArenaUnlocked;
 }
 
 const ARENA_GIFT_POOL: Record<number, string[]> = {

@@ -254,6 +254,7 @@ export const UnitInspector: React.FC<UnitInspectorProps> = ({
               <button
                 onClick={() => onTriggerShowdown(unit.instanceId)}
                 disabled={!unit.showdownReady}
+                title="También puedes mantener presionado 2 segundos sobre el personaje en la arena para lanzarlo"
                 className={`w-full py-2 px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                   unit.showdownReady
                     ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-lg shadow-amber-500/20 active:scale-95 cursor-pointer ring-2 ring-amber-300'

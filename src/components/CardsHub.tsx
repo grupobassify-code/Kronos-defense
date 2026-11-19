@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { PlayerProgression, Mission, PackReward, ShopPackTierId, MissionCategory, MissionDifficulty } from '../types/game';
-import { UNITS, UNIT_LIST, isCardLockedByArena } from '../data/units';
+import { UNITS, UNIT_LIST } from '../data/units';
 import { ENEMY_LIST } from '../data/enemies';
-import { getArenaForWave, getArenaByLevel } from '../data/maps';
+import { ARENAS, getArenaForWave, getArenaByLevel } from '../data/maps';
 import {
   LEVEL_UP_COSTS,
   getLevelStatMultiplier,
@@ -98,6 +98,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
   const [selectedCardId, setSelectedCardId] = useState<string>(progression.unlockedCardIds[0] || 'vanguard_solar');
   const [selectedRarityFilter, setSelectedRarityFilter] = useState<string>('all');
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('all');
+  const [deckArenaFilter, setDeckArenaFilter] = useState<number | 'all'>('all');
   const [deckOwnershipFilter, setDeckOwnershipFilter] = useState<'ALL' | 'UNLOCKED' | 'IN_DECK' | 'UPGRADEABLE' | 'LOCKED'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [raritySortAsc, setRaritySortAsc] = useState<boolean>(true); // true: Común -> Divinidad, false: Divinidad -> Común
@@ -107,6 +108,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
   const [shopSearch, setShopSearch] = useState<string>('');
   const [shopRarity, setShopRarity] = useState<string>('all');
   const [shopRole, setShopRole] = useState<string>('all');
+  const [shopArenaFilter, setShopArenaFilter] = useState<number | 'all'>('all');
   const [shopShowMode, setShopShowMode] = useState<'ALL' | 'UNOWNED' | 'AFFORDABLE'>('ALL');
   const [shopSort, setShopSort] = useState<'AVAILABLE' | 'PRICE_ASC' | 'PRICE_DESC' | 'RARITY'>('AVAILABLE');
   const [shopPreviewCardId, setShopPreviewCardId] = useState<string | null>(null);
@@ -552,6 +554,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                     if (deckOwnershipFilter === 'IN_DECK' && !isInDeck) return false;
                     if (deckOwnershipFilter === 'UPGRADEABLE' && !canUpgrade) return false;
                     if (deckOwnershipFilter === 'LOCKED' && isUnlocked) return false;
+                    if (deckArenaFilter !== 'all' && (u.arenaUnlockLevel || 1) !== deckArenaFilter) return false;
 
                     if (searchQuery.trim()) {
                       const q = searchQuery.toLowerCase().trim();
@@ -565,6 +568,9 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                     const normRarity = u.rarity === 'rara' ? 'especial' : u.rarity;
                     return normRarity === selectedRarityFilter;
                   }).sort((a, b) => {
+                    const aArena = a.arenaUnlockLevel || 1;
+                    const bArena = b.arenaUnlockLevel || 1;
+                    if (aArena !== bArena) return aArena - bArena;
                     const aUnl = progression.unlockedCardIds.includes(a.id) ? 0 : 1;
                     const bUnl = progression.unlockedCardIds.includes(b.id) ? 0 : 1;
                     if (deckOwnershipFilter === 'ALL' && aUnl !== bUnl) return aUnl - bUnl;
@@ -689,9 +695,47 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                             ))}
                           </div>
                         </div>
+
+                        {/* Arena Filter Strip (1–15) */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar pt-1 border-t border-slate-800/80">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 mr-1">
+                            Arena:
+                          </span>
+                          <button
+                            onClick={() => setDeckArenaFilter('all')}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
+                              deckArenaFilter === 'all'
+                                ? 'bg-cyan-500 text-slate-950 font-black'
+                                : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                            }`}
+                          >
+                            Todas (1–15)
+                          </button>
+                          {ARENAS.map((arena) => {
+                            const isArenaUnlocked = (progression.highestArenaUnlocked || 1) >= arena.arenaLevel;
+                            const isActive = deckArenaFilter === arena.arenaLevel;
+                            return (
+                              <button
+                                key={`deck_arena_${arena.arenaLevel}`}
+                                onClick={() => setDeckArenaFilter(arena.arenaLevel)}
+                                title={`${arena.name}${isArenaUnlocked ? '' : ` (Requiere Arena ${arena.arenaLevel})`}`}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1 shrink-0 ${
+                                  isActive
+                                    ? 'bg-cyan-500 text-slate-950 font-black'
+                                    : isArenaUnlocked
+                                    ? 'bg-slate-900 text-slate-200 hover:border-cyan-500/60 border border-slate-800'
+                                    : 'bg-slate-950 text-slate-500 border border-slate-800/80 hover:text-slate-300'
+                                }`}
+                              >
+                                {!isArenaUnlocked && <Lock className="w-2.5 h-2.5 text-amber-400/80" />}
+                                <span>A{arena.arenaLevel}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
 
-                      {/* Cards Grid */}
+                      {/* Cards Grid Grouped by Arena */}
                       {filteredDeckCards.length === 0 ? (
                         <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
                           <div className="text-sm font-bold text-slate-300">No hay cartas con estos filtros</div>
@@ -700,6 +744,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                               setSearchQuery('');
                               setSelectedRarityFilter('all');
                               setSelectedRoleFilter('all');
+                              setDeckArenaFilter('all');
                               setDeckOwnershipFilter('ALL');
                             }}
                             className="px-4 py-1.5 rounded-xl bg-cyan-500 text-slate-950 text-xs font-black cursor-pointer"
@@ -708,8 +753,46 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                           </button>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-                          {filteredDeckCards.map((unit) => {
+                        <div className="space-y-5">
+                          {ARENAS.filter((arena) => deckArenaFilter === 'all' || arena.arenaLevel === deckArenaFilter).map((arena) => {
+                            const arenaCards = filteredDeckCards.filter(
+                              (u) => (u.arenaUnlockLevel || 1) === arena.arenaLevel
+                            );
+                            if (arenaCards.length === 0) return null;
+                            const isArenaUnlocked = (progression.highestArenaUnlocked || 1) >= arena.arenaLevel;
+                            const totalArenaCards = UNIT_LIST.filter((u) => (u.arenaUnlockLevel || 1) === arena.arenaLevel);
+                            const ownedInArena = totalArenaCards.filter((u) => progression.unlockedCardIds.includes(u.id)).length;
+
+                            return (
+                              <section key={`deck_sec_${arena.arenaLevel}`} className="space-y-2.5">
+                                <div className={`flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 rounded-xl border ${
+                                  isArenaUnlocked
+                                    ? 'bg-slate-950/90 border-slate-800'
+                                    : 'bg-slate-950/50 border-amber-500/25'
+                                }`}>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-sm shrink-0">{arena.badge}</span>
+                                    <span className="text-xs font-black uppercase tracking-wider text-slate-100">
+                                      Arena {arena.arenaLevel}: {arena.name}
+                                    </span>
+                                    {!isArenaUnlocked ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[10px] font-bold">
+                                        <Lock className="w-2.5 h-2.5" />
+                                        Bloqueada
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold">
+                                        Desbloqueada
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[11px] font-mono tabular-nums text-slate-400">
+                                    {ownedInArena}/{totalArenaCards.length} tuyas
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                                  {arenaCards.map((unit) => {
                             const isUnlocked = progression.unlockedCardIds.includes(unit.id);
                             const isInDeck = (progression.activeDeckCardIds || []).includes(unit.id);
                             const isSelected = selectedCardId === unit.id;
@@ -853,16 +936,21 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setActiveSubTab('SHOP');
+                                        setShopArenaFilter(unit.arenaUnlockLevel || 1);
                                         setShopSearch(unit.name);
                                       }}
                                       className="w-full py-1.5 px-2 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center gap-1"
                                     >
                                       <ShoppingBag className="w-3 h-3" />
-                                      <span>Ver en Tienda</span>
+                                      <span>Ver en Tienda (A{unit.arenaUnlockLevel || 1})</span>
                                     </button>
                                   )}
                                 </div>
                               </div>
+                            );
+                          })}
+                                </div>
+                              </section>
                             );
                           })}
                         </div>
@@ -1099,26 +1187,41 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                         </div>
                       ) : (
                         <div className="pt-2 border-t border-slate-800 space-y-2">
-                          {isCardLockedByArena(selectedUnit, progression.highestArenaUnlocked || 1) ? (
-                            <div className="p-3 rounded-xl bg-slate-900 border border-amber-500/30 text-xs text-slate-300">
-                              <div className="font-bold text-amber-300 flex items-center gap-1.5 mb-1">
-                                <Lock className="w-3.5 h-3.5" />
-                                <span>Bloqueada hasta Arena {selectedUnit.arenaUnlockLevel}</span>
-                              </div>
-                              Llega a <strong>{getArenaByLevel(selectedUnit.arenaUnlockLevel || 1).name}</strong> para desbloquearla en Tienda y Sobres.
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setActiveSubTab('SHOP');
-                                setShopSearch(selectedUnit.name);
-                              }}
-                              className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
-                            >
-                              <ShoppingBag className="w-4 h-4" />
-                              <span>Comprar en Tienda ({getCardShopPrice(selectedUnit)} monedas)</span>
-                            </button>
-                          )}
+                          {(() => {
+                            const selShopElig = canBuyCardInShop(selectedUnit, progression);
+                            if (!selShopElig.allowed) {
+                              return (
+                                <div className="p-3 rounded-xl bg-slate-900 border border-amber-500/30 text-xs text-slate-300">
+                                  <div className="font-bold text-amber-300 flex items-center gap-1.5 mb-1">
+                                    <Lock className="w-3.5 h-3.5" />
+                                    <span>
+                                      {selShopElig.reason === 'beat_arena'
+                                        ? `Completa la Arena ${selShopElig.requiredArena}`
+                                        : `Bloqueada hasta Arena ${selShopElig.requiredArena}`}
+                                    </span>
+                                  </div>
+                                  {selShopElig.reason === 'beat_arena' ? (
+                                    <>Completa todas las rondas de <strong>{getArenaByLevel(selShopElig.requiredArena || 1).name}</strong> para poder comprar esta Divinidad.</>
+                                  ) : (
+                                    <>Desbloquea <strong>{getArenaByLevel(selShopElig.requiredArena || 1).name}</strong> para habilitar su compra en Tienda.</>
+                                  )}
+                                </div>
+                              );
+                            }
+                            return (
+                              <button
+                                onClick={() => {
+                                  setActiveSubTab('SHOP');
+                                  setShopArenaFilter(selectedUnit.arenaUnlockLevel || 1);
+                                  setShopSearch(selectedUnit.name);
+                                }}
+                                className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                              >
+                                <ShoppingBag className="w-4 h-4" />
+                                <span>Comprar en Tienda ({getCardShopPrice(selectedUnit)} monedas)</span>
+                              </button>
+                            );
+                          })()}
                         </div>
                       )}
                     </>
@@ -1460,7 +1563,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
               const unownedEligible = UNIT_LIST.filter(
                 (u) => !progression.unlockedCardIds.includes(u.id) && canBuyCardInShop(u, progression).allowed
               );
-              if (unownedEligible.length === 0 || shopSearch.trim() || shopRarity !== 'all') return null;
+              if (unownedEligible.length === 0 || shopSearch.trim() || shopRarity !== 'all' || shopArenaFilter !== 'all') return null;
 
               const affordableTop = unownedEligible
                 .filter((u) => (progression.savedCoins ?? 0) >= getCardShopPrice(u))
@@ -1656,15 +1759,54 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                   ))}
                 </div>
               </div>
+
+              {/* Shop Arena Filter Strip (1–15) */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar pt-1 border-t border-slate-800/80">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-300 shrink-0 mr-1">
+                  Arena:
+                </span>
+                <button
+                  onClick={() => setShopArenaFilter('all')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
+                    shopArenaFilter === 'all'
+                      ? 'bg-amber-500 text-slate-950 font-black'
+                      : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Todas (1–15)
+                </button>
+                {ARENAS.map((arena) => {
+                  const isArenaUnlocked = (progression.highestArenaUnlocked || 1) >= arena.arenaLevel;
+                  const isActive = shopArenaFilter === arena.arenaLevel;
+                  return (
+                    <button
+                      key={`shop_arena_${arena.arenaLevel}`}
+                      onClick={() => setShopArenaFilter(arena.arenaLevel)}
+                      title={`${arena.name}${isArenaUnlocked ? ' (Disponible)' : ` (Bloqueada hasta Arena ${arena.arenaLevel})`}`}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1 shrink-0 ${
+                        isActive
+                          ? 'bg-amber-500 text-slate-950 font-black'
+                          : isArenaUnlocked
+                          ? 'bg-slate-900 border border-slate-800 text-slate-200 hover:border-amber-400/60'
+                          : 'bg-slate-950 border border-slate-800/80 text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      {!isArenaUnlocked && <Lock className="w-2.5 h-2.5 text-amber-400/80" />}
+                      <span>A{arena.arenaLevel}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Direct Card Purchase Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
-              {UNIT_LIST
+            {/* Direct Card Purchase Divided by Arena Sections */}
+            {(() => {
+              const filteredShopUnits = UNIT_LIST
                 .filter((u) => {
                   const owned = progression.unlockedCardIds.includes(u.id);
                   const eligible = canBuyCardInShop(u, progression).allowed;
                   const affordable = isFreeShop || (progression.savedCoins ?? 0) >= getCardShopPrice(u);
+                  if (shopArenaFilter !== 'all' && (u.arenaUnlockLevel || 1) !== shopArenaFilter) return false;
                   if (shopShowMode === 'UNOWNED' && owned) return false;
                   if (shopShowMode === 'AFFORDABLE' && (owned || !eligible || !affordable)) return false;
                   if (shopSearch.trim()) {
@@ -1693,153 +1835,224 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                   const bCan = canBuyCardInShop(b, progression).allowed ? 0 : 1;
                   if (aCan !== bCan) return aCan - bCan;
                   return compareRarities(a.rarity, b.rarity);
-                })
-                .map((unit) => {
-                  const isOwned = progression.unlockedCardIds.includes(unit.id);
-                  const isInDeck = (progression.activeDeckCardIds || []).includes(unit.id);
-                  const rMeta = getRarityMeta(unit.rarity);
-                  const coinPrice = isFreeShop ? 0 : getCardShopPrice(unit);
-                  const canAfford = isFreeShop || (progression.savedCoins ?? 0) >= coinPrice;
-                  const shopEligibility = canBuyCardInShop(unit, progression);
-                  const isDivinityLocked = !shopEligibility.allowed;
+                });
 
-                  return (
-                    <div
-                      key={`shop_card_${unit.id}`}
-                      className={`rounded-2xl border p-3 flex flex-col justify-between gap-3 transition-colors ${
-                        isOwned
-                          ? 'bg-slate-950/70 border-emerald-500/30'
-                          : isDivinityLocked
-                          ? 'bg-slate-950/80 border-slate-800'
-                          : `bg-slate-950 ${rMeta.cardBorder}`
-                      }`}
+              if (filteredShopUnits.length === 0) {
+                return (
+                  <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2.5">
+                    <div className="text-sm font-bold text-slate-300">No hay cartas disponibles con estos filtros</div>
+                    <button
+                      onClick={() => {
+                        setShopSearch('');
+                        setShopRarity('all');
+                        setShopRole('all');
+                        setShopArenaFilter('all');
+                        setShopShowMode('ALL');
+                      }}
+                      className="px-4 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-black cursor-pointer"
                     >
-                      <div>
-                        <div
-                          onClick={() => setShopPreviewCardId(unit.id)}
-                          className={`relative w-full aspect-[4/3] rounded-xl overflow-hidden border ${rMeta.cardBorder} bg-slate-900 mb-2.5 cursor-pointer group`}
-                        >
-                          {unit.imageUrl && (
-                            <GameImage
-                              src={unit.imageUrl}
-                              alt={unit.name}
-                              loading="lazy"
-                              className={`w-full h-full object-cover transition-transform duration-200 group-hover:scale-105 ${
-                                isDivinityLocked && !isOwned ? 'grayscale opacity-45' : ''
-                              }`}
-                              fallback={
-                                <div className="w-full h-full flex items-center justify-center bg-slate-800 text-xs font-bold text-slate-300">
-                                  {unit.name.slice(0, 2).toUpperCase()}
-                                </div>
-                              }
-                            />
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+                      Restablecer filtros de tienda
+                    </button>
+                  </div>
+                );
+              }
 
-                          <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1">
-                            <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-black ${rMeta.badgeClass}`}>
-                              {unit.rarity === 'divinidad' ? `Divinidad A${unit.arenaUnlockLevel || 1}` : rMeta.badgeLabel}
-                            </span>
-                            <span className="text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-slate-950/85 text-amber-300 font-bold border border-slate-700">
-                              {unit.cost}o arena
-                            </span>
-                          </div>
+              return (
+                <div className="space-y-6">
+                  {ARENAS.filter((arena) => shopArenaFilter === 'all' || arena.arenaLevel === shopArenaFilter).map((arena) => {
+                    const arenaCards = filteredShopUnits.filter(
+                      (u) => (u.arenaUnlockLevel || 1) === arena.arenaLevel
+                    );
+                    if (arenaCards.length === 0) return null;
+                    const isArenaUnlocked = (progression.highestArenaUnlocked || 1) >= arena.arenaLevel;
 
-                          <div className="absolute bottom-2 left-2.5 right-2.5 flex items-end justify-between gap-2">
+                    return (
+                      <section key={`shop_sec_${arena.arenaLevel}`} className="space-y-3">
+                        <div className={`flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-2xl border ${
+                          isArenaUnlocked
+                            ? 'bg-slate-950 border-slate-800'
+                            : 'bg-slate-950/60 border-amber-500/30'
+                        }`}>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-base shrink-0">{arena.badge}</span>
                             <div className="min-w-0">
-                              <div className={`text-sm font-black truncate ${rMeta.textColor}`}>{unit.name}</div>
-                              <div className="text-[11px] text-slate-300 truncate">{unit.title}</div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShopPreviewCardId(unit.id);
-                              }}
-                              className="p-1.5 rounded-lg bg-slate-950/80 hover:bg-slate-800 border border-slate-700 text-slate-200 shrink-0 cursor-pointer"
-                              title="Inspeccionar estadísticas"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          {isDivinityLocked && !isOwned && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-slate-950/45 pointer-events-none">
-                              <div className="px-2.5 py-1 rounded-lg bg-slate-950/90 border border-amber-500/50 text-amber-300 text-xs font-bold flex items-center gap-1.5">
-                                <Lock className="w-3.5 h-3.5" />
-                                <span>Arena {shopEligibility.requiredArena}</span>
+                              <div className="text-xs sm:text-sm font-black text-slate-100 truncate">
+                                Arena {arena.arenaLevel}: {arena.name}
+                              </div>
+                              <div className="text-[11px] text-slate-400">
+                                {arenaCards.length} cartas en esta arena
                               </div>
                             </div>
+                          </div>
+                          {isArenaUnlocked ? (
+                            <span className="px-2.5 py-1 rounded-lg bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
+                              Arena Desbloqueada · Compra abierta
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[11px] font-bold">
+                              <Lock className="w-3 h-3 shrink-0" />
+                              <span>Bloqueada — Desbloquea Arena {arena.arenaLevel} para comprar</span>
+                            </span>
                           )}
                         </div>
 
-                        <div className="text-[11px] text-cyan-300 font-mono tabular-nums capitalize">
-                          {unit.role} · {unit.baseDamage} daño · {unit.baseRange}px
-                        </div>
-                        <p className="text-[11px] text-slate-400 leading-snug line-clamp-2 mt-1">
-                          {unit.description}
-                        </p>
-                      </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+                          {arenaCards.map((unit) => {
+                            const isOwned = progression.unlockedCardIds.includes(unit.id);
+                            const isInDeck = (progression.activeDeckCardIds || []).includes(unit.id);
+                            const rMeta = getRarityMeta(unit.rarity);
+                            const coinPrice = isFreeShop ? 0 : getCardShopPrice(unit);
+                            const canAfford = isFreeShop || (progression.savedCoins ?? 0) >= coinPrice;
+                            const shopEligibility = canBuyCardInShop(unit, progression);
+                            const isShopLocked = !shopEligibility.allowed;
 
-                      <div className="pt-2.5 border-t border-slate-800/80 flex items-center gap-2">
-                        {isOwned ? (
-                          <>
-                            <div className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5">
-                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                              <span>En Colección</span>
-                            </div>
-                            {!isInDeck && (progression.activeDeckCardIds?.length || 0) < 7 && onToggleDeckCard && (
-                              <button
-                                onClick={() => {
-                                  onToggleDeckCard(unit.id);
-                                  sounds.playPlace();
-                                }}
-                                className="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black cursor-pointer transition-colors whitespace-nowrap"
+                            return (
+                              <div
+                                key={`shop_card_${unit.id}`}
+                                className={`rounded-2xl border p-3 flex flex-col justify-between gap-3 transition-colors ${
+                                  isOwned
+                                    ? 'bg-slate-950/70 border-emerald-500/30'
+                                    : isShopLocked
+                                    ? 'bg-slate-950/80 border-slate-800'
+                                    : `bg-slate-950 ${rMeta.cardBorder}`
+                                }`}
                               >
-                                Equipar
-                              </button>
-                            )}
-                          </>
-                        ) : isDivinityLocked ? (
-                          <button
-                            disabled
-                            className="w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-slate-900 text-amber-300/80 border border-amber-500/30 cursor-not-allowed whitespace-nowrap"
-                          >
-                            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                            <span className="truncate font-mono tabular-nums">
-                              Arena {shopEligibility.requiredArena} · {coinPrice} mon.
-                            </span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              onBuyCardWithCoins?.(unit.id);
-                              setShopPurchaseToast({ cardId: unit.id, name: unit.name });
-                            }}
-                            disabled={!canAfford}
-                            className={`w-full py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
-                              isFreeShop
-                                ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950'
-                                : canAfford
-                                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
-                                : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
-                            }`}
-                          >
-                            <Coins className="w-3.5 h-3.5 shrink-0" />
-                            <span className="font-mono tabular-nums">
-                              {isFreeShop
-                                ? 'Gratis · 0 mon.'
-                                : canAfford
-                                ? `Comprar · ${coinPrice} monedas`
-                                : `Faltan monedas (${coinPrice})`}
-                            </span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
+                                <div>
+                                  <div
+                                    onClick={() => setShopPreviewCardId(unit.id)}
+                                    className={`relative w-full aspect-[4/3] rounded-xl overflow-hidden border ${rMeta.cardBorder} bg-slate-900 mb-2.5 cursor-pointer group`}
+                                  >
+                                    {unit.imageUrl && (
+                                      <GameImage
+                                        src={unit.imageUrl}
+                                        alt={unit.name}
+                                        loading="lazy"
+                                        className={`w-full h-full object-cover transition-transform duration-200 group-hover:scale-105 ${
+                                          isShopLocked && !isOwned ? 'grayscale opacity-45' : ''
+                                        }`}
+                                        fallback={
+                                          <div className="w-full h-full flex items-center justify-center bg-slate-800 text-xs font-bold text-slate-300">
+                                            {unit.name.slice(0, 2).toUpperCase()}
+                                          </div>
+                                        }
+                                      />
+                                    )}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+
+                                    <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1">
+                                      <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-black ${rMeta.badgeClass}`}>
+                                        {unit.rarity === 'divinidad' ? `Divinidad A${unit.arenaUnlockLevel || 1}` : rMeta.badgeLabel}
+                                      </span>
+                                      <span className="text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-slate-950/85 text-amber-300 font-bold border border-slate-700">
+                                        {unit.cost}o arena
+                                      </span>
+                                    </div>
+
+                                    <div className="absolute bottom-2 left-2.5 right-2.5 flex items-end justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <div className={`text-sm font-black truncate ${rMeta.textColor}`}>{unit.name}</div>
+                                        <div className="text-[11px] text-slate-300 truncate">{unit.title}</div>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setShopPreviewCardId(unit.id);
+                                        }}
+                                        className="p-1.5 rounded-lg bg-slate-950/80 hover:bg-slate-800 border border-slate-700 text-slate-200 shrink-0 cursor-pointer"
+                                        title="Inspeccionar estadísticas"
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+
+                                    {isShopLocked && !isOwned && (
+                                      <div className="absolute inset-0 flex items-center justify-center bg-slate-950/45 pointer-events-none">
+                                        <div className="px-2.5 py-1 rounded-lg bg-slate-950/90 border border-amber-500/50 text-amber-300 text-xs font-bold flex items-center gap-1.5">
+                                          <Lock className="w-3.5 h-3.5" />
+                                          <span>Arena {shopEligibility.requiredArena}</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="text-[11px] text-cyan-300 font-mono tabular-nums capitalize">
+                                    {unit.role} · {unit.baseDamage} daño · {unit.baseRange}px
+                                  </div>
+                                  <p className="text-[11px] text-slate-400 leading-snug line-clamp-2 mt-1">
+                                    {unit.description}
+                                  </p>
+                                </div>
+
+                                <div className="pt-2.5 border-t border-slate-800/80 flex items-center gap-2">
+                                  {isOwned ? (
+                                    <>
+                                      <div className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5">
+                                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                                        <span>En Colección</span>
+                                      </div>
+                                      {!isInDeck && (progression.activeDeckCardIds?.length || 0) < 7 && onToggleDeckCard && (
+                                        <button
+                                          onClick={() => {
+                                            onToggleDeckCard(unit.id);
+                                            sounds.playPlace();
+                                          }}
+                                          className="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black cursor-pointer transition-colors whitespace-nowrap"
+                                        >
+                                          Equipar
+                                        </button>
+                                      )}
+                                    </>
+                                  ) : isShopLocked ? (
+                                    <button
+                                      disabled
+                                      className="w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-slate-900 text-amber-300/80 border border-amber-500/30 cursor-not-allowed whitespace-nowrap"
+                                    >
+                                      <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                      <span className="truncate font-mono tabular-nums">
+                                        {shopEligibility.reason === 'beat_arena'
+                                          ? `Completa A${shopEligibility.requiredArena}`
+                                          : `Desbloquea A${shopEligibility.requiredArena}`}{' '}
+                                        · {coinPrice} mon.
+                                      </span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        if (!shopEligibility.allowed || !canAfford) return;
+                                        onBuyCardWithCoins?.(unit.id);
+                                        setShopPurchaseToast({ cardId: unit.id, name: unit.name });
+                                      }}
+                                      disabled={!canAfford}
+                                      className={`w-full py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
+                                        isFreeShop
+                                          ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950'
+                                          : canAfford
+                                          ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                                          : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+                                      }`}
+                                    >
+                                      <Coins className="w-3.5 h-3.5 shrink-0" />
+                                      <span className="font-mono tabular-nums">
+                                        {isFreeShop
+                                          ? 'Gratis · 0 mon.'
+                                          : canAfford
+                                          ? `Comprar · ${coinPrice} monedas`
+                                          : `Faltan monedas (${coinPrice})`}
+                                      </span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -2619,7 +2832,9 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                   </div>
                 ) : !shopElig.allowed ? (
                   <div className="px-4 py-2.5 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-300 text-xs font-bold">
-                    Requiere completar Arena {shopElig.requiredArena}
+                    {shopElig.reason === 'beat_arena'
+                      ? `Requiere completar Arena ${shopElig.requiredArena}`
+                      : `Requiere desbloquear Arena ${shopElig.requiredArena}`}
                   </div>
                 ) : (
                   <button

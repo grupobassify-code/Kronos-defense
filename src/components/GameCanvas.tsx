@@ -85,6 +85,8 @@ function safeDrawImage(
   }
 }
 
+const SHOWDOWN_HOLD_MS = 2000;
+
 export const GameCanvas: React.FC<GameCanvasProps> = ({
   map,
   placedUnits,
@@ -107,9 +109,38 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [, setImageLoadTick] = useState(0);
+  const [showdownHold, setShowdownHold] = useState<{
+    instanceId: string;
+    pixelX: number;
+    pixelY: number;
+    progress: number;
+  } | null>(null);
+
+  const holdRafRef = useRef<number | null>(null);
+  const holdActiveRef = useRef<{ instanceId: string; startTime: number } | null>(null);
+  const suppressClickRef = useRef<boolean>(false);
+  const onTriggerShowdownRef = useRef(onTriggerShowdown);
+  onTriggerShowdownRef.current = onTriggerShowdown;
 
   const canvasWidth = map.cols * map.tileSize;
   const canvasHeight = map.rows * map.tileSize;
+
+  const cancelShowdownHold = () => {
+    if (holdRafRef.current !== null) {
+      cancelAnimationFrame(holdRafRef.current);
+      holdRafRef.current = null;
+    }
+    holdActiveRef.current = null;
+    setShowdownHold(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (holdRafRef.current !== null) {
+        cancelAnimationFrame(holdRafRef.current);
+      }
+    };
+  }, []);
 
   // Subscribe to async image load events so canvas redraws immediately when web assets arrive
   useEffect(() => {
@@ -128,92 +159,118 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     getImage('/assets/images/attack_orbital_beam_1791483770365.jpg');
   }, [map]);
 
-  // Handle canvas mouse move
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getGridCoordsFromClient = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvasWidth / rect.width;
     const scaleY = canvasHeight / rect.height;
+    const x = (clientX - rect.x) * scaleX;
+    const y = (clientY - rect.y) * scaleY;
+    const gridX = Math.floor(x / map.tileSize);
+    const gridY = Math.floor(y / map.tileSize);
+    if (gridX < 0 || gridX >= map.cols || gridY < 0 || gridY >= map.rows) return null;
+    return { gridX, gridY };
+  };
 
-    const mouseX = (e.clientX - rect.x) * scaleX;
-    const mouseY = (e.clientY - rect.y) * scaleY;
-
-    const gridX = Math.floor(mouseX / map.tileSize);
-    const gridY = Math.floor(mouseY / map.tileSize);
-
-    if (gridX >= 0 && gridX < map.cols && gridY >= 0 && gridY < map.rows) {
-      if (!hoverTile || hoverTile.x !== gridX || hoverTile.y !== gridY) {
-        onHoverTileChange({ x: gridX, y: gridY });
+  // Handle canvas pointer move
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const coords = getGridCoordsFromClient(e.clientX, e.clientY);
+    if (coords) {
+      if (!hoverTile || hoverTile.x !== coords.gridX || hoverTile.y !== coords.gridY) {
+        onHoverTileChange({ x: coords.gridX, y: coords.gridY });
+      }
+      if (holdActiveRef.current) {
+        const activeUnit = placedUnits.find((u) => u.instanceId === holdActiveRef.current?.instanceId);
+        if (!activeUnit || activeUnit.gridX !== coords.gridX || activeUnit.gridY !== coords.gridY) {
+          cancelShowdownHold();
+        }
       }
     } else {
       if (hoverTile) onHoverTileChange(null);
+      if (holdActiveRef.current) cancelShowdownHold();
     }
   };
 
-  const handleMouseLeave = () => {
+  const handlePointerLeave = () => {
     onHoverTileChange(null);
+    cancelShowdownHold();
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    if (activeToolId || placementBlueprintId || !onTriggerShowdown) return;
+
+    const coords = getGridCoordsFromClient(e.clientX, e.clientY);
+    if (!coords) return;
+
+    const clickedUnit = placedUnits.find((u) => u.gridX === coords.gridX && u.gridY === coords.gridY);
+    if (!clickedUnit || !clickedUnit.showdownReady) return;
+
+    cancelShowdownHold();
+    const startTime = performance.now();
+    const instanceId = clickedUnit.instanceId;
+    const pixelX = clickedUnit.pixelX;
+    const pixelY = clickedUnit.pixelY;
+    holdActiveRef.current = { instanceId, startTime };
+    setShowdownHold({ instanceId, pixelX, pixelY, progress: 0 });
+
+    const step = (now: number) => {
+      if (!holdActiveRef.current || holdActiveRef.current.instanceId !== instanceId) return;
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / SHOWDOWN_HOLD_MS);
+      if (progress >= 1) {
+        cancelShowdownHold();
+        suppressClickRef.current = true;
+        window.setTimeout(() => {
+          suppressClickRef.current = false;
+        }, 250);
+        onTriggerShowdownRef.current?.(instanceId);
+        return;
+      }
+      setShowdownHold({ instanceId, pixelX, pixelY, progress });
+      holdRafRef.current = requestAnimationFrame(step);
+    };
+
+    holdRafRef.current = requestAnimationFrame(step);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const hadHold = !!holdActiveRef.current;
+    cancelShowdownHold();
+    // On touch devices, releasing before 2s might skip synthetic click after a long press (~0.6s-1.9s)
+    if (hadHold && e.pointerType !== 'mouse' && !suppressClickRef.current) {
+      const coords = getGridCoordsFromClient(e.clientX, e.clientY);
+      if (coords) {
+        const clickedUnit = placedUnits.find((u) => u.gridX === coords.gridX && u.gridY === coords.gridY);
+        if (clickedUnit) {
+          suppressClickRef.current = true;
+          window.setTimeout(() => {
+            suppressClickRef.current = false;
+          }, 180);
+          onSelectUnit(clickedUnit);
+        }
+      }
+    }
   };
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvasWidth / rect.width;
-    const scaleY = canvasHeight / rect.height;
-
-    const mouseX = (e.clientX - rect.x) * scaleX;
-    const mouseY = (e.clientY - rect.y) * scaleY;
-
-    const gridX = Math.floor(mouseX / map.tileSize);
-    const gridY = Math.floor(mouseY / map.tileSize);
-
-    if (gridX >= 0 && gridX < map.cols && gridY >= 0 && gridY < map.rows) {
-      // Check if clicked on placed unit
-      const clickedUnit = placedUnits.find((u) => u.gridX === gridX && u.gridY === gridY);
-      if (activeToolId || placementBlueprintId) {
-        // Tool or placement attempt
-        onTileClick(gridX, gridY);
-      } else if (clickedUnit) {
-        if (clickedUnit.showdownReady && onTriggerShowdown) {
-          onTriggerShowdown(clickedUnit.instanceId);
-        }
-        onSelectUnit(clickedUnit);
-      } else {
-        // Clicked empty or path tile
-        onTileClick(gridX, gridY);
-      }
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
     }
-  };
+    const coords = getGridCoordsFromClient(e.clientX, e.clientY);
+    if (!coords) return;
+    const { gridX, gridY } = coords;
 
-  const handleTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.changedTouches[0] || e.touches[0];
-    if (!touch) return;
-
-    const scaleX = canvasWidth / rect.width;
-    const scaleY = canvasHeight / rect.height;
-
-    const touchX = (touch.clientX - rect.x) * scaleX;
-    const touchY = (touch.clientY - rect.y) * scaleY;
-
-    const gridX = Math.floor(touchX / map.tileSize);
-    const gridY = Math.floor(touchY / map.tileSize);
-
-    if (gridX >= 0 && gridX < map.cols && gridY >= 0 && gridY < map.rows) {
-      const clickedUnit = placedUnits.find((u) => u.gridX === gridX && u.gridY === gridY);
-      if (activeToolId || placementBlueprintId) {
-        onTileClick(gridX, gridY);
-      } else if (clickedUnit) {
-        if (clickedUnit.showdownReady && onTriggerShowdown) {
-          onTriggerShowdown(clickedUnit.instanceId);
-        }
-        onSelectUnit(clickedUnit);
-      } else {
-        onTileClick(gridX, gridY);
-      }
+    // Single click ALWAYS opens Upgrades Inspector if clicking on a unit (never auto-fires Showdown)
+    const clickedUnit = placedUnits.find((u) => u.gridX === gridX && u.gridY === gridY);
+    if (activeToolId || placementBlueprintId) {
+      onTileClick(gridX, gridY);
+    } else if (clickedUnit) {
+      onSelectUnit(clickedUnit);
+    } else {
+      onTileClick(gridX, gridY);
     }
   };
 
@@ -246,6 +303,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       const isHovered = !!hoverTile && hoverTile.x === unit.gridX && hoverTile.y === unit.gridY;
       drawUnit(ctx, unit, selectedUnit?.instanceId === unit.instanceId, isHovered);
     });
+
+    // 6b. Draw 2s Showdown Hold Charge Ring when holding a Showdown-ready character
+    if (showdownHold) {
+      drawShowdownHoldRing(ctx, showdownHold.pixelX, showdownHold.pixelY, showdownHold.progress);
+    }
 
     // 7. Draw Active Enemies (with AI boss portraits)
     activeEnemies.forEach((enemy) => {
@@ -286,10 +348,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         ref={canvasRef}
         width={canvasWidth}
         height={canvasHeight}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={cancelShowdownHold}
         onClick={handleClick}
-        onTouchEnd={handleTouch}
+        onContextMenu={(e) => e.preventDefault()}
         className={`block ${cursorClass} max-w-full h-auto aspect-[18/11] touch-manipulation`}
       />
     </div>
@@ -1570,6 +1635,60 @@ function drawShowdownOverlay(
     ctx.fillStyle = `rgba(16, 185, 129, ${0.24 * fade})`;
     ctx.fillRect(0, 0, width, height);
   }
+
+  ctx.restore();
+}
+
+function drawShowdownHoldRing(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  progress: number
+) {
+  const p = Math.max(0, Math.min(1, progress));
+  const r = 34;
+  const startAngle = -Math.PI / 2;
+  const endAngle = startAngle + Math.PI * 2 * p;
+  const remainingSec = Math.max(0, 2.0 * (1 - p)).toFixed(1);
+
+  ctx.save();
+
+  // Subtle dark track
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.85)';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  // Bright golden progress arc
+  ctx.beginPath();
+  ctx.arc(x, y, r, startAngle, endAngle);
+  ctx.strokeStyle = '#FACC15';
+  ctx.lineWidth = 4.5;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Compact countdown pill above character
+  const label = `SHOWDOWN ${remainingSec}s`;
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  const tw = ctx.measureText(label).width;
+  const pw = tw + 12;
+  const ph = 18;
+  const px = x - pw / 2;
+  const py = y - r - 22;
+
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+  ctx.strokeStyle = '#FACC15';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(px, py, pw, ph, 6);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#FEF08A';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, x, py + ph / 2);
 
   ctx.restore();
 }
