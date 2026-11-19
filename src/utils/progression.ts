@@ -1,4 +1,4 @@
-import { PlayerProgression, PackReward, Mission, UnitBlueprint } from '../types/game';
+import { PlayerProgression, PackReward, Mission, UnitBlueprint, ShopPackDefinition, ShopPackTierId } from '../types/game';
 import { UNITS } from '../data/units';
 import { INITIAL_MISSIONS } from '../data/missions';
 
@@ -159,7 +159,8 @@ export function loadProgression(): { progression: PlayerProgression; missions: M
         return m;
       });
 
-      return { progression: prog, missions };
+      const syncedMissions = syncMissionsWithProgression(missions, prog);
+      return { progression: prog, missions: syncedMissions };
     }
   } catch (err) {
     console.error('Failed to load progression from localStorage:', err);
@@ -320,9 +321,229 @@ export function openBoosterPack(currentUnlockedIds: string[], highestArenaUnlock
   return rewards;
 }
 
-export const SHOP_PACK_COIN_PRICE = 850;
+export const SHOP_PACK_COIN_PRICE = 750;
+export const SHOP_BUNDLE_3_PACKS_PRICE = 1950;
 export const SHOP_SP_COIN_PRICE = 480;
 export const SHOP_SP_BUNDLE_AMOUNT = 100;
+
+export const SHOP_PACK_TIERS: ShopPackDefinition[] = [
+  {
+    id: 'classic',
+    name: 'Sobre Crono Clásico',
+    subtitle: 'Ideal para sumar PH y cazar cartas de tu arena actual.',
+    priceCoins: 750,
+    cardsSummary: '35% Carta Nueva + 2x PH',
+    spRangeLabel: '45 - 80 PH',
+    guaranteeLabel: 'Sin repetidos',
+    badgeText: 'Estándar'
+  },
+  {
+    id: 'elite',
+    name: 'Sobre Élite de Batalla',
+    subtitle: 'Asegura 1 héroe nuevo y reserva sólida de Puntos de Habilidad.',
+    priceCoins: 1650,
+    cardsSummary: '1 Carta Garantizada (Esp.+)',
+    spRangeLabel: '75 - 115 PH',
+    guaranteeLabel: '100% Héroe Nuevo',
+    badgeText: 'Garantizado'
+  },
+  {
+    id: 'royal',
+    name: 'Cofre Real Táctico',
+    subtitle: 'Doble reclutamiento con al menos 1 Épica o superior garantizada.',
+    priceCoins: 3200,
+    cardsSummary: '2 Cartas (1 Épica+ segura)',
+    spRangeLabel: '130 - 190 PH',
+    guaranteeLabel: 'Épica o Superior',
+    badgeText: 'Alto Valor'
+  },
+  {
+    id: 'cosmic',
+    name: 'Megacaja Cósmica',
+    subtitle: 'Botín máximo con 3 cartas nuevas y Legendaria o Divinidad segura.',
+    priceCoins: 5900,
+    cardsSummary: '3 Cartas (1 Legendaria/Divina)',
+    spRangeLabel: '250 - 350 PH',
+    guaranteeLabel: 'Legendaria / Divina',
+    badgeText: 'Supremo'
+  }
+];
+
+/**
+ * Generates rewards for a specific Shop Pack Tier without duplicate cards.
+ */
+export function openShopTierPack(
+  tierId: ShopPackTierId,
+  currentUnlockedIds: string[],
+  highestArenaUnlocked: number = 1,
+  completedArenaLevels: number[] = []
+): PackReward[] {
+  if (tierId === 'classic') {
+    return openBoosterPack(currentUnlockedIds, highestArenaUnlocked);
+  }
+
+  const rewards: PackReward[] = [];
+  const allCardIds = Object.keys(UNITS);
+
+  const isEligibleUnowned = (id: string, taken: Set<string>) => {
+    if (taken.has(id) || currentUnlockedIds.includes(id)) return false;
+    const u = UNITS[id];
+    if (!u) return false;
+    if (u.arenaUnlockLevel && u.arenaUnlockLevel > highestArenaUnlocked) return false;
+    if (u.rarity === 'divinidad') {
+      const reqArena = u.arenaUnlockLevel || 1;
+      const done = reqArena < highestArenaUnlocked || completedArenaLevels.includes(reqArena);
+      if (!done) return false;
+    }
+    return true;
+  };
+
+  const takenIds = new Set<string>();
+
+  const pickCardByRarities = (preferredRarities: string[], fallbackAll = true): PackReward => {
+    let candidates = allCardIds.filter((id) => {
+      if (!isEligibleUnowned(id, takenIds)) return false;
+      const u = UNITS[id];
+      return u && preferredRarities.includes(u.rarity);
+    });
+
+    if (candidates.length === 0 && fallbackAll) {
+      candidates = allCardIds.filter((id) => isEligibleUnowned(id, takenIds));
+    }
+
+    if (candidates.length === 0) {
+      const fallbackSp = tierId === 'cosmic' ? 180 : tierId === 'royal' ? 140 : 110;
+      return { type: 'skill_points', skillPoints: fallbackSp };
+    }
+
+    const chosenId = candidates[Math.floor(Math.random() * candidates.length)];
+    takenIds.add(chosenId);
+    const bp = UNITS[chosenId];
+    return {
+      type: 'card',
+      cardId: chosenId,
+      cardName: bp?.name || 'Nueva Carta',
+      rarity: bp?.rarity || 'especial',
+      isDuplicate: false
+    };
+  };
+
+  if (tierId === 'elite') {
+    const spAmount = 75 + Math.floor(Math.random() * 9) * 5; // 75-115
+    rewards.push({ type: 'skill_points', skillPoints: spAmount });
+    const roll = Math.random();
+    const target =
+      roll < 0.55
+        ? ['especial', 'rara']
+        : roll < 0.88
+        ? ['epica']
+        : ['legendaria', 'divinidad'];
+    rewards.push(pickCardByRarities(target));
+    rewards.push({ type: 'skill_points', skillPoints: 30 + Math.floor(Math.random() * 4) * 5 });
+  } else if (tierId === 'royal') {
+    const spAmount = 130 + Math.floor(Math.random() * 13) * 5; // 130-190
+    rewards.push({ type: 'skill_points', skillPoints: spAmount });
+    // Slot 2: Guaranteed Epic or higher
+    const rollHigh = Math.random();
+    rewards.push(
+      pickCardByRarities(rollHigh < 0.72 ? ['epica'] : rollHigh < 0.93 ? ['legendaria'] : ['divinidad'])
+    );
+    // Slot 3: Second guaranteed card (any rarity, leaning especial/epica)
+    rewards.push(pickCardByRarities(['especial', 'rara', 'epica', 'comun', 'legendaria']));
+  } else {
+    // Cosmic Megacaja: 1 SP cache + 3 guaranteed cards (1 Legendary/Divinity + 1 Epic+ + 1 any)
+    const spAmount = 250 + Math.floor(Math.random() * 21) * 5; // 250-350
+    rewards.push({ type: 'skill_points', skillPoints: spAmount });
+    rewards.push(
+      pickCardByRarities(Math.random() < 0.72 ? ['legendaria'] : ['divinidad', 'legendaria'])
+    );
+    rewards.push(pickCardByRarities(['epica', 'legendaria', 'divinidad']));
+    rewards.push(pickCardByRarities(['especial', 'rara', 'epica', 'comun', 'legendaria']));
+  }
+
+  return rewards;
+}
+
+/**
+ * Synchronizes progression-derived missions with current lifetime stats, arenas beaten, and collection.
+ */
+export function syncMissionsWithProgression(missions: Mission[], prog: PlayerProgression): Mission[] {
+  const completedArenasCount = (prog.completedArenaLevels || []).length;
+  const maxLevelCount = Object.values(prog.cardMasteryLevels || {}).filter((lv) => lv >= 10).length;
+  const unlockedCount = (prog.unlockedCardIds || []).length;
+  const highWave = prog.highScoreWave || 0;
+  const totalWaves = prog.lifetimeWaves || 0;
+  const totalKills = prog.lifetimeKills || 0;
+  const totalGold = prog.lifetimeGold || 0;
+
+  let anyChanged = false;
+  const updated = missions.map((m) => {
+    let derived: number | null = null;
+    switch (m.id) {
+      case 'mission_first_battle':
+      case 'mission_wave_5':
+      case 'mission_wave_15':
+      case 'mission_eclipse_victory':
+      case 'mission_wave_30':
+      case 'mission_wave_45':
+      case 'mission_wave_65':
+        derived = highWave;
+        break;
+      case 'mission_total_waves_100':
+      case 'mission_total_waves_350':
+        derived = totalWaves;
+        break;
+      case 'mission_recon_kills':
+      case 'mission_slayer_150':
+      case 'mission_slayer_500':
+      case 'mission_slayer_1500':
+      case 'mission_slayer_5000':
+      case 'mission_slayer_15000':
+        derived = totalKills;
+        break;
+      case 'mission_arena_2':
+      case 'mission_arena_4':
+      case 'mission_arena_7':
+      case 'mission_arena_10':
+      case 'mission_arena_13':
+      case 'mission_arena_all_15':
+        derived = completedArenasCount;
+        break;
+      case 'mission_wealth':
+      case 'mission_wealth_25k':
+      case 'mission_wealth_100k':
+      case 'mission_wealth_350k':
+        derived = totalGold;
+        break;
+      case 'mission_collect_12':
+      case 'mission_collect_30':
+      case 'mission_collect_60':
+      case 'mission_collect_100':
+        derived = unlockedCount;
+        break;
+      case 'mission_max_level_cards_3':
+        derived = maxLevelCount;
+        break;
+      default:
+        break;
+    }
+
+    if (derived === null) return m;
+    const nextCount = Math.max(m.currentCount, derived);
+    const nextCompleted = m.completed || nextCount >= m.targetCount;
+    if (nextCount !== m.currentCount || nextCompleted !== m.completed) {
+      anyChanged = true;
+      return {
+        ...m,
+        currentCount: nextCount,
+        completed: nextCompleted
+      };
+    }
+    return m;
+  });
+
+  return anyChanged ? updated : missions;
+}
 
 /**
  * Checks whether an arena has been beaten/completed at least once.

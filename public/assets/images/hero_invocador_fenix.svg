@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="72%">
+      <stop offset="0%" stop-color="#9A3412"/>
+      <stop offset="62%" stop-color="#0B1120"/>
+      <stop offset="100%" stop-color="#140502"/>
+    </radialGradient>
+    <linearGradient id="armorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="55%" stop-color="#B91C1C"/>
+      <stop offset="100%" stop-color="#090D16"/>
+    </linearGradient>
+    <linearGradient id="helmGrad" x1="15%" y1="0%" x2="85%" y2="100%">
+      <stop offset="0%" stop-color="#FEF08A"/>
+      <stop offset="40%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B91C1C"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="35%" stop-color="#FEF08A"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="256" cy="210" r="156" fill="none" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="6 10" opacity="0.35"/>
+  <circle cx="256" cy="210" r="128" fill="none" stroke="#FEF08A" stroke-width="2" opacity="0.28"/>
+  <circle cx="431" cy="265" r="2.0" fill="#FEF08A" opacity="0.25"/>
+  <circle cx="72" cy="384" r="3.4" fill="#F59E0B" opacity="0.45"/>
+  <circle cx="145" cy="113" r="4.8" fill="#FEF08A" opacity="0.65"/>
+  <circle cx="218" cy="232" r="6.2" fill="#F59E0B" opacity="0.25"/>
+  <circle cx="291" cy="351" r="2.0" fill="#FEF08A" opacity="0.45"/>
+  <circle cx="364" cy="80" r="3.4" fill="#F59E0B" opacity="0.65"/>
+  <circle cx="437" cy="199" r="4.8" fill="#FEF08A" opacity="0.25"/>
+  <circle cx="78" cy="318" r="6.2" fill="#F59E0B" opacity="0.45"/>
+  <circle cx="151" cy="47" r="2.0" fill="#FEF08A" opacity="0.65"/>
+  <circle cx="224" cy="166" r="3.4" fill="#F59E0B" opacity="0.25"/>
+  <circle cx="297" cy="285" r="4.8" fill="#FEF08A" opacity="0.45"/>
+  <circle cx="370" cy="404" r="6.2" fill="#F59E0B" opacity="0.65"/>
+  <circle cx="443" cy="133" r="2.0" fill="#FEF08A" opacity="0.25"/>
+  <circle cx="84" cy="252" r="3.4" fill="#F59E0B" opacity="0.45"/>
+  <!-- Sculpted Armor Torso & Pauldrons -->
+  <path d="M64,506 C76,342 146,274 256,274 C366,274 436,342 448,506 Z" fill="url(#armorGrad)" stroke="#FEF08A" stroke-width="4"/>
+  <path d="M68,376 Q128,284 196,310 L176,372 Z" fill="url(#helmGrad)" stroke="#FEF08A" stroke-width="3"/>
+  <path d="M444,376 Q384,284 316,310 L336,372 Z" fill="url(#helmGrad)" stroke="#FEF08A" stroke-width="3"/>
+  <path d="M164,318 L256,386 L348,318" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+  <polygon points="256,346 280,382 256,418 232,382" fill="url(#accentGrad)" stroke="#090D16" stroke-width="4" filter="url(#glow)"/>
+  <rect x="232" y="256" width="48" height="52" rx="12" fill="#0F172A"/><path d="M165,260 C72,185 52,110 88,65 C130,115 165,160 198,225 Z" fill="url(#accentGrad)" opacity="0.88" stroke="#FEF08A" stroke-width="3"/><path d="M347,260 C440,185 460,110 424,65 C382,115 347,160 314,225 Z" fill="url(#accentGrad)" opacity="0.88" stroke="#FEF08A" stroke-width="3"/><path d="M192,202 C192,140 220,116 256,116 C292,116 320,140 320,202 C320,248 292,276 256,276 C220,276 192,248 192,202 Z" fill="url(#helmGrad)" stroke="#FEF08A" stroke-width="3.5"/><ellipse cx="256" cy="210" rx="46" ry="52" fill="#111827" stroke="#F59E0B" stroke-width="2"/><path d="M224,196 L246,204 L228,210 Z" fill="#FEF08A" filter="url(#glow)"/><path d="M288,196 L266,204 L284,210 Z" fill="#FEF08A" filter="url(#glow)"/><path d="M242,242 Q256,248 270,242" fill="none" stroke="#FEF08A" stroke-width="2.5" stroke-linecap="round" opacity="0.75"/><polygon points="188,158 206,88 234,132 256,64 278,132 306,88 324,158 256,144" fill="url(#accentGrad)" stroke="#FFFFFF" stroke-width="2.5"/>
+  <line x1="404" y1="96" x2="364" y2="468" stroke="#E2E8F0" stroke-width="8" stroke-linecap="round"/><polygon points="406,52 430,122 380,122" fill="#FEF08A" stroke="#F59E0B" stroke-width="3" filter="url(#glow)"/><circle cx="404" cy="126" r="14" fill="#F59E0B" stroke="#FFFFFF" stroke-width="3"/>
+  <!-- Rim Vignette -->
+  <rect x="6" y="6" width="500" height="500" rx="26" fill="none" stroke="#F59E0B" stroke-width="3" opacity="0.35"/>
+</svg>

@@ -18,7 +18,8 @@ import {
   PlayerProgression,
   Mission,
   PackReward,
-  UnitBlueprint
+  UnitBlueprint,
+  ShopPackTierId
 } from './types/game';
 import { UNITS, getDivinityForArena, getArenaGiftCharacter } from './data/units';
 import { ENEMIES } from './data/enemies';
@@ -32,11 +33,15 @@ import {
   saveProgression,
   getLevelStatMultiplier,
   openBoosterPack,
+  openShopTierPack,
+  syncMissionsWithProgression,
   LEVEL_UP_COSTS,
   getKillsRequiredForPack,
   getCardShopPrice,
   canBuyCardInShop,
   SHOP_PACK_COIN_PRICE,
+  SHOP_PACK_TIERS,
+  SHOP_BUNDLE_3_PACKS_PRICE,
   SHOP_SP_COIN_PRICE,
   SHOP_SP_BUNDLE_AMOUNT
 } from './utils/progression';
@@ -64,6 +69,19 @@ export default function App() {
   useEffect(() => {
     saveProgression(progression, missions);
   }, [progression, missions]);
+
+  // Synchronize progression-derived missions (kills, waves, arenas, gold, cards, lv.10)
+  useEffect(() => {
+    setMissions((prev) => syncMissionsWithProgression(prev, progression));
+  }, [
+    progression.lifetimeKills,
+    progression.lifetimeWaves,
+    progression.lifetimeGold,
+    progression.highScoreWave,
+    progression.unlockedCardIds.length,
+    progression.completedArenaLevels?.length,
+    progression.cardMasteryLevels
+  ]);
 
   // AI Procedural Music: automatically play Menu theme in Cards hub, Battle theme in Battle screen
   useEffect(() => {
@@ -482,13 +500,25 @@ export default function App() {
 
     setMissions((missionsList) =>
       missionsList.map((m) => {
-        if (m.id === 'mission_recon_kills' || m.id === 'mission_slayer_150') {
+        if (
+          m.id === 'mission_recon_kills' ||
+          m.id === 'mission_slayer_150' ||
+          m.id === 'mission_slayer_500' ||
+          m.id === 'mission_slayer_1500' ||
+          m.id === 'mission_slayer_5000' ||
+          m.id === 'mission_slayer_15000'
+        ) {
           const nextCount = m.currentCount + 1;
-          return { ...m, currentCount: nextCount, completed: nextCount >= m.targetCount };
+          return { ...m, currentCount: nextCount, completed: m.completed || nextCount >= m.targetCount };
         }
-        if (enemy.isBoss && m.id === 'mission_defeat_boss') {
+        if (
+          enemy.isBoss &&
+          (m.id === 'mission_defeat_boss' ||
+            m.id === 'mission_boss_hunter_10' ||
+            m.id === 'mission_boss_slayer_35')
+        ) {
           const nextCount = m.currentCount + 1;
-          return { ...m, currentCount: nextCount, completed: nextCount >= m.targetCount };
+          return { ...m, currentCount: nextCount, completed: m.completed || nextCount >= m.targetCount };
         }
         return m;
       })
@@ -497,6 +527,22 @@ export default function App() {
 
   // Trigger Showdown
   const handleTriggerShowdown = useCallback((instanceId: string) => {
+    const targetUnit = stateRef.current.placedUnits.find((u) => u.instanceId === instanceId);
+    const targetBp = targetUnit ? UNITS[targetUnit.blueprintId] : null;
+    const targetLevel = targetUnit ? progression.cardMasteryLevels[targetUnit.blueprintId] || 1 : 1;
+    const targetMastery = getLevelStatMultiplier(targetLevel);
+    if (targetUnit && targetUnit.showdownReady && targetBp && targetMastery.isShowdownUnlocked) {
+      setMissions((missionsList) =>
+        missionsList.map((m) => {
+          if (m.id === 'mission_showdown_master_25') {
+            const nextCount = m.currentCount + 1;
+            return { ...m, currentCount: nextCount, completed: m.completed || nextCount >= m.targetCount };
+          }
+          return m;
+        })
+      );
+    }
+
     setPlacedUnits((prevUnits) => {
       const unit = prevUnits.find((u) => u.instanceId === instanceId);
       if (!unit || !unit.showdownReady) return prevUnits;
@@ -1351,6 +1397,355 @@ export default function App() {
             distanceTraveled: Math.max(0, e.distanceTraveled - 120)
           }))
         );
+      } else if (bp.id === 'centinela_acero') {
+        setActiveShowdownVFX({ type: 'meteor', progress: 0 });
+        sounds.playShoot('bullet');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({ ...e, currentHealth: Math.max(0, e.currentHealth - 240) }))
+        );
+      } else if (bp.id === 'ballestero_real') {
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        sounds.playShoot('beam');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({ ...e, currentHealth: Math.max(0, e.currentHealth - 290) }))
+        );
+      } else if (bp.id === 'granadero_tactico') {
+        setActiveShowdownVFX({ type: 'supernova', progress: 0 });
+        sounds.playShoot('fireball');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({ ...e, currentHealth: Math.max(0, e.currentHealth - 310) }))
+        );
+      } else if (bp.id === 'vigia_bosque') {
+        setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
+        sounds.playShoot('spore');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 210),
+            slowUntil: 4.0,
+            slowMultiplier: 0.45
+          }))
+        );
+      } else if (bp.id === 'mercader_rondas') {
+        setActiveShowdownVFX({ type: 'hyperdrive', progress: 0 });
+        sounds.playCoin();
+        setGold((g) => g + 70);
+        setTotalGoldEarned((g) => g + 70);
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.3 : 0.6)
+          }))
+        );
+      } else if (bp.id === 'soldado_plasma') {
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        sounds.playShoot('laser');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({ ...e, currentHealth: Math.max(0, e.currentHealth - 260) }))
+        );
+      } else if (bp.id === 'zapador_mina') {
+        setActiveShowdownVFX({ type: 'meteor', progress: 0 });
+        sounds.playShoot('missile');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 300),
+            distanceTraveled: Math.max(0, e.distanceTraveled - 55)
+          }))
+        );
+      } else if (bp.id === 'escudero_luz') {
+        setActiveShowdownVFX({ type: 'hyperdrive', progress: 0 });
+        sounds.playPlace();
+        setBaseHealth((hp) => Math.min(maxBaseHealth, hp + 1));
+        return prevUnits.map((u) => ({
+          ...u,
+          boostedUntil: 5.0,
+          showdownReady: u.instanceId === instanceId ? false : u.showdownReady,
+          showdownCooldownTimer:
+            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult : u.showdownCooldownTimer
+        }));
+      } else if (bp.id === 'lancero_solar') {
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        sounds.playShoot('beam');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 460),
+            burnUntil: 4.0,
+            burnDps: 25
+          }))
+        );
+      } else if (bp.id === 'cazador_sombras') {
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        sounds.playShoot('laser');
+        setActiveEnemies((prevEnemies) => {
+          if (prevEnemies.length === 0) return prevEnemies;
+          const foremost = prevEnemies.reduce((max, e) => (e.distanceTraveled > max.distanceTraveled ? e : max));
+          return prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - (e.instanceId === foremost.instanceId ? 650 : 300))
+          }));
+        });
+      } else if (bp.id === 'pirotecnico_brasa') {
+        setActiveShowdownVFX({ type: 'supernova', progress: 0 });
+        sounds.playShoot('fireball');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 430),
+            burnUntil: 5.0,
+            burnDps: 35
+          }))
+        );
+      } else if (bp.id === 'torre_tesla_v2') {
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        sounds.playShoot('laser');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 390),
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.4 : 0.8)
+          }))
+        );
+      } else if (bp.id === 'botanico_veneno') {
+        setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
+        sounds.playShoot('spore');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 330),
+            burnUntil: 6.0,
+            burnDps: 35
+          }))
+        );
+      } else if (bp.id === 'banquero_crono') {
+        setActiveShowdownVFX({ type: 'hyperdrive', progress: 0 });
+        sounds.playCoin();
+        setGold((g) => g + 135);
+        setTotalGoldEarned((g) => g + 135);
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            slowUntil: 3.0,
+            slowMultiplier: 0.65
+          }))
+        );
+      } else if (bp.id === 'artillero_doble') {
+        setActiveShowdownVFX({ type: 'meteor', progress: 0 });
+        sounds.playShoot('multishot');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({ ...e, currentHealth: Math.max(0, e.currentHealth - 420) }))
+        );
+      } else if (bp.id === 'paladin_estelar') {
+        setActiveShowdownVFX({ type: 'hyperdrive', progress: 0 });
+        sounds.playShowdown();
+        setBaseHealth((hp) => Math.min(maxBaseHealth, hp + 2));
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({ ...e, currentHealth: Math.max(0, e.currentHealth - 540) }))
+        );
+        return prevUnits.map((u) => ({
+          ...u,
+          boostedUntil: 6.0,
+          showdownReady: u.instanceId === instanceId ? false : u.showdownReady,
+          showdownCooldownTimer:
+            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult : u.showdownCooldownTimer
+        }));
+      } else if (bp.id === 'asesino_espectral') {
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        sounds.playShoot('beam');
+        setActiveEnemies((prevEnemies) => {
+          if (prevEnemies.length === 0) return prevEnemies;
+          const bossOrStrongest =
+            prevEnemies.find((e) => e.isBoss) ||
+            prevEnemies.reduce((max, e) => (e.currentHealth > max.currentHealth ? e : max));
+          return prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - (e.instanceId === bossOrStrongest.instanceId ? 1250 : 520))
+          }));
+        });
+      } else if (bp.id === 'criomante_abismo') {
+        setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
+        sounds.playShoot('ice');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 560),
+            armor: Math.max(0, e.armor - 6),
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.5 : 1.2)
+          }))
+        );
+      } else if (bp.id === 'bombardero_orbital') {
+        setActiveShowdownVFX({ type: 'meteor', progress: 0 });
+        sounds.playShoot('missile');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({ ...e, currentHealth: Math.max(0, e.currentHealth - 760) }))
+        );
+      } else if (bp.id === 'maestro_runas') {
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        sounds.playShoot('resonance');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 640),
+            armor: Math.max(0, e.armor - 10)
+          }))
+        );
+      } else if (bp.id === 'forjador_titanio') {
+        setActiveShowdownVFX({ type: 'meteor', progress: 0 });
+        sounds.playShoot('fireball');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 680),
+            armor: 0,
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.5 : 1.1)
+          }))
+        );
+      } else if (bp.id === 'cazadora_viento') {
+        setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
+        sounds.playShoot('bullet');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 580),
+            distanceTraveled: Math.max(0, e.distanceTraveled - 90)
+          }))
+        );
+      } else if (bp.id === 'alquimista_esmeralda') {
+        setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
+        sounds.playShoot('spore');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 520),
+            armor: Math.max(0, e.armor - 8),
+            burnUntil: 6.0,
+            burnDps: 60
+          }))
+        );
+      } else if (bp.id === 'emperador_rayo') {
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        sounds.playShowdown();
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 1050),
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.5 : 1.1)
+          }))
+        );
+      } else if (bp.id === 'senor_cenizas') {
+        setActiveShowdownVFX({ type: 'supernova', progress: 0 });
+        sounds.playShowdown();
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 1120),
+            burnUntil: 7.0,
+            burnDps: 85
+          }))
+        );
+      } else if (bp.id === 'arquitecto_vacio') {
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        sounds.playShoot('portal');
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 1050),
+            distanceTraveled: Math.max(0, e.distanceTraveled - 130)
+          }))
+        );
+      } else if (bp.id === 'valquiria_aurora') {
+        setActiveShowdownVFX({ type: 'hyperdrive', progress: 0 });
+        sounds.playShowdown();
+        setBaseHealth((hp) => Math.min(maxBaseHealth, hp + 2));
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({ ...e, currentHealth: Math.max(0, e.currentHealth - 820) }))
+        );
+        return prevUnits.map((u) => ({
+          ...u,
+          boostedUntil: 7.0,
+          showdownReady: u.instanceId === instanceId ? false : u.showdownReady,
+          showdownCooldownTimer:
+            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult : u.showdownCooldownTimer
+        }));
+      } else if (bp.id === 'coloso_obsidiana') {
+        setActiveShowdownVFX({ type: 'meteor', progress: 0 });
+        sounds.playShowdown();
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 1180),
+            armor: Math.max(0, e.armor - 12),
+            freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.5 : 1.2)
+          }))
+        );
+      } else if (bp.id === 'francotirador_pulsar') {
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        sounds.playShowdown();
+        setActiveEnemies((prevEnemies) => {
+          if (prevEnemies.length === 0) return prevEnemies;
+          const bossOrStrongest =
+            prevEnemies.find((e) => e.isBoss) ||
+            prevEnemies.reduce((max, e) => (e.currentHealth > max.currentHealth ? e : max));
+          return prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - (e.instanceId === bossOrStrongest.instanceId ? 2400 : 700))
+          }));
+        });
+      } else if (bp.id === 'invocador_fenix') {
+        setActiveShowdownVFX({ type: 'supernova', progress: 0 });
+        sounds.playCoin();
+        setGold((g) => g + 120);
+        setTotalGoldEarned((g) => g + 120);
+        setBaseHealth((hp) => Math.min(maxBaseHealth, hp + 1));
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 1050),
+            burnUntil: 5.0,
+            burnDps: 45
+          }))
+        );
+      } else if (bp.id === 'maestro_tormenta') {
+        setActiveShowdownVFX({ type: 'blizzard', progress: 0 });
+        sounds.playShowdown();
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 940),
+            distanceTraveled: Math.max(0, e.distanceTraveled - 100),
+            slowUntil: 5.0,
+            slowMultiplier: 0.45
+          }))
+        );
+      } else if (bp.id === 'helios_celestial') {
+        setActiveShowdownVFX({ type: 'supernova', progress: 0 });
+        sounds.playShowdown();
+        setBaseHealth((hp) => Math.min(maxBaseHealth, hp + 2));
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => ({
+            ...e,
+            currentHealth: Math.max(0, e.currentHealth - 1650),
+            armor: 0,
+            burnUntil: 7.0,
+            burnDps: 90
+          }))
+        );
+      } else if (bp.id === 'nyx_abismo_eterno') {
+        setActiveShowdownVFX({ type: 'orbital', progress: 0 });
+        sounds.playShowdown();
+        setActiveEnemies((prevEnemies) =>
+          prevEnemies.map((e) => {
+            if (!e.isBoss && e.currentHealth / e.maxHealth <= 0.35) {
+              return { ...e, currentHealth: 0 };
+            }
+            return {
+              ...e,
+              currentHealth: Math.max(0, e.currentHealth - (e.isBoss ? 1750 : 950)),
+              freezeUntil: Math.max(e.freezeUntil, e.isBoss ? 0.7 : 1.5)
+            };
+          })
+        );
       }
 
       // Reset unit cooldown
@@ -1484,6 +1879,16 @@ export default function App() {
     setPlacedUnits((prev) => [...prev, ...unitsToAdd]);
     setSelectedUnitId(newUnit.instanceId);
     setSelectedBlueprintId(null);
+
+    setMissions((missionsList) =>
+      missionsList.map((m) => {
+        if (m.id === 'mission_deploy_units_50') {
+          const nextCount = m.currentCount + 1;
+          return { ...m, currentCount: nextCount, completed: m.completed || nextCount >= m.targetCount };
+        }
+        return m;
+      })
+    );
   };
 
   // Upgrade unit inside match (Tier 1 -> 2 -> 3)
@@ -1542,8 +1947,47 @@ export default function App() {
     setProgression((prev) => ({
       ...prev,
       unopenedPacks: prev.unopenedPacks + mission.rewardPacks,
+      savedCoins: (prev.savedCoins ?? 0) + (mission.rewardCoins || 0),
+      skillPoints: prev.skillPoints + (mission.rewardSkillPoints || 0),
       claimedMissionIds: [...prev.claimedMissionIds, missionId]
     }));
+  };
+
+  // Claim all completed unclaimed missions at once
+  const handleClaimAllMissions = () => {
+    const claimable = missions.filter((m) => m.completed && !m.claimed);
+    if (claimable.length === 0) return;
+
+    sounds.playUpgrade();
+
+    let totalPacks = 0;
+    let totalCoins = 0;
+    let totalSp = 0;
+    const idsToClaim = new Set<string>();
+
+    claimable.forEach((m) => {
+      totalPacks += m.rewardPacks;
+      totalCoins += m.rewardCoins || 0;
+      totalSp += m.rewardSkillPoints || 0;
+      idsToClaim.add(m.id);
+    });
+
+    setMissions((prev) =>
+      prev.map((m) => (idsToClaim.has(m.id) ? { ...m, claimed: true } : m))
+    );
+
+    setProgression((prev) => ({
+      ...prev,
+      unopenedPacks: prev.unopenedPacks + totalPacks,
+      savedCoins: (prev.savedCoins ?? 0) + totalCoins,
+      skillPoints: prev.skillPoints + totalSp,
+      claimedMissionIds: Array.from(new Set([...prev.claimedMissionIds, ...idsToClaim]))
+    }));
+
+    setKillToast(
+      `🏆 ¡${claimable.length} misiones reclamadas! +${totalPacks} Sobres${totalCoins > 0 ? ` · +${totalCoins} mon.` : ''}${totalSp > 0 ? ` · +${totalSp} PH` : ''}`
+    );
+    setTimeout(() => setKillToast(null), 4000);
   };
 
   // Story Mode: Open Pack with Clash Royale drop rates & automatic deck slotting
@@ -1577,6 +2021,16 @@ export default function App() {
         skillPoints: bonusSkillPoints
       };
     });
+
+    setMissions((missionsList) =>
+      missionsList.map((m) => {
+        if (m.id === 'mission_open_packs_10') {
+          const nextCount = m.currentCount + 1;
+          return { ...m, currentCount: nextCount, completed: m.completed || nextCount >= m.targetCount };
+        }
+        return m;
+      })
+    );
 
     return rewards;
   };
@@ -1677,12 +2131,12 @@ export default function App() {
     });
   }, []);
 
-  // Card Shop: Buy Chrono Booster Pack with saved Coins
+  // Card Shop: Buy Chrono Booster Pack with saved Coins (stockpile into unopenedPacks)
   const handleBuyPackWithCoins = useCallback(() => {
     setProgression((prev) => {
       if ((prev.savedCoins ?? 0) < SHOP_PACK_COIN_PRICE) return prev;
       sounds.playCoin();
-      setKillToast('📦 ¡+1 Sobre Crono comprado! Ábrelo en la pestaña Abrir Sobres.');
+      setKillToast('📦 ¡+1 Sobre Crono guardado! Puedes abrirlo cuando quieras en Abrir Sobres.');
       setTimeout(() => setKillToast(null), 3200);
       return {
         ...prev,
@@ -1690,6 +2144,77 @@ export default function App() {
         unopenedPacks: prev.unopenedPacks + 1
       };
     });
+  }, []);
+
+  // Card Shop: Buy Bundle of 3 Classic Booster Packs at a discount
+  const handleBuyPackBundleWithCoins = useCallback(() => {
+    setProgression((prev) => {
+      if ((prev.savedCoins ?? 0) < SHOP_BUNDLE_3_PACKS_PRICE) return prev;
+      sounds.playUpgrade();
+      setKillToast('🎁 ¡Lote de 3 Sobres Crono comprado! Ábrelos en Abrir Sobres.');
+      setTimeout(() => setKillToast(null), 3500);
+      return {
+        ...prev,
+        savedCoins: (prev.savedCoins ?? 0) - SHOP_BUNDLE_3_PACKS_PRICE,
+        unopenedPacks: prev.unopenedPacks + 3
+      };
+    });
+  }, []);
+
+  // Card Shop: Buy & immediately open any Shop Pack Tier (Classic, Elite, Royal, Cosmic)
+  const handleBuyAndOpenPackTier = useCallback((tierId: ShopPackTierId): PackReward[] => {
+    const tierDef = SHOP_PACK_TIERS.find((t) => t.id === tierId);
+    const currentProg = stateRef.current.progression;
+    if (!tierDef || (currentProg.savedCoins ?? 0) < tierDef.priceCoins) {
+      return [];
+    }
+
+    const rewards = openShopTierPack(
+      tierId,
+      currentProg.unlockedCardIds,
+      currentProg.highestArenaUnlocked || 1,
+      currentProg.completedArenaLevels || []
+    );
+
+    sounds.playWaveClear();
+
+    setProgression((prev) => {
+      if ((prev.savedCoins ?? 0) < tierDef.priceCoins) return prev;
+      const updatedUnlocked = [...prev.unlockedCardIds];
+      const updatedDeck = [...(prev.activeDeckCardIds || [])];
+      let bonusSp = prev.skillPoints;
+
+      rewards.forEach((r) => {
+        if (r.type === 'card' && r.cardId && !updatedUnlocked.includes(r.cardId)) {
+          updatedUnlocked.push(r.cardId);
+          if (updatedDeck.length < 7 && !updatedDeck.includes(r.cardId)) {
+            updatedDeck.push(r.cardId);
+          }
+        } else if (r.type === 'skill_points' && r.skillPoints) {
+          bonusSp += r.skillPoints;
+        }
+      });
+
+      return {
+        ...prev,
+        savedCoins: (prev.savedCoins ?? 0) - tierDef.priceCoins,
+        unlockedCardIds: updatedUnlocked,
+        activeDeckCardIds: updatedDeck,
+        skillPoints: bonusSp
+      };
+    });
+
+    setMissions((missionsList) =>
+      missionsList.map((m) => {
+        if (m.id === 'mission_open_packs_10') {
+          const nextCount = m.currentCount + 1;
+          return { ...m, currentCount: nextCount, completed: m.completed || nextCount >= m.targetCount };
+        }
+        return m;
+      })
+    );
+
+    return rewards;
   }, []);
 
   // Card Shop: Buy Skill Points bundle with saved Coins
@@ -2480,10 +3005,13 @@ export default function App() {
           onConsumeRequestedSubTab={() => setCardsHubSubTab(null)}
           onUpgradeCharacter={handleUpgradeCharacter}
           onClaimMission={handleClaimMission}
+          onClaimAllMissions={handleClaimAllMissions}
           onOpenPack={handleOpenPack}
           onToggleDeckCard={handleToggleDeckCard}
           onBuyCardWithCoins={handleBuyCardWithCoins}
           onBuyPackWithCoins={handleBuyPackWithCoins}
+          onBuyPackBundleWithCoins={handleBuyPackBundleWithCoins}
+          onBuyAndOpenPackTier={handleBuyAndOpenPackTier}
           onBuySkillPointsWithCoins={handleBuySkillPointsWithCoins}
           onSwitchToBattle={() => {
             setActiveBottomTab('BATTLE');

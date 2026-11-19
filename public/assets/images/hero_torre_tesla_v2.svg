@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="72%">
+      <stop offset="0%" stop-color="#0C4A6E"/>
+      <stop offset="62%" stop-color="#0B1120"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </radialGradient>
+    <linearGradient id="armorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="55%" stop-color="#0369A1"/>
+      <stop offset="100%" stop-color="#090D16"/>
+    </linearGradient>
+    <linearGradient id="helmGrad" x1="15%" y1="0%" x2="85%" y2="100%">
+      <stop offset="0%" stop-color="#E0F2FE"/>
+      <stop offset="40%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="35%" stop-color="#E0F2FE"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="256" cy="210" r="156" fill="none" stroke="#38BDF8" stroke-width="1.5" stroke-dasharray="6 10" opacity="0.35"/>
+  <circle cx="256" cy="210" r="128" fill="none" stroke="#E0F2FE" stroke-width="2" opacity="0.28"/>
+  <polyline points="48,70 105,140 82,155 145,230" fill="none" stroke="#E0F2FE" stroke-width="4" opacity="0.65" stroke-linecap="round"/>
+  <polyline points="460,85 405,155 430,170 375,235" fill="none" stroke="#38BDF8" stroke-width="4" opacity="0.65" stroke-linecap="round"/>
+  <circle cx="128" cy="268" r="2.0" fill="#E0F2FE" opacity="0.25"/>
+  <circle cx="201" cy="387" r="3.4" fill="#38BDF8" opacity="0.45"/>
+  <circle cx="274" cy="116" r="4.8" fill="#E0F2FE" opacity="0.65"/>
+  <circle cx="347" cy="235" r="6.2" fill="#38BDF8" opacity="0.25"/>
+  <circle cx="420" cy="354" r="2.0" fill="#E0F2FE" opacity="0.45"/>
+  <circle cx="61" cy="83" r="3.4" fill="#38BDF8" opacity="0.65"/>
+  <circle cx="134" cy="202" r="4.8" fill="#E0F2FE" opacity="0.25"/>
+  <circle cx="207" cy="321" r="6.2" fill="#38BDF8" opacity="0.45"/>
+  <circle cx="280" cy="50" r="2.0" fill="#E0F2FE" opacity="0.65"/>
+  <circle cx="353" cy="169" r="3.4" fill="#38BDF8" opacity="0.25"/>
+  <circle cx="426" cy="288" r="4.8" fill="#E0F2FE" opacity="0.45"/>
+  <circle cx="67" cy="407" r="6.2" fill="#38BDF8" opacity="0.65"/>
+  <circle cx="140" cy="136" r="2.0" fill="#E0F2FE" opacity="0.25"/>
+  <circle cx="213" cy="255" r="3.4" fill="#38BDF8" opacity="0.45"/>
+  <!-- Sculpted Armor Torso & Pauldrons -->
+  <path d="M64,506 C76,342 146,274 256,274 C366,274 436,342 448,506 Z" fill="url(#armorGrad)" stroke="#E0F2FE" stroke-width="4"/>
+  <path d="M68,376 Q128,284 196,310 L176,372 Z" fill="url(#helmGrad)" stroke="#E0F2FE" stroke-width="3"/>
+  <path d="M444,376 Q384,284 316,310 L336,372 Z" fill="url(#helmGrad)" stroke="#E0F2FE" stroke-width="3"/>
+  <path d="M164,318 L256,386 L348,318" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+  <polygon points="256,346 280,382 256,418 232,382" fill="url(#accentGrad)" stroke="#090D16" stroke-width="4" filter="url(#glow)"/>
+  <rect x="232" y="256" width="48" height="52" rx="12" fill="#0F172A"/><path d="M130,330 Q180,255 256,265 Q332,255 382,330 L405,496 L107,496 Z" fill="#0369A1" opacity="0.55"/><path d="M192,202 C192,140 220,116 256,116 C292,116 320,140 320,202 C320,248 292,276 256,276 C220,276 192,248 192,202 Z" fill="url(#helmGrad)" stroke="#E0F2FE" stroke-width="3.5"/><ellipse cx="256" cy="210" rx="46" ry="52" fill="#111827" stroke="#38BDF8" stroke-width="2"/><path d="M224,196 L246,204 L228,210 Z" fill="#E0F2FE" filter="url(#glow)"/><path d="M288,196 L266,204 L284,210 Z" fill="#E0F2FE" filter="url(#glow)"/><path d="M242,242 Q256,248 270,242" fill="none" stroke="#E0F2FE" stroke-width="2.5" stroke-linecap="round" opacity="0.75"/><rect x="246" y="52" width="20" height="64" rx="6" fill="#0369A1" stroke="#E0F2FE" stroke-width="3"/><circle cx="256" cy="50" r="20" fill="#E0F2FE" filter="url(#glow)"/>
+  <circle cx="396" cy="296" r="42" fill="url(#accentGrad)" stroke="#FFFFFF" stroke-width="4" filter="url(#glow)"/><circle cx="396" cy="296" r="20" fill="#E0F2FE" opacity="0.9"/>
+  <!-- Rim Vignette -->
+  <rect x="6" y="6" width="500" height="500" rx="26" fill="none" stroke="#38BDF8" stroke-width="3" opacity="0.35"/>
+</svg>

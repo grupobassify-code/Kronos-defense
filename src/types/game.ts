@@ -265,6 +265,10 @@ export type ViewState =
   | 'PACK_OPEN'
   | 'MISSIONS';
 
+export type MissionDifficulty = 'facil' | 'media' | 'dificil' | 'extrema' | 'legendaria';
+
+export type MissionCategory = 'story' | 'combat' | 'economy' | 'collection' | 'arena';
+
 export interface Mission {
   id: string;
   title: string;
@@ -274,7 +278,23 @@ export interface Mission {
   completed: boolean;
   claimed: boolean;
   rewardPacks: number;
-  category: 'story' | 'combat' | 'economy';
+  rewardCoins?: number;
+  rewardSkillPoints?: number;
+  difficulty?: MissionDifficulty;
+  category: MissionCategory;
+}
+
+export type ShopPackTierId = 'classic' | 'elite' | 'royal' | 'cosmic';
+
+export interface ShopPackDefinition {
+  id: ShopPackTierId;
+  name: string;
+  subtitle: string;
+  priceCoins: number;
+  cardsSummary: string;
+  spRangeLabel: string;
+  guaranteeLabel: string;
+  badgeText: string;
 }
 
 export interface PackReward {

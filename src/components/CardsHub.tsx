@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlayerProgression, Mission, PackReward } from '../types/game';
+import { PlayerProgression, Mission, PackReward, ShopPackTierId, MissionCategory, MissionDifficulty } from '../types/game';
 import { UNITS, UNIT_LIST, isCardLockedByArena } from '../data/units';
 import { ENEMY_LIST } from '../data/enemies';
 import { getArenaForWave, getArenaByLevel } from '../data/maps';
@@ -10,6 +10,8 @@ import {
   getCardShopPrice,
   canBuyCardInShop,
   SHOP_PACK_COIN_PRICE,
+  SHOP_PACK_TIERS,
+  SHOP_BUNDLE_3_PACKS_PRICE,
   SHOP_SP_COIN_PRICE,
   SHOP_SP_BUNDLE_AMOUNT
 } from '../utils/progression';
@@ -35,7 +37,10 @@ import {
   Music,
   HardDrive,
   ShoppingBag,
-  Wallet
+  Wallet,
+  Eye,
+  ArrowUpDown,
+  SlidersHorizontal
 } from 'lucide-react';
 import { music } from '../utils/music';
 import { saveProgression } from '../utils/progression';
@@ -48,11 +53,14 @@ interface CardsHubProps {
   missions: Mission[];
   onUpgradeCharacter: (unitId: string) => void;
   onClaimMission: (missionId: string) => void;
+  onClaimAllMissions?: () => void;
   onOpenPack: () => PackReward[];
   onSwitchToBattle: () => void;
   onToggleDeckCard?: (unitId: string) => void;
   onBuyCardWithCoins?: (unitId: string) => void;
   onBuyPackWithCoins?: () => void;
+  onBuyPackBundleWithCoins?: () => void;
+  onBuyAndOpenPackTier?: (tierId: ShopPackTierId) => PackReward[];
   onBuySkillPointsWithCoins?: () => void;
   requestedSubTab?: SubTabKey | null;
   onConsumeRequestedSubTab?: () => void;
@@ -64,11 +72,14 @@ export const CardsHub: React.FC<CardsHubProps> = ({
   missions,
   onUpgradeCharacter,
   onClaimMission,
+  onClaimAllMissions,
   onOpenPack,
   onSwitchToBattle,
   onToggleDeckCard,
   onBuyCardWithCoins,
   onBuyPackWithCoins,
+  onBuyPackBundleWithCoins,
+  onBuyAndOpenPackTier,
   onBuySkillPointsWithCoins,
   requestedSubTab = null,
   onConsumeRequestedSubTab,
@@ -78,14 +89,24 @@ export const CardsHub: React.FC<CardsHubProps> = ({
   const [selectedCardId, setSelectedCardId] = useState<string>(progression.unlockedCardIds[0] || 'vanguard_solar');
   const [selectedRarityFilter, setSelectedRarityFilter] = useState<string>('all');
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('all');
+  const [deckOwnershipFilter, setDeckOwnershipFilter] = useState<'ALL' | 'UNLOCKED' | 'IN_DECK' | 'UPGRADEABLE' | 'LOCKED'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [raritySortAsc, setRaritySortAsc] = useState<boolean>(true); // true: Común -> Divinidad, false: Divinidad -> Común
+  const [inspectorTierPreview, setInspectorTierPreview] = useState<number>(0);
 
   // Card Shop filters
   const [shopSearch, setShopSearch] = useState<string>('');
   const [shopRarity, setShopRarity] = useState<string>('all');
   const [shopRole, setShopRole] = useState<string>('all');
-  const [shopShowMode, setShopShowMode] = useState<'ALL' | 'UNOWNED'>('ALL');
+  const [shopShowMode, setShopShowMode] = useState<'ALL' | 'UNOWNED' | 'AFFORDABLE'>('ALL');
+  const [shopSort, setShopSort] = useState<'AVAILABLE' | 'PRICE_ASC' | 'PRICE_DESC' | 'RARITY'>('AVAILABLE');
+  const [shopPreviewCardId, setShopPreviewCardId] = useState<string | null>(null);
+  const [shopPurchaseToast, setShopPurchaseToast] = useState<{ cardId: string; name: string } | null>(null);
+  const [shopPackReveal, setShopPackReveal] = useState<{ tierName: string; rewards: PackReward[] } | null>(null);
+
+  // Missions filters
+  const [missionCategoryFilter, setMissionCategoryFilter] = useState<'all' | MissionCategory>('all');
+  const [missionStatusFilter, setMissionStatusFilter] = useState<'all' | 'claimable' | 'active' | 'hard' | 'claimed'>('all');
 
   useEffect(() => {
     if (requestedSubTab) {
@@ -193,88 +214,82 @@ export const CardsHub: React.FC<CardsHubProps> = ({
         })()}
       </div>
 
-      {/* Clash Royale Header Banner */}
-      <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-950 via-slate-900 to-purple-950/40 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      {/* Header Banner */}
+      <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-purple-950/80 border border-purple-500/50 flex items-center justify-center text-purple-300 shadow-lg shadow-purple-950/40">
+          <div className="w-11 h-11 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center text-cyan-300 shadow-lg shrink-0">
             <Layers className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-100 font-display tracking-tight flex items-center gap-2 flex-wrap">
-              <span>Colección, Tienda & Mazo</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-bold">
-                {currentArena.name}
+            <h2 className="text-xl font-black text-slate-100 font-display tracking-tight flex items-center gap-2.5 flex-wrap">
+              <span>Colección, Tienda y Mazo</span>
+              <span className="text-xs font-semibold text-cyan-300">
+                · {currentArena.name}
               </span>
             </h2>
             <p className="text-xs text-slate-400">
-              Compra las cartas que quieras con tus monedas guardadas, equipa hasta 7 héroes y súbelos al Nivel 10.
+              Administra tus {UNIT_LIST.length} cartas disponibles, compra héroes en la tienda y arma tu escuadra de 7 defensores.
             </p>
           </div>
         </div>
 
-        {/* Resources Badges & Arena Badge */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-purple-500/40 text-purple-300 font-bold text-xs shadow-inner">
-            <Trophy className="w-4 h-4 text-purple-400" />
+        {/* Resources Strip */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 font-semibold text-xs whitespace-nowrap">
+            <Trophy className="w-3.5 h-3.5 text-purple-400" />
             <span>{currentArena.badge}</span>
           </div>
 
-          {/* Saved Vault Coins */}
           <button
             onClick={() => setActiveSubTab('SHOP')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-950/70 hover:bg-amber-900/70 border border-amber-500/50 text-amber-200 font-bold font-mono tabular-nums text-xs shadow-inner cursor-pointer transition-all whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-200 font-bold font-mono tabular-nums text-xs cursor-pointer transition-colors whitespace-nowrap"
             title="Ir a la Tienda de Cartas"
           >
-            <Wallet className="w-4 h-4 text-amber-400" />
+            <Wallet className="w-3.5 h-3.5 text-amber-400" />
             <span>{progression.savedCoins ?? 0} Monedas</span>
           </button>
 
-          {/* Skill Points */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-amber-500/30 text-amber-300 font-bold font-mono tabular-nums text-xs shadow-inner">
-            <Zap className="w-4 h-4 text-amber-400 fill-amber-400/20" />
-            <span>{progression.skillPoints} pts</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-amber-300 font-bold font-mono tabular-nums text-xs whitespace-nowrap">
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <span>{progression.skillPoints} PH</span>
           </div>
 
-          {/* Unopened Packs */}
           <button
             onClick={() => setActiveSubTab('PACKS')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
               progression.unopenedPacks > 0
-                ? 'bg-purple-950/90 border-purple-500/60 text-purple-200 animate-pulse hover:bg-purple-900 shadow-md shadow-purple-950/50'
-                : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200'
+                ? 'bg-purple-600/25 border-purple-500/60 text-purple-200 hover:bg-purple-600/35'
+                : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
             }`}
           >
-            <PackageOpen className="w-4 h-4 text-purple-400" />
-            <span>{progression.unopenedPacks} Sobres</span>
+            <PackageOpen className="w-3.5 h-3.5 text-purple-400" />
+            <span className="tabular-nums">{progression.unopenedPacks} Sobres</span>
           </button>
 
-          {/* AI Procedural Music Toggle */}
           <button
             onClick={() => {
               const next = music.toggleMute();
               setIsMusicMuted(next);
             }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
               isMusicMuted
-                ? 'bg-slate-950/70 border-slate-800 text-slate-500 hover:text-slate-300'
-                : 'bg-purple-950/80 border-purple-500/60 text-purple-300 shadow-md shadow-purple-950/40'
+                ? 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                : 'bg-purple-950/60 border-purple-500/50 text-purple-200'
             }`}
             title={isMusicMuted ? 'Activar música generada por IA' : 'Silenciar música'}
           >
-            <Music className={`w-3.5 h-3.5 ${!isMusicMuted ? 'animate-pulse' : ''}`} />
+            <Music className="w-3.5 h-3.5" />
             <span>{isMusicMuted ? 'Música: OFF' : 'Música IA'}</span>
           </button>
 
-          {/* Device Save Status Pill */}
           <button
             onClick={() => setShowSaveModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-emerald-500/40 text-emerald-300 font-bold text-xs shadow-inner cursor-pointer hover:bg-emerald-950/40 hover:border-emerald-400 transition-all whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-emerald-500/40 text-emerald-300 font-semibold text-xs cursor-pointer hover:bg-emerald-950/40 transition-colors whitespace-nowrap"
             title="Ver datos de progreso guardados en tu dispositivo"
           >
             <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">Guardado en Celular</span>
+            <span className="hidden sm:inline">Guardado Local</span>
             <span className="sm:hidden">Guardado</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </button>
         </div>
       </div>
@@ -355,104 +370,104 @@ export const CardsHub: React.FC<CardsHubProps> = ({
         {/* SUBTAB 1: DECK & CARDS COLLECTION */}
         {activeSubTab === 'DECK' && (
           <div className="space-y-6">
-            {/* 7-CARD ACTIVE BATTLE DECK CONTAINER (Clash Royale Style) */}
-            <div className="bg-slate-950/90 border-2 border-cyan-500/40 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs uppercase tracking-wider font-black text-cyan-300 flex items-center gap-1.5">
-                    <Swords className="w-4 h-4 text-cyan-400" />
-                    <span>Mazo de Batalla Activo</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300">
-                      {progression.activeDeckCardIds?.length || 0}/7 Cartas
-                    </span>
+            {/* 7-CARD ACTIVE BATTLE DECK DOCK */}
+            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <Swords className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <h3 className="text-sm font-black text-slate-100 tracking-tight">
+                    Mazo de Batalla Activo
+                  </h3>
+                  <span className="text-xs font-mono tabular-nums text-cyan-300 font-bold">
+                    {progression.activeDeckCardIds?.length || 0} / 7 ranuras
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 hidden sm:block">
-                  Solo estas cartas aparecerán en combate (máximo 7)
-                </div>
+                <p className="text-xs text-slate-400">
+                  Toca cualquier carta para inspeccionarla o usa el botón rápido para equipar o mejorar.
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-                {(progression.activeDeckCardIds || []).map((deckCardId) => {
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                {(progression.activeDeckCardIds || []).map((deckCardId, slotIdx) => {
                   const deckUnit = UNITS[deckCardId];
                   if (!deckUnit) return null;
                   const lvl = progression.cardMasteryLevels[deckCardId] || 1;
                   const isSel = selectedCardId === deckCardId;
                   const rMeta = getRarityMeta(deckUnit.rarity);
+                  const slotCost = LEVEL_UP_COSTS[lvl];
+                  const canSlotUpgrade = lvl < 10 && slotCost !== undefined && progression.skillPoints >= slotCost;
 
                   return (
                     <div
                       key={`deck_slot_${deckCardId}`}
-                      onClick={() => setSelectedCardId(deckCardId)}
-                      className={`relative p-2 rounded-2xl border text-left cursor-pointer transition-all ${
+                      onClick={() => {
+                        setSelectedCardId(deckCardId);
+                        setInspectorTierPreview(0);
+                      }}
+                      className={`group relative rounded-xl border p-2 text-left cursor-pointer transition-all duration-150 flex flex-col justify-between ${
                         isSel
-                          ? `${rMeta.cardSelected} scale-[1.03]`
-                          : `${rMeta.cardBg} ${rMeta.cardBorder} hover:scale-[1.02] shadow-sm`
+                          ? `bg-slate-900 ${rMeta.cardSelected} ring-2 ring-cyan-400/70`
+                          : `bg-slate-900/70 ${rMeta.cardBorder} hover:bg-slate-900`
                       }`}
                     >
-                      <div className="flex items-center justify-between text-[10px] mb-1 font-mono">
-                        <span className="text-cyan-300 font-bold">Nv.{lvl}</span>
-                        <span className="text-amber-400 font-bold">{deckUnit.cost}o</span>
-                      </div>
-                      <div className={`w-full h-14 rounded-lg overflow-hidden mb-1.5 border-2 ${rMeta.cardBorder} bg-slate-950`}>
-                        {deckUnit.imageUrl && (
-                          <GameImage
-                            src={deckUnit.imageUrl}
-                            alt={deckUnit.name}
-                            className="w-full h-full object-cover"
-                            fallback={
-                              <div className="w-full h-full flex items-center justify-center bg-slate-900 text-xs font-bold text-slate-400">
-                                {deckUnit.name.slice(0, 2).toUpperCase()}
-                              </div>
-                            }
-                          />
-                        )}
-                      </div>
-                      <div className="w-full flex items-center justify-between mb-0.5">
-                        <span className={`text-[8px] uppercase px-1 py-0.2 rounded ${rMeta.badgeClass}`}>
-                          {rMeta.badgeLabel}
-                        </span>
-                      </div>
-                      <div className={`text-[11px] font-bold truncate ${rMeta.textColor}`}>
-                        {deckUnit.name}
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] mb-1.5 font-mono tabular-nums">
+                          <span className="text-slate-400 font-bold">#{slotIdx + 1} · Nv.{lvl}</span>
+                          <span className="text-amber-300 font-bold">{deckUnit.cost}o</span>
+                        </div>
+
+                        <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden mb-1.5 bg-slate-950 border border-slate-800">
+                          {deckUnit.imageUrl && (
+                            <GameImage
+                              src={deckUnit.imageUrl}
+                              alt={deckUnit.name}
+                              className="w-full h-full object-cover"
+                              fallback={
+                                <div className="w-full h-full flex items-center justify-center bg-slate-900 text-xs font-bold text-slate-400">
+                                  {deckUnit.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              }
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
+                          <span className={`absolute bottom-1 left-1.5 text-[9px] font-black uppercase tracking-wide ${rMeta.textColor}`}>
+                            {rMeta.badgeLabel}
+                          </span>
+                        </div>
+
+                        <div className="text-xs font-bold text-slate-100 truncate">
+                          {deckUnit.name}
+                        </div>
                       </div>
 
-                      {/* Direct Upgrade Button on Active Deck Card */}
-                      {lvl < 10 && LEVEL_UP_COSTS[lvl] !== undefined && (
-                        <div className="mt-1.5 w-full pt-1 border-t border-slate-800/80">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (progression.skillPoints >= LEVEL_UP_COSTS[lvl]) {
-                                onUpgradeCharacter(deckCardId);
-                              } else {
-                                setSelectedCardId(deckCardId);
-                              }
-                            }}
-                            disabled={progression.skillPoints < LEVEL_UP_COSTS[lvl]}
-                            className={`w-full py-0.5 px-1 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-0.5 transition-all cursor-pointer ${
-                              progression.skillPoints >= LEVEL_UP_COSTS[lvl]
-                                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 ring-1 ring-emerald-300 animate-pulse hover:scale-105 active:scale-95'
-                                : 'bg-slate-900 text-slate-500 border border-slate-800'
-                            }`}
-                            title={
-                              progression.skillPoints >= LEVEL_UP_COSTS[lvl]
-                                ? `Subir a Nv.${lvl + 1} (${LEVEL_UP_COSTS[lvl]} PH)`
-                                : `Faltan puntos (${progression.skillPoints}/${LEVEL_UP_COSTS[lvl]} PH)`
+                      {lvl < 10 && slotCost !== undefined && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (canSlotUpgrade) {
+                              onUpgradeCharacter(deckCardId);
+                            } else {
+                              setSelectedCardId(deckCardId);
                             }
-                          >
-                            <ArrowUp className="w-2.5 h-2.5 shrink-0" />
-                            <span className="truncate">
-                              {progression.skillPoints >= LEVEL_UP_COSTS[lvl]
-                                ? `Nv.${lvl + 1} (${LEVEL_UP_COSTS[lvl]})`
-                                : `Nv.${lvl + 1} (${LEVEL_UP_COSTS[lvl]})`}
-                            </span>
-                          </button>
-                        </div>
+                          }}
+                          disabled={!canSlotUpgrade}
+                          className={`mt-2 w-full py-1 px-1.5 rounded-lg text-[10px] font-bold font-mono tabular-nums flex items-center justify-center gap-1 transition-colors cursor-pointer whitespace-nowrap ${
+                            canSlotUpgrade
+                              ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+                              : 'bg-slate-950 text-slate-500 border border-slate-800'
+                          }`}
+                          title={
+                            canSlotUpgrade
+                              ? `Subir a Nv.${lvl + 1} (${slotCost} PH)`
+                              : `Necesitas ${slotCost} PH`
+                          }
+                        >
+                          <ArrowUp className="w-3 h-3 shrink-0" />
+                          <span>Nv.{lvl + 1} · {slotCost}</span>
+                        </button>
                       )}
 
-                      {/* Remove button if deck has > 1 card */}
                       {(progression.activeDeckCardIds || []).length > 1 && onToggleDeckCard && (
                         <button
                           onClick={(e) => {
@@ -460,10 +475,10 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                             onToggleDeckCard(deckCardId);
                             sounds.playSell();
                           }}
-                          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-xs shadow-md transition-transform hover:scale-110 cursor-pointer"
-                          title="Quitar de la baraja activa"
+                          className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-slate-900 hover:bg-red-600 border border-slate-700 hover:border-red-400 text-slate-300 hover:text-white flex items-center justify-center shadow-md transition-colors cursor-pointer"
+                          title="Quitar del mazo"
                         >
-                          <X className="w-3 h-3" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
@@ -474,289 +489,367 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                 {Array.from({ length: Math.max(0, 7 - (progression.activeDeckCardIds?.length || 0)) }).map((_, idx) => (
                   <div
                     key={`hub_empty_${idx}`}
-                    className="p-2 rounded-xl border border-dashed border-slate-800 bg-slate-950/40 flex flex-col items-center justify-center text-center text-slate-500 min-h-[96px]"
+                    className="p-3 rounded-xl border border-dashed border-slate-800 bg-slate-900/30 flex flex-col items-center justify-center text-center text-slate-500 min-h-[124px]"
                   >
                     <Plus className="w-5 h-5 mb-1 text-slate-600" />
-                    <span className="text-[10px] font-bold">Ranura Libre</span>
-                    <span className="text-[9px] text-slate-600">Equipa abajo</span>
+                    <span className="text-[11px] font-semibold text-slate-400">Ranura libre</span>
+                    <span className="text-[10px] text-slate-500">Equipa abajo</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* TWO COLUMNS: ALL CARDS + SELECTED CARD INSPECTOR */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-              {/* Left Column: All Cards Grid */}
-              <div className="md:col-span-6 lg:col-span-7 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                      Colección de Cartas
-                    </span>
-                    <span className="font-mono text-cyan-400 text-xs font-bold">
-                      ({progression.unlockedCardIds.length}/{UNIT_LIST.length})
-                    </span>
-                  </div>
+            {/* TWO COLUMNS: COLLECTION GRID + STICKY TACTICAL INSPECTOR */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              {/* Left Column: Filterable Collection */}
+              <div className="lg:col-span-7 xl:col-span-8 space-y-3.5">
+                {(() => {
+                  const filteredDeckCards = UNIT_LIST.filter((u) => {
+                    const isUnlocked = progression.unlockedCardIds.includes(u.id);
+                    const isInDeck = (progression.activeDeckCardIds || []).includes(u.id);
+                    const lvl = progression.cardMasteryLevels[u.id] || 1;
+                    const upCost = LEVEL_UP_COSTS[lvl];
+                    const canUpgrade = isUnlocked && lvl < 10 && upCost !== undefined && progression.skillPoints >= upCost;
 
-                  {/* Order By Rarity Toggle */}
-                  <button
-                    onClick={() => setRaritySortAsc(!raritySortAsc)}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950 border border-slate-700 hover:border-cyan-500 text-[11px] font-bold text-slate-300 hover:text-white transition-all cursor-pointer self-start sm:self-auto"
-                    title="Cambiar orden de rarezas"
-                  >
-                    <span>Ordenar Rareza:</span>
-                    <span className="text-cyan-400 font-extrabold">
-                      {raritySortAsc ? 'Común ➔ Divinidad ↑' : 'Divinidad ➔ Común ↓'}
-                    </span>
-                  </button>
-                </div>
+                    if (deckOwnershipFilter === 'UNLOCKED' && !isUnlocked) return false;
+                    if (deckOwnershipFilter === 'IN_DECK' && !isInDeck) return false;
+                    if (deckOwnershipFilter === 'UPGRADEABLE' && !canUpgrade) return false;
+                    if (deckOwnershipFilter === 'LOCKED' && isUnlocked) return false;
 
-                {/* Search & Quick Filters */}
-                <div className="space-y-2">
-                  <div className="relative w-full">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Buscar por nombre (ej. Espadachín, Slimes, Kronos, Dragón)..."
-                      className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                    />
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery('')}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
+                    if (searchQuery.trim()) {
+                      const q = searchQuery.toLowerCase().trim();
+                      const matchName = u.name.toLowerCase().includes(q);
+                      const matchTitle = u.title.toLowerCase().includes(q);
+                      const matchDesc = u.description.toLowerCase().includes(q);
+                      if (!matchName && !matchTitle && !matchDesc) return false;
+                    }
+                    if (selectedRoleFilter !== 'all' && u.role !== selectedRoleFilter) return false;
+                    if (selectedRarityFilter === 'all') return true;
+                    const normRarity = u.rarity === 'rara' ? 'especial' : u.rarity;
+                    return normRarity === selectedRarityFilter;
+                  }).sort((a, b) => {
+                    const aUnl = progression.unlockedCardIds.includes(a.id) ? 0 : 1;
+                    const bUnl = progression.unlockedCardIds.includes(b.id) ? 0 : 1;
+                    if (deckOwnershipFilter === 'ALL' && aUnl !== bUnl) return aUnl - bUnl;
+                    const diff = compareRarities(a.rarity, b.rarity);
+                    return raritySortAsc ? diff : -diff;
+                  });
 
-                  {/* Rarity Filter Tabs */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                    {RARITY_LIST.map((r) => {
-                      const isFilterActive = selectedRarityFilter === r.key;
-                      return (
-                        <button
-                          key={r.key}
-                          onClick={() => setSelectedRarityFilter(r.key)}
-                          className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                            isFilterActive
-                              ? 'bg-cyan-500 text-slate-950 shadow-md font-black shadow-cyan-950/60'
-                              : 'bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                          }`}
-                        >
-                          {r.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  const upgradeableCount = UNIT_LIST.filter((u) => {
+                    if (!progression.unlockedCardIds.includes(u.id)) return false;
+                    const lvl = progression.cardMasteryLevels[u.id] || 1;
+                    const upCost = LEVEL_UP_COSTS[lvl];
+                    return lvl < 10 && upCost !== undefined && progression.skillPoints >= upCost;
+                  }).length;
 
-                  {/* Role Filter Tabs */}
-                  <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-[11px]">
-                    {[
-                      { key: 'all', label: 'Todos los Roles' },
-                      { key: 'ataque', label: '⚡ Ataque' },
-                      { key: 'area', label: '🔥 Área' },
-                      { key: 'control', label: '❄️ Control' },
-                      { key: 'invocador', label: '✨ Invocador' },
-                      { key: 'soporte', label: '🛡️ Soporte' },
-                      { key: 'economia', label: '🪙 Economía' }
-                    ].map((roleItem) => (
-                      <button
-                        key={roleItem.key}
-                        onClick={() => setSelectedRoleFilter(roleItem.key)}
-                        className={`px-2.5 py-0.5 rounded-lg font-bold whitespace-nowrap transition-all cursor-pointer ${
-                          selectedRoleFilter === roleItem.key
-                            ? 'bg-purple-600 text-white shadow'
-                            : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800/80'
-                        }`}
-                      >
-                        {roleItem.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {UNIT_LIST
-                    .filter((u) => {
-                      if (searchQuery.trim()) {
-                        const q = searchQuery.toLowerCase().trim();
-                        const matchName = u.name.toLowerCase().includes(q);
-                        const matchTitle = u.title.toLowerCase().includes(q);
-                        const matchDesc = u.description.toLowerCase().includes(q);
-                        if (!matchName && !matchTitle && !matchDesc) return false;
-                      }
-                      if (selectedRoleFilter !== 'all' && u.role !== selectedRoleFilter) {
-                        return false;
-                      }
-                      if (selectedRarityFilter === 'all') return true;
-                      const normRarity = u.rarity === 'rara' ? 'especial' : u.rarity;
-                      return normRarity === selectedRarityFilter;
-                    })
-                    .sort((a, b) => {
-                      const diff = compareRarities(a.rarity, b.rarity);
-                      return raritySortAsc ? diff : -diff;
-                    })
-                    .map((unit) => {
-                    const isUnlocked = progression.unlockedCardIds.includes(unit.id);
-                    const isInDeck = (progression.activeDeckCardIds || []).includes(unit.id);
-                    const isSelected = selectedCardId === unit.id;
-                    const level = progression.cardMasteryLevels[unit.id] || 1;
-                    const isMaxLevel = level >= 10;
-                    const cost = LEVEL_UP_COSTS[level] || null;
-                    const canUpgrade = isUnlocked && cost !== null && progression.skillPoints >= cost;
-                    const rMeta = getRarityMeta(unit.rarity);
-
-                    return (
-                      <div
-                        key={unit.id}
-                        onClick={() => setSelectedCardId(unit.id)}
-                        className={`relative p-2.5 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between cursor-pointer group ${
-                          isSelected
-                            ? `${rMeta.cardSelected} scale-[1.03]`
-                            : isUnlocked
-                            ? `${rMeta.cardBg} ${rMeta.cardBorder} ${rMeta.cardHover}`
-                            : 'bg-slate-950/40 border-slate-900 opacity-60 hover:opacity-75'
-                        }`}
-                      >
-                        {/* Top Badges */}
-                        <div className="flex items-center justify-between w-full mb-1.5 gap-1">
-                          <span className={`text-[9px] uppercase px-1.5 py-0.2 rounded font-black truncate ${rMeta.badgeClass}`}>
-                            {unit.rarity === 'divinidad' ? `👑 Divinidad A${unit.arenaUnlockLevel || 1}` : rMeta.badgeLabel}
-                          </span>
-                          {isUnlocked ? (
-                            <span
-                              className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded shrink-0 ${
-                                isMaxLevel
-                                  ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
-                                  : 'bg-slate-800 text-cyan-300 border border-cyan-800/40'
-                              }`}
-                            >
-                              Nv.{level}
+                  return (
+                    <>
+                      {/* Filter Toolbar */}
+                      <div className="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                          <div className="flex items-center gap-2">
+                            <SlidersHorizontal className="w-4 h-4 text-cyan-400" />
+                            <span className="text-sm font-black text-slate-100">
+                              Catálogo de Cartas
                             </span>
-                          ) : (
-                            <span className="text-[10px] text-slate-500 flex items-center gap-0.5 shrink-0">
-                              {unit.arenaUnlockLevel && unit.arenaUnlockLevel > (progression.highestArenaUnlocked || 1) ? (
-                                <span className="text-amber-400 font-bold flex items-center gap-0.5 text-[9px] bg-amber-950/80 px-1 py-0.5 rounded border border-amber-500/40">
-                                  <Lock className="w-2.5 h-2.5" /> A{unit.arenaUnlockLevel}
-                                </span>
-                              ) : (
-                                <span className="text-slate-400 flex items-center gap-0.5 text-[9px]">
-                                  <Lock className="w-2.5 h-2.5" /> Bloqueada
-                                </span>
-                              )}
+                            <span className="font-mono tabular-nums text-xs text-cyan-300 font-bold">
+                              {filteredDeckCards.length} mostradas · {progression.unlockedCardIds.length}/{UNIT_LIST.length} tuyas
                             </span>
-                          )}
+                          </div>
+
+                          <button
+                            onClick={() => setRaritySortAsc(!raritySortAsc)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-500 text-xs font-bold text-slate-200 transition-colors cursor-pointer self-start sm:self-auto whitespace-nowrap"
+                          >
+                            <ArrowUpDown className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>{raritySortAsc ? 'Común → Divinidad' : 'Divinidad → Común'}</span>
+                          </button>
                         </div>
 
-                        {/* Portrait */}
-                        <div className={`relative w-full h-24 sm:h-28 rounded-xl overflow-hidden mb-2 border-2 ${rMeta.cardBorder} bg-slate-900`}>
-                          {unit.imageUrl ? (
-                            <GameImage
-                              src={unit.imageUrl}
-                              alt={unit.name}
-                              loading="lazy"
-                              className={`w-full h-full object-cover transition-transform group-hover:scale-105 ${
-                                !isUnlocked ? 'grayscale opacity-40' : ''
-                              }`}
-                              fallback={
-                                <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400 text-xs font-bold">
-                                  {unit.name.slice(0, 2).toUpperCase()}
-                                </div>
-                              }
+                        {/* Search + Ownership Segmented Filter */}
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <div className="relative flex-1">
+                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              placeholder="Buscar héroe, rol o habilidad..."
+                              className="w-full pl-9 pr-8 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                             />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500">
-                              No Sprite
-                            </div>
-                          )}
+                            {searchQuery && (
+                              <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs cursor-pointer"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
 
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-
-                          {isInDeck && (
-                            <div className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-cyan-400 text-slate-950 text-[9px] font-black shadow-md">
-                              EN MAZO
-                            </div>
-                          )}
-
-                          {isMaxLevel && (
-                            <div className="absolute top-1.5 right-1.5 p-1 rounded-full bg-amber-500 text-slate-950 shadow">
-                              <Star className="w-3 h-3 fill-current" />
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 overflow-x-auto no-scrollbar">
+                            {[
+                              { key: 'ALL', label: 'Todas' },
+                              { key: 'UNLOCKED', label: 'Mías' },
+                              { key: 'IN_DECK', label: 'En Mazo' },
+                              { key: 'UPGRADEABLE', label: `Mejorables (${upgradeableCount})` },
+                              { key: 'LOCKED', label: 'Bloqueadas' }
+                            ].map((opt) => (
+                              <button
+                                key={opt.key}
+                                onClick={() => setDeckOwnershipFilter(opt.key as typeof deckOwnershipFilter)}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                                  deckOwnershipFilter === opt.key
+                                    ? 'bg-cyan-500 text-slate-950'
+                                    : 'text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
-                        {/* Name & Role */}
-                        <div className="w-full min-w-0">
-                          <div className={`text-xs font-bold truncate ${rMeta.textColor}`}>
-                            {unit.name}
+                        {/* Rarity + Role Filter Strips */}
+                        <div className="flex flex-col sm:flex-row gap-2 pt-1 border-t border-slate-800/80">
+                          <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar flex-1">
+                            {RARITY_LIST.map((r) => (
+                              <button
+                                key={r.key}
+                                onClick={() => setSelectedRarityFilter(r.key)}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                                  selectedRarityFilter === r.key
+                                    ? 'bg-slate-100 text-slate-950'
+                                    : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                                }`}
+                              >
+                                {r.label}
+                              </button>
+                            ))}
                           </div>
-                          <div className="text-[10px] text-slate-400 truncate capitalize">
-                            {unit.role} · {unit.cost} oro
+
+                          <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
+                            {[
+                              { key: 'all', label: 'Todos Roles' },
+                              { key: 'ataque', label: 'Ataque' },
+                              { key: 'area', label: 'Área' },
+                              { key: 'control', label: 'Control' },
+                              { key: 'invocador', label: 'Invocador' },
+                              { key: 'soporte', label: 'Soporte' },
+                              { key: 'economia', label: 'Economía' }
+                            ].map((roleItem) => (
+                              <button
+                                key={roleItem.key}
+                                onClick={() => setSelectedRoleFilter(roleItem.key)}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                                  selectedRoleFilter === roleItem.key
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                                }`}
+                              >
+                                {roleItem.label}
+                              </button>
+                            ))}
                           </div>
                         </div>
-
-                        {/* Direct Upgrade Button (No need to scroll down to inspector) */}
-                        {isUnlocked && !isMaxLevel && cost !== null && (
-                          <div className="mt-2 w-full pt-1.5 border-t border-slate-800/80">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (canUpgrade) {
-                                  onUpgradeCharacter(unit.id);
-                                } else {
-                                  setSelectedCardId(unit.id);
-                                }
-                              }}
-                              disabled={!canUpgrade}
-                              className={`w-full py-1.5 px-2 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm ${
-                                canUpgrade
-                                  ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-950/60 ring-1 ring-emerald-300 animate-pulse hover:scale-[1.02] active:scale-95'
-                                  : 'bg-slate-900/90 text-slate-500 border border-slate-800 hover:border-slate-700'
-                              }`}
-                              title={
-                                canUpgrade
-                                  ? `Mejorar a Nv.${level + 1} por ${cost} puntos de habilidad`
-                                  : `Faltan puntos (${progression.skillPoints}/${cost} PH)`
-                              }
-                            >
-                              <ArrowUp className="w-3.5 h-3.5 shrink-0" />
-                              <span className="truncate">
-                                {canUpgrade ? `Mejorar Nv.${level + 1} (${cost} PH)` : `Nv.${level + 1} (${cost} PH)`}
-                              </span>
-                            </button>
-                          </div>
-                        )}
-
-                        {isMaxLevel && (
-                          <div className="mt-2 w-full py-1 px-1.5 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[10px] font-black text-center flex items-center justify-center gap-1">
-                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                            <span>Nv.10 Máximo</span>
-                          </div>
-                        )}
                       </div>
-                    );
-                  })}
-                </div>
+
+                      {/* Cards Grid */}
+                      {filteredDeckCards.length === 0 ? (
+                        <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
+                          <div className="text-sm font-bold text-slate-300">No hay cartas con estos filtros</div>
+                          <button
+                            onClick={() => {
+                              setSearchQuery('');
+                              setSelectedRarityFilter('all');
+                              setSelectedRoleFilter('all');
+                              setDeckOwnershipFilter('ALL');
+                            }}
+                            className="px-4 py-1.5 rounded-xl bg-cyan-500 text-slate-950 text-xs font-black cursor-pointer"
+                          >
+                            Restablecer filtros
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                          {filteredDeckCards.map((unit) => {
+                            const isUnlocked = progression.unlockedCardIds.includes(unit.id);
+                            const isInDeck = (progression.activeDeckCardIds || []).includes(unit.id);
+                            const isSelected = selectedCardId === unit.id;
+                            const level = progression.cardMasteryLevels[unit.id] || 1;
+                            const isMaxLevel = level >= 10;
+                            const cost = LEVEL_UP_COSTS[level] || null;
+                            const canUpgrade = isUnlocked && cost !== null && progression.skillPoints >= cost;
+                            const rMeta = getRarityMeta(unit.rarity);
+                            const deckFull = (progression.activeDeckCardIds || []).length >= 7;
+
+                            return (
+                              <div
+                                key={unit.id}
+                                onClick={() => {
+                                  setSelectedCardId(unit.id);
+                                  setInspectorTierPreview(0);
+                                }}
+                                className={`group relative rounded-2xl border p-2.5 text-left transition-all duration-150 flex flex-col justify-between cursor-pointer ${
+                                  isSelected
+                                    ? `bg-slate-900 ${rMeta.cardSelected} ring-2 ring-cyan-400`
+                                    : isUnlocked
+                                    ? `bg-slate-950/90 ${rMeta.cardBorder} hover:bg-slate-900`
+                                    : 'bg-slate-950/40 border-slate-800/80 opacity-75 hover:opacity-100'
+                                }`}
+                              >
+                                <div>
+                                  {/* Portrait with bottom scrim */}
+                                  <div className={`relative w-full aspect-[4/3] rounded-xl overflow-hidden mb-2 border ${rMeta.cardBorder} bg-slate-900`}>
+                                    {unit.imageUrl && (
+                                      <GameImage
+                                        src={unit.imageUrl}
+                                        alt={unit.name}
+                                        loading="lazy"
+                                        className={`w-full h-full object-cover transition-transform duration-200 group-hover:scale-105 ${
+                                          !isUnlocked ? 'grayscale opacity-45' : ''
+                                        }`}
+                                        fallback={
+                                          <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400 text-xs font-bold">
+                                            {unit.name.slice(0, 2).toUpperCase()}
+                                          </div>
+                                        }
+                                      />
+                                    )}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+
+                                    <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1">
+                                      <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-black ${rMeta.badgeClass}`}>
+                                        {unit.rarity === 'divinidad' ? `Divinidad A${unit.arenaUnlockLevel || 1}` : rMeta.badgeLabel}
+                                      </span>
+                                      {isUnlocked ? (
+                                        <span className="text-[10px] font-mono tabular-nums font-bold px-1.5 py-0.5 rounded bg-slate-950/85 text-cyan-300 border border-slate-700">
+                                          Nv.{level}
+                                        </span>
+                                      ) : (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-950/85 text-slate-300 border border-slate-700 flex items-center gap-0.5">
+                                          <Lock className="w-2.5 h-2.5 text-amber-400" />
+                                          {unit.arenaUnlockLevel ? `A${unit.arenaUnlockLevel}` : ''}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {isInDeck && (
+                                      <div className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded bg-cyan-400 text-slate-950 text-[9px] font-black tracking-wide">
+                                        EN MAZO
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Unboxed Title & Metadata */}
+                                  <div className={`text-xs font-extrabold truncate ${rMeta.textColor}`}>
+                                    {unit.name}
+                                  </div>
+                                  <div className="text-[11px] text-slate-400 truncate mt-0.5 capitalize font-mono tabular-nums">
+                                    {unit.role} · {unit.cost} oro · {Math.round(unit.baseDamage * getLevelStatMultiplier(level).damageMult)} daño
+                                  </div>
+                                </div>
+
+                                {/* Direct Card Controls */}
+                                <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex flex-col gap-1.5">
+                                  {isUnlocked ? (
+                                    <>
+                                      {onToggleDeckCard && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (isInDeck) {
+                                              if ((progression.activeDeckCardIds || []).length > 1) {
+                                                onToggleDeckCard(unit.id);
+                                                sounds.playSell();
+                                              }
+                                            } else if (!deckFull) {
+                                              onToggleDeckCard(unit.id);
+                                              sounds.playPlace();
+                                            } else {
+                                              setSelectedCardId(unit.id);
+                                            }
+                                          }}
+                                          className={`w-full py-1.5 px-2 rounded-lg text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                                            isInDeck
+                                              ? 'bg-cyan-950/80 hover:bg-red-950/80 text-cyan-300 hover:text-red-300 border border-cyan-500/40 hover:border-red-500/40'
+                                              : deckFull
+                                              ? 'bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 border border-amber-500/40'
+                                              : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black'
+                                          }`}
+                                        >
+                                          {isInDeck ? 'Quitar del Mazo' : deckFull ? 'Sustituir en Mazo' : 'Equipar al Mazo'}
+                                        </button>
+                                      )}
+
+                                      {!isMaxLevel && cost !== null ? (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (canUpgrade) {
+                                              onUpgradeCharacter(unit.id);
+                                            } else {
+                                              setSelectedCardId(unit.id);
+                                            }
+                                          }}
+                                          disabled={!canUpgrade}
+                                          className={`w-full py-1 px-2 rounded-lg text-[10px] font-bold font-mono tabular-nums flex items-center justify-center gap-1 transition-colors cursor-pointer whitespace-nowrap ${
+                                            canUpgrade
+                                              ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black'
+                                              : 'bg-slate-900 text-slate-500 border border-slate-800'
+                                          }`}
+                                        >
+                                          <ArrowUp className="w-3 h-3 shrink-0" />
+                                          <span>{canUpgrade ? `Subir Nv.${level + 1} (${cost} PH)` : `Nv.${level + 1} · ${cost} PH`}</span>
+                                        </button>
+                                      ) : (
+                                        <div className="w-full py-1 rounded-lg bg-amber-950/40 border border-amber-500/30 text-amber-300 text-[10px] font-bold text-center">
+                                          Nivel 10 Máximo
+                                        </div>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveSubTab('SHOP');
+                                        setShopSearch(unit.name);
+                                      }}
+                                      className="w-full py-1.5 px-2 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center gap-1"
+                                    >
+                                      <ShoppingBag className="w-3 h-3" />
+                                      <span>Ver en Tienda</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
-              {/* Right Column: Selected Card Detail, Deck Equip & Upgrade Panel */}
-              <div className="md:col-span-6 lg:col-span-5 bg-slate-950/80 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-                <div>
-                  {/* Header with portrait */}
-                  {(() => {
-                    const selRMeta = getRarityMeta(selectedUnit.rarity);
-                    return (
-                      <div className="flex items-center gap-3.5 pb-4 border-b border-slate-800">
-                        <div className={`w-16 h-16 rounded-2xl overflow-hidden border-2 ${selRMeta.cardBorder} bg-slate-900 shrink-0 shadow-lg relative`}>
+              {/* Right Column: Sticky Selected Card Inspector */}
+              <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-0 bg-slate-950 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
+                {(() => {
+                  const selRMeta = getRarityMeta(selectedUnit.rarity);
+                  const activeTier = selectedUnit.tiers[inspectorTierPreview] || selectedUnit.tiers[0];
+                  return (
+                    <>
+                      {/* Header with portrait */}
+                      <div className="flex items-start gap-3.5 pb-4 border-b border-slate-800">
+                        <div className={`w-20 h-20 rounded-xl overflow-hidden border-2 ${selRMeta.cardBorder} bg-slate-900 shrink-0 relative`}>
                           {selectedUnit.imageUrl && (
                             <GameImage
                               src={selectedUnit.imageUrl}
                               alt={selectedUnit.name}
-                              className={`w-full h-full object-cover ${!isSelectedUnlocked ? 'grayscale opacity-40' : ''}`}
+                              className={`w-full h-full object-cover ${!isSelectedUnlocked ? 'grayscale opacity-45' : ''}`}
                               fallback={
                                 <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400 text-sm font-bold">
                                   {selectedUnit.name.slice(0, 2).toUpperCase()}
@@ -766,234 +859,227 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className={`font-black text-base truncate ${selRMeta.textColor}`}>
-                              {selectedUnit.name}
-                            </h3>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded ${selRMeta.badgeClass}`}>
+                              {selRMeta.badgeLabel}
+                            </span>
                             {isSelectedUnlocked && (
-                              <span className="text-xs font-bold font-mono text-cyan-300 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/60">
-                                Nv. {currentLevel}
+                              <span className="text-xs font-bold font-mono tabular-nums text-cyan-300">
+                                Nivel {currentLevel}/10
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-slate-400 capitalize flex items-center gap-1.5 mt-0.5">
-                            <span>{selectedUnit.title}</span>
-                            <span>•</span>
-                            <span className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded ${selRMeta.badgeClass}`}>
-                              {selRMeta.badgeLabel}
-                            </span>
+                          <h3 className={`font-black text-base mt-1 leading-tight ${selRMeta.textColor}`}>
+                            {selectedUnit.name}
+                          </h3>
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {selectedUnit.title} · {selectedUnit.cost} oro arena
                           </div>
-                          <div className="text-xs text-amber-300 font-mono mt-0.5">Coste de Despliegue: {selectedUnit.cost} oro</div>
                         </div>
                       </div>
-                    );
-                  })()}
 
-                  {/* Deck Equip Toggle Button */}
-                  {isSelectedUnlocked && onToggleDeckCard && (
-                    <div className="py-3 border-b border-slate-800">
-                      {isSelectedInDeck ? (
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs text-cyan-400 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-4 h-4 text-cyan-400" />
-                            Equipada en tu Mazo (Ranura activa)
-                          </span>
-                          {(progression.activeDeckCardIds || []).length > 1 && (
+                      {/* Deck Equip / Swap Section */}
+                      {isSelectedUnlocked && onToggleDeckCard && (
+                        <div className="pb-3 border-b border-slate-800">
+                          {isSelectedInDeck ? (
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs text-cyan-300 font-bold flex items-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                                <span>Equipada en tu Mazo</span>
+                              </span>
+                              {(progression.activeDeckCardIds || []).length > 1 && (
+                                <button
+                                  onClick={() => {
+                                    onToggleDeckCard(selectedUnit.id);
+                                    sounds.playSell();
+                                  }}
+                                  className="px-3 py-1.5 text-xs font-bold text-red-300 bg-red-950/60 border border-red-800/60 hover:bg-red-900 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+                                >
+                                  Quitar
+                                </button>
+                              )}
+                            </div>
+                          ) : (progression.activeDeckCardIds || []).length < 7 ? (
                             <button
                               onClick={() => {
                                 onToggleDeckCard(selectedUnit.id);
-                                sounds.playSell();
+                                sounds.playPlace();
                               }}
-                              className="px-2.5 py-1 text-xs font-bold text-red-300 bg-red-950/60 border border-red-800/60 hover:bg-red-900 rounded-lg transition-colors cursor-pointer"
+                              className="w-full py-2.5 px-4 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 cursor-pointer transition-colors"
                             >
-                              Quitar del Mazo
+                              <Plus className="w-4 h-4" />
+                              <span>Equipar al Mazo ({progression.activeDeckCardIds?.length || 0}/7)</span>
                             </button>
+                          ) : (
+                            <div className="space-y-2">
+                              <div className="text-xs text-amber-300 font-bold">
+                                Mazo completo (7/7). Elige a quién reemplazar:
+                              </div>
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {(progression.activeDeckCardIds || []).map((cardId) => {
+                                  const u = UNITS[cardId];
+                                  return (
+                                    <button
+                                      key={`swap_${cardId}`}
+                                      onClick={() => {
+                                        onToggleDeckCard(cardId);
+                                        setTimeout(() => onToggleDeckCard(selectedUnit.id), 40);
+                                        sounds.playPlace();
+                                      }}
+                                      className="p-2 rounded-lg bg-slate-900 hover:bg-cyan-950 border border-slate-700 hover:border-cyan-400 text-[11px] text-slate-200 truncate transition-colors cursor-pointer flex items-center gap-1.5 text-left"
+                                      title={`Reemplazar a ${u?.name || cardId}`}
+                                    >
+                                      <span className="text-cyan-400 font-bold">↔</span>
+                                      <span className="truncate">{u?.name || cardId}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Description */}
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        {selectedUnit.description}
+                      </p>
+
+                      {/* Current vs Next Level Stats */}
+                      <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-800 space-y-2 text-xs font-mono tabular-nums">
+                        <div className="flex justify-between text-slate-300">
+                          <span className="font-sans text-slate-400">Daño en Arena</span>
+                          <span>
+                            <strong className="text-amber-300">{Math.round(selectedUnit.baseDamage * currentStats.damageMult)}</strong>
+                            {nextStats && (
+                              <span className="text-emerald-400 ml-1.5">
+                                → {Math.round(selectedUnit.baseDamage * nextStats.damageMult)}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-slate-300">
+                          <span className="font-sans text-slate-400">Cadencia</span>
+                          <span>
+                            <strong className="text-emerald-300">{(selectedUnit.baseAttackSpeed * currentStats.speedMult).toFixed(2)}/s</strong>
+                            {nextStats && (
+                              <span className="text-cyan-300 ml-1.5">
+                                → {(selectedUnit.baseAttackSpeed * nextStats.speedMult).toFixed(2)}/s
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-slate-300">
+                          <span className="font-sans text-slate-400">Alcance</span>
+                          <span className="text-cyan-300">{selectedUnit.baseRange}px</span>
+                        </div>
+                      </div>
+
+                      {/* In-Arena 3 Upgrade Tiers Preview */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                            Mejoras dentro de la Arena
+                          </span>
+                          <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800">
+                            {[0, 1, 2].map((tIdx) => (
+                              <button
+                                key={tIdx}
+                                onClick={() => setInspectorTierPreview(tIdx)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
+                                  inspectorTierPreview === tIdx
+                                    ? 'bg-cyan-500 text-slate-950'
+                                    : 'text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                Nv.{tIdx + 1}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 text-[11px] space-y-1">
+                          <div className="flex items-center justify-between font-bold text-slate-200">
+                            <span>{activeTier.name}</span>
+                            <span className="font-mono text-amber-300">
+                              {activeTier.cost > 0 ? `${activeTier.cost} oro` : 'Base'}
+                            </span>
+                          </div>
+                          <p className="text-slate-400 leading-snug">{activeTier.description}</p>
+                        </div>
+                      </div>
+
+                      {/* Showdown Info */}
+                      <div className="bg-slate-900/90 rounded-xl p-3 border border-purple-500/30 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-purple-300 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                            <span>{selectedUnit.showdownName}</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {currentStats.isShowdownUnlocked ? 'Activo' : 'Requiere Nv.10'} · {selectedUnit.showdownCooldown}s
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                          {selectedUnit.showdownDescription}
+                        </p>
+                      </div>
+
+                      {/* Bottom Upgrade / Unlock Action */}
+                      {isSelectedUnlocked ? (
+                        <div className="pt-2 border-t border-slate-800 space-y-2">
+                          {selectedUnit.rarity === 'divinidad' && (
+                            <p className="text-[11px] text-amber-300 bg-amber-950/30 p-2.5 rounded-xl border border-amber-500/30">
+                              <strong>Divinidad Arena {selectedUnit.arenaUnlockLevel}:</strong> Máximo 1 Divinidad desplegada a la vez en batalla.
+                            </p>
+                          )}
+                          {currentLevel < 10 ? (
+                            <button
+                              onClick={() => onUpgradeCharacter(selectedUnit.id)}
+                              disabled={!canAffordUpgrade}
+                              className={`w-full py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer ${
+                                canAffordUpgrade
+                                  ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+                                  : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+                              }`}
+                            >
+                              <ArrowUp className="w-4 h-4" />
+                              <span className="font-mono tabular-nums">
+                                Subir a Nivel {currentLevel + 1} ({nextLevelCost} PH)
+                              </span>
+                            </button>
+                          ) : (
+                            <div className="w-full py-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-300 font-bold text-xs text-center">
+                              Nivel 10 Máximo · Showdown Definitivo Activo
+                            </div>
                           )}
                         </div>
                       ) : (
-                        (progression.activeDeckCardIds || []).length < 7 ? (
-                          <button
-                            onClick={() => {
-                              onToggleDeckCard(selectedUnit.id);
-                              sounds.playPlace();
-                            }}
-                            className="w-full py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-slate-950 hover:from-cyan-500 hover:to-blue-500 cursor-pointer shadow-md transition-all"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>
-                              ➕ Equipar a tu Mazo de Batalla ({progression.activeDeckCardIds?.length || 0}/7)
-                            </span>
-                          </button>
-                        ) : (
-                          <div className="space-y-1.5 bg-slate-900/90 p-2.5 rounded-xl border border-amber-500/40">
-                            <div className="text-[11px] text-amber-300 font-bold flex items-center justify-between">
-                              <span>Mazo Lleno (7/7). Toca qué carta sustituir:</span>
+                        <div className="pt-2 border-t border-slate-800 space-y-2">
+                          {isCardLockedByArena(selectedUnit, progression.highestArenaUnlocked || 1) ? (
+                            <div className="p-3 rounded-xl bg-slate-900 border border-amber-500/30 text-xs text-slate-300">
+                              <div className="font-bold text-amber-300 flex items-center gap-1.5 mb-1">
+                                <Lock className="w-3.5 h-3.5" />
+                                <span>Bloqueada hasta Arena {selectedUnit.arenaUnlockLevel}</span>
+                              </div>
+                              Llega a <strong>{getArenaByLevel(selectedUnit.arenaUnlockLevel || 1).name}</strong> para desbloquearla en Tienda y Sobres.
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-0.5">
-                              {(progression.activeDeckCardIds || []).map((cardId) => {
-                                const u = UNITS[cardId];
-                                return (
-                                  <button
-                                    key={`swap_${cardId}`}
-                                    onClick={() => {
-                                      onToggleDeckCard(cardId);
-                                      setTimeout(() => onToggleDeckCard(selectedUnit.id), 50);
-                                      sounds.playPlace();
-                                    }}
-                                    className="p-1.5 rounded-lg bg-slate-950 hover:bg-cyan-950 border border-slate-700 hover:border-cyan-400 text-[10px] text-slate-200 truncate transition-colors cursor-pointer flex items-center gap-1 text-left"
-                                    title={`Reemplazar por ${u?.name || cardId}`}
-                                  >
-                                    <span className="text-cyan-400">↔</span>
-                                    <span className="truncate">{u?.name || cardId}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setActiveSubTab('SHOP');
+                                setShopSearch(selectedUnit.name);
+                              }}
+                              className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                            >
+                              <ShoppingBag className="w-4 h-4" />
+                              <span>Comprar en Tienda ({getCardShopPrice(selectedUnit)} monedas)</span>
+                            </button>
+                          )}
+                        </div>
                       )}
-                    </div>
-                  )}
-
-                  {/* Description & Stats */}
-                  <div className="py-3 space-y-3">
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      {selectedUnit.description}
-                    </p>
-
-                    {/* Stats Table */}
-                    <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-800/80 space-y-2 text-xs">
-                      <div className="flex justify-between text-slate-300">
-                        <span>Daño Base:</span>
-                        <span className="font-mono font-bold text-amber-300">
-                          {Math.round(selectedUnit.baseDamage * currentStats.damageMult)}{' '}
-                          <span className="text-[10px] text-emerald-400 font-normal">
-                            (+{Math.round((currentStats.damageMult - 1) * 100)}%)
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-slate-300">
-                        <span>Alcance:</span>
-                        <span className="font-mono text-cyan-300">{selectedUnit.baseRange}px</span>
-                      </div>
-                      <div className="flex justify-between text-slate-300">
-                        <span>Cadencia de Ataque:</span>
-                        <span className="font-mono text-emerald-300">
-                          {(selectedUnit.baseAttackSpeed * currentStats.speedMult).toFixed(2)} /seg
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-slate-300">
-                        <span>Rareza:</span>
-                        {(() => {
-                          const rM = getRarityMeta(selectedUnit.rarity);
-                          return (
-                            <span className={`font-mono uppercase font-black text-xs px-2 py-0.5 rounded ${rM.badgeClass}`}>
-                              {rM.badgeLabel}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                    </div>
-
-                    {/* Showdown Box */}
-                    <div className="bg-slate-900/90 rounded-xl p-3 border border-purple-500/30 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                          <span>Showdown: {selectedUnit.showdownName}</span>
-                        </span>
-                        {currentStats.isShowdownUnlocked ? (
-                          <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 border border-amber-500/40 px-1.5 py-0.2 rounded">
-                            Desbloqueado
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                            <Lock className="w-3 h-3" /> Nivel 10
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">
-                        {selectedUnit.showdownDescription}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Upgrade Action / Unlock Information */}
-                {isSelectedUnlocked ? (
-                  <div className="pt-3 border-t border-slate-800 space-y-2">
-                    {selectedUnit.rarity === 'divinidad' && (
-                      <div className="text-[10px] text-amber-300 font-semibold bg-amber-950/40 p-2 rounded-xl border border-amber-500/40 flex items-center gap-2">
-                        <span>👑</span>
-                        <span>
-                          <strong>Divinidad de Arena {selectedUnit.arenaUnlockLevel}:</strong> Solo puedes desplegar 1 Personaje Divino en el campo de batalla a la vez.
-                        </span>
-                      </div>
-                    )}
-                    {currentLevel < 10 ? (
-                      <button
-                        onClick={() => onUpgradeCharacter(selectedUnit.id)}
-                        disabled={!canAffordUpgrade}
-                        className={`w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                          canAffordUpgrade
-                            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-950/50 active:scale-95'
-                            : 'bg-slate-800 text-slate-500 border border-slate-700/50 cursor-not-allowed'
-                        }`}
-                      >
-                        <ArrowUp className="w-4 h-4" />
-                        <span>
-                          Subir a Nivel {currentLevel + 1} ({nextLevelCost} Puntos de Habilidad)
-                        </span>
-                      </button>
-                    ) : (
-                      <div className="w-full py-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-300 font-bold text-xs text-center">
-                        ★ Nivel 10 Máximo · Showdown Definitivo Activo ★
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="pt-3 border-t border-slate-800 space-y-2">
-                    {selectedUnit.rarity === 'divinidad' ? (
-                      <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-950/60 via-purple-950/50 to-slate-950 border-2 border-amber-500/50 text-left space-y-2 shadow-xl">
-                        <div className="flex items-center justify-between">
-                          <span className="flex items-center gap-1.5 text-xs font-black text-amber-300 uppercase tracking-wider">
-                            <span>👑</span>
-                            <span>Personaje Divino de Arena {selectedUnit.arenaUnlockLevel}</span>
-                          </span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/50 font-bold">
-                            {getArenaByLevel(selectedUnit.arenaUnlockLevel || 1).badge}
-                          </span>
-                        </div>
-
-                        {isCardLockedByArena(selectedUnit, progression.highestArenaUnlocked || 1) ? (
-                          <div className="p-2.5 rounded-xl bg-slate-900/90 border border-amber-500/40 flex items-start gap-2">
-                            <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                            <div className="text-[11px] text-slate-300 leading-relaxed">
-                              <span className="text-amber-300 font-bold">Bloqueado hasta alcanzar esta arena:</span> Debes superar las arenas anteriores y llegar a la <strong className="text-amber-200">Arena {selectedUnit.arenaUnlockLevel} ({getArenaByLevel(selectedUnit.arenaUnlockLevel || 1).name})</strong> para que esta Divinidad pueda tocarte en tus Sobres Crono.
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="p-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 flex items-start gap-2">
-                            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                            <div className="text-[11px] text-emerald-200 leading-relaxed">
-                              <strong>¡Arena {selectedUnit.arenaUnlockLevel} Alcanzada!</strong> Este Personaje Divino ya está desbloqueado para tu cuenta. ¡Abre sobres con bajas o rondas para que se sume a tu colección!
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="text-[10px] text-purple-200 font-medium bg-purple-950/80 p-2 rounded-xl border border-purple-800/60 flex items-center gap-1.5">
-                          <span>⚡</span>
-                          <span><strong>Regla de Combate:</strong> Solo se puede poner 1 Personaje Divino en el campo de batalla a la vez.</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs text-center flex items-center justify-center gap-2">
-                        <Lock className="w-4 h-4 text-slate-500" />
-                        <span>Consigue esta carta abriendo Sobres Crono tácticos.</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -1001,166 +1087,427 @@ export const CardsHub: React.FC<CardsHubProps> = ({
 
         {/* SUBTAB: CARD SHOP (DIRECT PURCHASE WITH SAVED COINS) */}
         {activeSubTab === 'SHOP' && (
-          <div className="space-y-5">
-            {/* Vault Banner + Coin Bundles */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-              <div className="lg:col-span-5 bg-gradient-to-br from-amber-950/60 via-slate-950 to-slate-900 border border-amber-500/40 rounded-2xl p-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/50 flex items-center justify-center shrink-0">
+          <div className="space-y-6">
+            {/* Vault Banner + Quick Bundles */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+              <div className="lg:col-span-5 bg-slate-950 border border-amber-500/40 rounded-2xl p-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center shrink-0">
                     <Wallet className="w-6 h-6 text-amber-400" />
                   </div>
                   <div>
-                    <div className="text-[11px] uppercase tracking-wider font-bold text-amber-400">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
                       Bóveda del Comandante
                     </div>
-                    <div className="text-2xl font-black font-mono tabular-nums text-amber-300">
-                      {progression.savedCoins ?? 0} <span className="text-xs font-normal text-amber-400/80">monedas</span>
+                    <div className="text-2xl font-black font-mono tabular-nums text-amber-200">
+                      {progression.savedCoins ?? 0} <span className="text-xs font-sans font-normal text-amber-300/80">monedas</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Gana oro en batalla y guárdalo durante la arena o al completar rondas.
-                    </p>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      Arena {progression.highestArenaUnlocked || 1} · {progression.unlockedCardIds.length}/{UNIT_LIST.length} cartas · {progression.unopenedPacks} sobres pendientes
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Bundle 1: Buy Chrono Pack */}
-              <div className="lg:col-span-3 bg-slate-950/90 border border-purple-500/40 rounded-2xl p-3.5 flex items-center justify-between gap-2.5">
+              <div className="lg:col-span-3 bg-slate-950 border border-purple-500/35 rounded-2xl p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-xs font-black text-purple-300 flex items-center gap-1.5">
                     <PackageOpen className="w-4 h-4 text-purple-400 shrink-0" />
-                    <span className="truncate">+1 Sobre Crono</span>
+                    <span className="truncate">Lote x3 Sobres Crono</span>
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">Contiene cartas + PH</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">Ahorra 300 monedas</div>
                 </div>
                 <button
-                  onClick={() => onBuyPackWithCoins?.()}
-                  disabled={(progression.savedCoins ?? 0) < SHOP_PACK_COIN_PRICE}
-                  className={`px-3 py-2 rounded-xl text-xs font-black font-mono tabular-nums whitespace-nowrap transition-all cursor-pointer ${
-                    (progression.savedCoins ?? 0) >= SHOP_PACK_COIN_PRICE
-                      ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-md active:scale-95'
+                  onClick={() => onBuyPackBundleWithCoins?.()}
+                  disabled={(progression.savedCoins ?? 0) < SHOP_BUNDLE_3_PACKS_PRICE}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-black font-mono tabular-nums whitespace-nowrap transition-colors cursor-pointer ${
+                    (progression.savedCoins ?? 0) >= SHOP_BUNDLE_3_PACKS_PRICE
+                      ? 'bg-purple-600 hover:bg-purple-500 text-white'
                       : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
                   }`}
                 >
-                  🪙 {SHOP_PACK_COIN_PRICE}
+                  {SHOP_BUNDLE_3_PACKS_PRICE} mon.
                 </button>
               </div>
 
-              {/* Bundle 2: Buy Skill Points */}
-              <div className="lg:col-span-4 bg-slate-950/90 border border-emerald-500/40 rounded-2xl p-3.5 flex items-center justify-between gap-2.5">
+              <div className="lg:col-span-4 bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
                     <Zap className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span className="truncate">+{SHOP_SP_BUNDLE_AMOUNT} Puntos de Habilidad</span>
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">Para mejorar tus cartas al Nv.10</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">Mejora tus cartas hasta Nv.10</div>
                 </div>
                 <button
                   onClick={() => onBuySkillPointsWithCoins?.()}
                   disabled={(progression.savedCoins ?? 0) < SHOP_SP_COIN_PRICE}
-                  className={`px-3 py-2 rounded-xl text-xs font-black font-mono tabular-nums whitespace-nowrap transition-all cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-black font-mono tabular-nums whitespace-nowrap transition-colors cursor-pointer ${
                     (progression.savedCoins ?? 0) >= SHOP_SP_COIN_PRICE
-                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md active:scale-95'
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
                       : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
                   }`}
                 >
-                  🪙 {SHOP_SP_COIN_PRICE}
+                  {SHOP_SP_COIN_PRICE} mon.
                 </button>
               </div>
             </div>
 
-            {/* Shop Search & Filters */}
-            <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+            {/* Purchasable Booster Packs & Chests Shelf */}
+            <div className="space-y-3 bg-slate-950/70 border border-purple-500/30 rounded-2xl p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                <div className="flex items-center gap-2">
+                  <PackageOpen className="w-4 h-4 text-purple-400 shrink-0" />
+                  <h3 className="text-sm font-black text-slate-100">
+                    Sobres y Cofres de Reclutamiento
+                  </h3>
+                </div>
+                <span className="text-[11px] text-slate-400">
+                  Compra y abre sobres al instante con cartas nuevas garantizadas sin repetidos
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                {SHOP_PACK_TIERS.map((tier) => {
+                  const canAffordTier = (progression.savedCoins ?? 0) >= tier.priceCoins;
+                  const tierAccent =
+                    tier.id === 'cosmic'
+                      ? 'border-cyan-400/60 bg-gradient-to-b from-cyan-950/35 to-slate-950'
+                      : tier.id === 'royal'
+                      ? 'border-amber-400/50 bg-gradient-to-b from-amber-950/30 to-slate-950'
+                      : tier.id === 'elite'
+                      ? 'border-purple-500/50 bg-gradient-to-b from-purple-950/30 to-slate-950'
+                      : 'border-slate-700 bg-slate-950';
+                  const tierTitleColor =
+                    tier.id === 'cosmic'
+                      ? 'text-cyan-300'
+                      : tier.id === 'royal'
+                      ? 'text-amber-300'
+                      : tier.id === 'elite'
+                      ? 'text-purple-300'
+                      : 'text-slate-100';
+                  const tierBtnClass =
+                    tier.id === 'cosmic'
+                      ? 'bg-cyan-400 hover:bg-cyan-300 text-slate-950'
+                      : tier.id === 'royal'
+                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                      : tier.id === 'elite'
+                      ? 'bg-purple-600 hover:bg-purple-500 text-white'
+                      : 'bg-indigo-600 hover:bg-indigo-500 text-white';
+
+                  return (
+                    <div
+                      key={tier.id}
+                      className={`rounded-2xl border p-3.5 flex flex-col justify-between gap-3 ${tierAccent}`}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-[10px] font-black uppercase tracking-wider ${tierTitleColor}`}>
+                            {tier.badgeText}
+                          </span>
+                          <span className="text-[11px] font-mono tabular-nums text-amber-300 font-bold">
+                            {tier.priceCoins.toLocaleString()} mon.
+                          </span>
+                        </div>
+
+                        <div>
+                          <div className={`text-sm font-black ${tierTitleColor}`}>{tier.name}</div>
+                          <p className="text-[11px] text-slate-400 leading-snug mt-0.5">{tier.subtitle}</p>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-800/80 space-y-1 text-[11px] font-mono tabular-nums">
+                          <div className="flex items-center justify-between text-slate-200">
+                            <span className="font-sans text-slate-400">Contenido:</span>
+                            <span className="font-bold">{tier.cardsSummary}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-emerald-300">
+                            <span className="font-sans text-slate-400">Puntos Hab.:</span>
+                            <span className="font-bold">+{tier.spRangeLabel}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => {
+                            if (!onBuyAndOpenPackTier) return;
+                            const pulled = onBuyAndOpenPackTier(tier.id);
+                            if (pulled.length > 0) {
+                              setShopPackReveal({ tierName: tier.name, rewards: pulled });
+                            }
+                          }}
+                          disabled={!canAffordTier}
+                          className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-colors cursor-pointer whitespace-nowrap ${
+                            canAffordTier
+                              ? tierBtnClass
+                              : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+                          }`}
+                        >
+                          {canAffordTier ? `Comprar y Abrir` : `Faltan monedas`}
+                        </button>
+
+                        {tier.id === 'classic' && onBuyPackWithCoins && (
+                          <button
+                            onClick={() => onBuyPackWithCoins()}
+                            disabled={!canAffordTier}
+                            title="Comprar y guardar en Abrir Sobres"
+                            className={`px-2.5 py-2 rounded-xl text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                              canAffordTier
+                                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                                : 'bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed'
+                            }`}
+                          >
+                            +1 Inv.
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Purchase feedback banner */}
+            {shopPurchaseToast && (
+              <div className="p-3 rounded-xl bg-emerald-950/70 border border-emerald-500/50 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 text-emerald-200 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>¡Has comprado a <strong>{shopPurchaseToast.name}</strong>!</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!(progression.activeDeckCardIds || []).includes(shopPurchaseToast.cardId) &&
+                    (progression.activeDeckCardIds || []).length < 7 &&
+                    onToggleDeckCard && (
+                      <button
+                        onClick={() => {
+                          onToggleDeckCard(shopPurchaseToast.cardId);
+                          sounds.playPlace();
+                          setShopPurchaseToast(null);
+                        }}
+                        className="px-3 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black cursor-pointer whitespace-nowrap"
+                      >
+                        Equipar ahora
+                      </button>
+                    )}
+                  <button
+                    onClick={() => setShopPurchaseToast(null)}
+                    className="text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Recommended Offers Spotlight */}
+            {(() => {
+              const unownedEligible = UNIT_LIST.filter(
+                (u) => !progression.unlockedCardIds.includes(u.id) && canBuyCardInShop(u, progression).allowed
+              );
+              if (unownedEligible.length === 0 || shopSearch.trim() || shopRarity !== 'all') return null;
+
+              const affordableTop = unownedEligible
+                .filter((u) => (progression.savedCoins ?? 0) >= getCardShopPrice(u))
+                .sort((a, b) => getCardShopPrice(b) - getCardShopPrice(a))[0];
+              const nextGoal = unownedEligible
+                .filter((u) => u.id !== affordableTop?.id)
+                .sort((a, b) => getCardShopPrice(a) - getCardShopPrice(b))[0];
+              const highRarityPick = unownedEligible
+                .filter((u) => u.id !== affordableTop?.id && u.id !== nextGoal?.id)
+                .sort((a, b) => compareRarities(b.rarity, a.rarity))[0];
+              const featured = [affordableTop, nextGoal, highRarityPick].filter(Boolean);
+              if (featured.length === 0) return null;
+
+              return (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-amber-300">
+                      Destacadas para tu Progreso
+                    </h3>
+                    <span className="text-[11px] text-slate-400">
+                      Disponibles para compra inmediata en tu Arena actual
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {featured.map((unit) => {
+                      const rMeta = getRarityMeta(unit.rarity);
+                      const price = getCardShopPrice(unit);
+                      const canAfford = (progression.savedCoins ?? 0) >= price;
+                      return (
+                        <div
+                          key={`feat_${unit.id}`}
+                          className={`p-3 rounded-2xl border ${rMeta.cardBorder} bg-slate-950 flex items-center gap-3`}
+                        >
+                          <div
+                            onClick={() => setShopPreviewCardId(unit.id)}
+                            className={`w-16 h-16 rounded-xl overflow-hidden border ${rMeta.cardBorder} bg-slate-900 shrink-0 cursor-pointer`}
+                          >
+                            {unit.imageUrl && (
+                              <GameImage
+                                src={unit.imageUrl}
+                                alt={unit.name}
+                                className="w-full h-full object-cover"
+                                fallback={<div className="w-full h-full flex items-center justify-center bg-slate-800 text-xs">{unit.name.slice(0, 2)}</div>}
+                              />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className={`text-[10px] font-black uppercase ${rMeta.textColor}`}>
+                              {rMeta.badgeLabel} · {unit.role}
+                            </div>
+                            <div className="text-sm font-black text-slate-100 truncate">{unit.name}</div>
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  onBuyCardWithCoins?.(unit.id);
+                                  setShopPurchaseToast({ cardId: unit.id, name: unit.name });
+                                }}
+                                disabled={!canAfford}
+                                className={`px-3 py-1 rounded-lg text-[11px] font-black font-mono tabular-nums cursor-pointer whitespace-nowrap ${
+                                  canAfford
+                                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                                    : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+                                }`}
+                              >
+                                {canAfford ? `Comprar · ${price}` : `${price} mon.`}
+                              </button>
+                              <button
+                                onClick={() => setShopPreviewCardId(unit.id)}
+                                className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 cursor-pointer"
+                                title="Ver detalles"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Shop Search, Filters & Sort */}
+            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+              <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={shopSearch}
                     onChange={(e) => setShopSearch(e.target.value)}
-                    placeholder="Busca cualquier carta para comprarla directamente (ej. Kronos, Fénix, Hacker)..."
-                    className="w-full pl-9 pr-8 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    placeholder="Buscar carta por nombre, rol o efecto..."
+                    className="w-full pl-9 pr-8 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400"
                   />
                   {shopSearch && (
                     <button
                       onClick={() => setShopSearch('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs cursor-pointer"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs cursor-pointer"
                     >
                       ✕
                     </button>
                   )}
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 shrink-0">
-                  <button
-                    onClick={() => setShopShowMode('ALL')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      shopShowMode === 'ALL'
-                        ? 'bg-amber-500 text-slate-950 font-black'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                    <button
+                      onClick={() => setShopShowMode('ALL')}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                        shopShowMode === 'ALL'
+                          ? 'bg-amber-500 text-slate-950 font-black'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Todas ({UNIT_LIST.length})
+                    </button>
+                    <button
+                      onClick={() => setShopShowMode('UNOWNED')}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                        shopShowMode === 'UNOWNED'
+                          ? 'bg-amber-500 text-slate-950 font-black'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Faltantes ({UNIT_LIST.filter((u) => !progression.unlockedCardIds.includes(u.id)).length})
+                    </button>
+                    <button
+                      onClick={() => setShopShowMode('AFFORDABLE')}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                        shopShowMode === 'AFFORDABLE'
+                          ? 'bg-emerald-500 text-slate-950 font-black'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Comprables ({UNIT_LIST.filter((u) => !progression.unlockedCardIds.includes(u.id) && canBuyCardInShop(u, progression).allowed && (progression.savedCoins ?? 0) >= getCardShopPrice(u)).length})
+                    </button>
+                  </div>
+
+                  <select
+                    value={shopSort}
+                    onChange={(e) => setShopSort(e.target.value as typeof shopSort)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
                   >
-                    Todas ({UNIT_LIST.length})
-                  </button>
-                  <button
-                    onClick={() => setShopShowMode('UNOWNED')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      shopShowMode === 'UNOWNED'
-                        ? 'bg-amber-500 text-slate-950 font-black'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    Solo Faltantes ({UNIT_LIST.filter((u) => !progression.unlockedCardIds.includes(u.id)).length})
-                  </button>
+                    <option value="AVAILABLE">Disponibles primero</option>
+                    <option value="PRICE_ASC">Precio: Menor a Mayor</option>
+                    <option value="PRICE_DESC">Precio: Mayor a Menor</option>
+                    <option value="RARITY">Rareza: Común → Divinidad</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                {RARITY_LIST.map((r) => (
-                  <button
-                    key={`shop_r_${r.key}`}
-                    onClick={() => setShopRarity(r.key)}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                      shopRarity === r.key
-                        ? 'bg-amber-500 text-slate-950 font-black shadow'
-                        : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
+              <div className="flex flex-col sm:flex-row gap-2 pt-1 border-t border-slate-800/80">
+                <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar flex-1">
+                  {RARITY_LIST.map((r) => (
+                    <button
+                      key={`shop_r_${r.key}`}
+                      onClick={() => setShopRarity(r.key)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                        shopRarity === r.key
+                          ? 'bg-amber-500 text-slate-950 font-black'
+                          : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
 
-              <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-[11px]">
-                {[
-                  { key: 'all', label: 'Todos los Roles' },
-                  { key: 'ataque', label: '⚡ Ataque' },
-                  { key: 'area', label: '🔥 Área' },
-                  { key: 'control', label: '❄️ Control' },
-                  { key: 'invocador', label: '✨ Invocador' },
-                  { key: 'soporte', label: '🛡️ Soporte' },
-                  { key: 'economia', label: '🪙 Economía' }
-                ].map((roleItem) => (
-                  <button
-                    key={`shop_role_${roleItem.key}`}
-                    onClick={() => setShopRole(roleItem.key)}
-                    className={`px-2.5 py-0.5 rounded-lg font-bold whitespace-nowrap transition-all cursor-pointer ${
-                      shopRole === roleItem.key
-                        ? 'bg-purple-600 text-white shadow'
-                        : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-                    }`}
-                  >
-                    {roleItem.label}
-                  </button>
-                ))}
+                <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
+                  {[
+                    { key: 'all', label: 'Todos Roles' },
+                    { key: 'ataque', label: 'Ataque' },
+                    { key: 'area', label: 'Área' },
+                    { key: 'control', label: 'Control' },
+                    { key: 'invocador', label: 'Invocador' },
+                    { key: 'soporte', label: 'Soporte' },
+                    { key: 'economia', label: 'Economía' }
+                  ].map((roleItem) => (
+                    <button
+                      key={`shop_role_${roleItem.key}`}
+                      onClick={() => setShopRole(roleItem.key)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                        shopRole === roleItem.key
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                      }`}
+                    >
+                      {roleItem.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Direct Card Purchase Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
               {UNIT_LIST
                 .filter((u) => {
                   const owned = progression.unlockedCardIds.includes(u.id);
+                  const eligible = canBuyCardInShop(u, progression).allowed;
+                  const affordable = (progression.savedCoins ?? 0) >= getCardShopPrice(u);
                   if (shopShowMode === 'UNOWNED' && owned) return false;
+                  if (shopShowMode === 'AFFORDABLE' && (owned || !eligible || !affordable)) return false;
                   if (shopSearch.trim()) {
                     const q = shopSearch.toLowerCase().trim();
                     if (
@@ -1177,9 +1524,15 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                   return normR === shopRarity;
                 })
                 .sort((a, b) => {
+                  if (shopSort === 'PRICE_ASC') return getCardShopPrice(a) - getCardShopPrice(b);
+                  if (shopSort === 'PRICE_DESC') return getCardShopPrice(b) - getCardShopPrice(a);
+                  if (shopSort === 'RARITY') return compareRarities(a.rarity, b.rarity);
                   const aOwned = progression.unlockedCardIds.includes(a.id) ? 1 : 0;
                   const bOwned = progression.unlockedCardIds.includes(b.id) ? 1 : 0;
-                  if (aOwned !== bOwned) return aOwned - bOwned; // Show unowned cards first
+                  if (aOwned !== bOwned) return aOwned - bOwned;
+                  const aCan = canBuyCardInShop(a, progression).allowed ? 0 : 1;
+                  const bCan = canBuyCardInShop(b, progression).allowed ? 0 : 1;
+                  if (aCan !== bCan) return aCan - bCan;
                   return compareRarities(a.rarity, b.rarity);
                 })
                 .map((unit) => {
@@ -1194,64 +1547,86 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                   return (
                     <div
                       key={`shop_card_${unit.id}`}
-                      className={`p-3 rounded-2xl border flex flex-col justify-between gap-2.5 transition-all ${
+                      className={`rounded-2xl border p-3 flex flex-col justify-between gap-3 transition-colors ${
                         isOwned
-                          ? 'bg-slate-950/60 border-emerald-500/30'
+                          ? 'bg-slate-950/70 border-emerald-500/30'
                           : isDivinityLocked
-                          ? 'bg-slate-950/80 border-slate-800 opacity-90'
-                          : `${rMeta.cardBg} ${rMeta.cardBorder} shadow-lg`
+                          ? 'bg-slate-950/80 border-slate-800'
+                          : `bg-slate-950 ${rMeta.cardBorder}`
                       }`}
                     >
                       <div>
-                        <div className="flex items-center justify-between gap-1 mb-2">
-                          <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-black ${rMeta.badgeClass}`}>
-                            {unit.rarity === 'divinidad' ? `👑 Divinidad A${unit.arenaUnlockLevel || 1}` : rMeta.badgeLabel}
-                          </span>
-                          <span className="text-[10px] font-mono text-amber-300 font-bold tabular-nums">
-                            {unit.cost} oro arena
-                          </span>
-                        </div>
+                        <div
+                          onClick={() => setShopPreviewCardId(unit.id)}
+                          className={`relative w-full aspect-[4/3] rounded-xl overflow-hidden border ${rMeta.cardBorder} bg-slate-900 mb-2.5 cursor-pointer group`}
+                        >
+                          {unit.imageUrl && (
+                            <GameImage
+                              src={unit.imageUrl}
+                              alt={unit.name}
+                              loading="lazy"
+                              className={`w-full h-full object-cover transition-transform duration-200 group-hover:scale-105 ${
+                                isDivinityLocked && !isOwned ? 'grayscale opacity-45' : ''
+                              }`}
+                              fallback={
+                                <div className="w-full h-full flex items-center justify-center bg-slate-800 text-xs font-bold text-slate-300">
+                                  {unit.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              }
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
 
-                        <div className="flex items-center gap-2.5 mb-2">
-                          <div className={`w-16 h-16 rounded-xl overflow-hidden border-2 ${rMeta.cardBorder} bg-slate-900 shrink-0 relative`}>
-                            {unit.imageUrl && (
-                              <GameImage
-                                src={unit.imageUrl}
-                                alt={unit.name}
-                                loading="lazy"
-                                className={`w-full h-full object-cover ${isDivinityLocked && !isOwned ? 'grayscale opacity-50' : ''}`}
-                                fallback={
-                                  <div className="w-full h-full flex items-center justify-center bg-slate-800 text-xs font-bold text-slate-300">
-                                    {unit.name.slice(0, 2).toUpperCase()}
-                                  </div>
-                                }
-                              />
-                            )}
-                            {isDivinityLocked && !isOwned && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-slate-950/50">
-                                <Lock className="w-5 h-5 text-amber-400" />
-                              </div>
-                            )}
+                          <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1">
+                            <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-black ${rMeta.badgeClass}`}>
+                              {unit.rarity === 'divinidad' ? `Divinidad A${unit.arenaUnlockLevel || 1}` : rMeta.badgeLabel}
+                            </span>
+                            <span className="text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-slate-950/85 text-amber-300 font-bold border border-slate-700">
+                              {unit.cost}o arena
+                            </span>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <div className={`text-sm font-black truncate ${rMeta.textColor}`}>{unit.name}</div>
-                            <div className="text-[11px] text-slate-400 truncate">{unit.title}</div>
-                            <div className="text-[10px] text-cyan-300 font-mono mt-0.5 capitalize">
-                              {unit.role} · {unit.baseDamage} daño · {unit.baseRange}px
+
+                          <div className="absolute bottom-2 left-2.5 right-2.5 flex items-end justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className={`text-sm font-black truncate ${rMeta.textColor}`}>{unit.name}</div>
+                              <div className="text-[11px] text-slate-300 truncate">{unit.title}</div>
                             </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShopPreviewCardId(unit.id);
+                              }}
+                              className="p-1.5 rounded-lg bg-slate-950/80 hover:bg-slate-800 border border-slate-700 text-slate-200 shrink-0 cursor-pointer"
+                              title="Inspeccionar estadísticas"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
                           </div>
+
+                          {isDivinityLocked && !isOwned && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-slate-950/45 pointer-events-none">
+                              <div className="px-2.5 py-1 rounded-lg bg-slate-950/90 border border-amber-500/50 text-amber-300 text-xs font-bold flex items-center gap-1.5">
+                                <Lock className="w-3.5 h-3.5" />
+                                <span>Arena {shopEligibility.requiredArena}</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
-                        <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">
+                        <div className="text-[11px] text-cyan-300 font-mono tabular-nums capitalize">
+                          {unit.role} · {unit.baseDamage} daño · {unit.baseRange}px
+                        </div>
+                        <p className="text-[11px] text-slate-400 leading-snug line-clamp-2 mt-1">
                           {unit.description}
                         </p>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2">
+                      <div className="pt-2.5 border-t border-slate-800/80 flex items-center gap-2">
                         {isOwned ? (
                           <>
-                            <div className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            <div className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                               <span>En Colección</span>
                             </div>
                             {!isInDeck && (progression.activeDeckCardIds?.length || 0) < 7 && onToggleDeckCard && (
@@ -1260,7 +1635,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                                   onToggleDeckCard(unit.id);
                                   sounds.playPlace();
                                 }}
-                                className="px-2.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black cursor-pointer transition-colors whitespace-nowrap"
+                                className="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black cursor-pointer transition-colors whitespace-nowrap"
                               >
                                 Equipar
                               </button>
@@ -1270,20 +1645,22 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                           <button
                             disabled
                             className="w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-slate-900 text-amber-300/80 border border-amber-500/30 cursor-not-allowed whitespace-nowrap"
-                            title={`Debes completar la Arena ${shopEligibility.requiredArena} primero para poder comprar este Divino`}
                           >
                             <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                             <span className="truncate font-mono tabular-nums">
-                              Completa Arena {shopEligibility.requiredArena} · {coinPrice} mon.
+                              Arena {shopEligibility.requiredArena} · {coinPrice} mon.
                             </span>
                           </button>
                         ) : (
                           <button
-                            onClick={() => onBuyCardWithCoins?.(unit.id)}
+                            onClick={() => {
+                              onBuyCardWithCoins?.(unit.id);
+                              setShopPurchaseToast({ cardId: unit.id, name: unit.name });
+                            }}
                             disabled={!canAfford}
-                            className={`w-full py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                            className={`w-full py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
                               canAfford
-                                ? 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 shadow-md active:scale-95'
+                                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
                                 : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
                             }`}
                           >
@@ -1349,32 +1726,44 @@ export const CardsHub: React.FC<CardsHubProps> = ({
               );
             })()}
 
-            {/* Drop Rates Info Box (as requested: "que los sobres ahora sean por probabilidad") */}
+            {/* Drop Rates Info Box */}
             <div className="w-full bg-slate-950/80 border border-purple-500/30 rounded-2xl p-3 text-left space-y-1.5 shadow-md">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-purple-300">
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                <span>Probabilidades de Recompensa (Rareza Clash Royale):</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-purple-300">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Probabilidades de Sobre Crono (Sin repetidos):</span>
+                </div>
+                <button
+                  onClick={() => setActiveSubTab('SHOP')}
+                  className="text-[11px] font-bold text-amber-300 hover:text-amber-200 cursor-pointer whitespace-nowrap"
+                >
+                  Comprar más en Tienda →
+                </button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-300 pt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] text-slate-300 pt-1">
                 <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-600/70">
                   <div className="text-slate-300 font-bold">Comunes</div>
-                  <div className="font-mono font-bold text-slate-200">50% de probabilidad</div>
+                  <div className="font-mono font-bold text-slate-200">48%</div>
                 </div>
                 <div className="bg-slate-900/80 p-2 rounded-xl border border-amber-500/70">
                   <div className="text-amber-300 font-bold">Especiales</div>
-                  <div className="font-mono font-bold text-amber-300">32% de probabilidad</div>
+                  <div className="font-mono font-bold text-amber-300">32%</div>
                 </div>
                 <div className="bg-slate-900/80 p-2 rounded-xl border border-purple-500/70">
                   <div className="text-purple-300 font-bold">Épicas</div>
-                  <div className="font-mono font-bold text-purple-300">14% de probabilidad</div>
+                  <div className="font-mono font-bold text-purple-300">13%</div>
                 </div>
-                <div className="bg-slate-900/80 p-2 rounded-xl border border-cyan-400 ring-1 ring-amber-400/60">
-                  <div className="text-cyan-300 font-bold">★ Legendarias ★</div>
-                  <div className="font-mono font-bold text-yellow-300">4% de probabilidad</div>
+                <div className="bg-slate-900/80 p-2 rounded-xl border border-cyan-400">
+                  <div className="text-cyan-300 font-bold">Legendarias</div>
+                  <div className="font-mono font-bold text-yellow-300">5%</div>
+                </div>
+                <div className="bg-slate-900/80 p-2 rounded-xl border border-rose-400/70">
+                  <div className="text-rose-300 font-bold">Divinidades</div>
+                  <div className="font-mono font-bold text-rose-200">2%</div>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-400 italic">
-                * 65% de probabilidad por sobre de contener una carta de personaje con los colores y bordes de su rareza. Las cartas repetidas se convierten en valiosos Puntos de Habilidad ⚡.
+              <p className="text-[10px] text-slate-400">
+                30% de probabilidad por sobre estándar de contener un héroe nuevo. ¿Buscas carta garantizada? Compra Sobres Élite, Cofres Reales o Megacajas en la Tienda.
               </p>
             </div>
 
@@ -1406,10 +1795,10 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center gap-3">
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
                   <div className="text-xs text-slate-400">
                     Sobres Disponibles:{' '}
-                    <span className="font-bold font-mono text-amber-300 text-sm">
+                    <span className="font-bold font-mono tabular-nums text-amber-300 text-sm">
                       {progression.unopenedPacks}
                     </span>
                   </div>
@@ -1421,6 +1810,15 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                   >
                     {isOpeningPack ? 'Abriendo...' : 'Abrir Sobre (1)'}
                   </button>
+
+                  {progression.unopenedPacks <= 0 && (
+                    <button
+                      onClick={() => setActiveSubTab('SHOP')}
+                      className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl transition-colors cursor-pointer"
+                    >
+                      Comprar Sobres en Tienda
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -1545,75 +1943,226 @@ export const CardsHub: React.FC<CardsHubProps> = ({
         )}
 
         {/* SUBTAB 3: MISSIONS */}
-        {activeSubTab === 'MISSIONS' && (
-          <div className="space-y-3 max-w-3xl mx-auto">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-              <span>Misiones del Modo Historia</span>
-              <span>Gana Sobres Crono</span>
-            </div>
+        {activeSubTab === 'MISSIONS' && (() => {
+          const totalMissions = missions.length;
+          const completedCount = missions.filter((m) => m.completed).length;
+          const claimedTotal = missions.filter((m) => m.claimed).length;
 
-            {missions.map((mission) => {
-              const progressRatio = Math.min(1, mission.currentCount / mission.targetCount);
+          const difficultyLabel: Record<MissionDifficulty, string> = {
+            facil: 'Fácil',
+            media: 'Media',
+            dificil: 'Difícil',
+            extrema: 'Extrema',
+            legendaria: 'Legendaria'
+          };
+          const difficultyStyle: Record<MissionDifficulty, string> = {
+            facil: 'text-emerald-300',
+            media: 'text-cyan-300',
+            dificil: 'text-amber-300',
+            extrema: 'text-orange-300',
+            legendaria: 'text-rose-300'
+          };
+          const categoryLabel: Record<MissionCategory, string> = {
+            combat: 'Combate',
+            story: 'Oleadas',
+            arena: 'Arenas',
+            economy: 'Economía',
+            collection: 'Colección'
+          };
 
-              return (
-                <div
-                  key={mission.id}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-                    mission.claimed
-                      ? 'bg-slate-950/40 border-slate-800/60 opacity-60'
-                      : mission.completed
-                      ? 'bg-gradient-to-r from-purple-950/60 to-slate-900 border-purple-500/70 shadow-lg ring-1 ring-purple-500/40'
-                      : 'bg-slate-950/70 border-slate-800'
-                  }`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-bold text-sm text-slate-100">{mission.title}</h4>
-                      <span className="text-[10px] px-2 py-0.5 rounded font-mono uppercase bg-slate-800 text-slate-300">
-                        {mission.category}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed mb-2">
-                      {mission.description}
-                    </p>
+          const filteredMissions = missions
+            .filter((m) => {
+              if (missionCategoryFilter !== 'all' && m.category !== missionCategoryFilter) return false;
+              if (missionStatusFilter === 'claimable') return m.completed && !m.claimed;
+              if (missionStatusFilter === 'active') return !m.completed;
+              if (missionStatusFilter === 'hard') {
+                return m.difficulty === 'dificil' || m.difficulty === 'extrema' || m.difficulty === 'legendaria';
+              }
+              if (missionStatusFilter === 'claimed') return m.claimed;
+              return true;
+            })
+            .sort((a, b) => {
+              // Claimable first, then uncompleted, then claimed
+              const rankA = a.completed && !a.claimed ? 0 : !a.completed ? 1 : 2;
+              const rankB = b.completed && !b.claimed ? 0 : !b.completed ? 1 : 2;
+              if (rankA !== rankB) return rankA - rankB;
+              if (rankA === 1) {
+                const ratioA = a.currentCount / a.targetCount;
+                const ratioB = b.currentCount / b.targetCount;
+                return ratioB - ratioA;
+              }
+              return 0;
+            });
 
-                    {/* Progress Bar */}
-                    <div className="w-full max-w-md h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
-                      <div
-                        className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 transition-all duration-300"
-                        style={{ width: `${progressRatio * 100}%` }}
-                      />
-                    </div>
-                    <div className="text-[10px] font-mono text-slate-400 mt-1">
-                      Progreso: {Math.min(mission.currentCount, mission.targetCount)} /{' '}
-                      {mission.targetCount}
-                    </div>
-                  </div>
-
-                  {/* Claim Reward Button */}
-                  <div className="shrink-0">
-                    {mission.claimed ? (
-                      <div className="px-3 py-1.5 rounded-xl bg-slate-900 text-slate-500 text-xs font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Reclamado
-                      </div>
-                    ) : mission.completed ? (
-                      <button
-                        onClick={() => onClaimMission(mission.id)}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs shadow-md active:scale-95 transition-all cursor-pointer"
-                      >
-                        Reclamar (+{mission.rewardPacks} {mission.rewardPacks === 1 ? 'Sobre' : 'Sobres'})
-                      </button>
-                    ) : (
-                      <div className="px-3 py-1.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-400 text-xs font-medium">
-                        Recompensa: +{mission.rewardPacks} {mission.rewardPacks === 1 ? 'Sobre' : 'Sobres'}
-                      </div>
-                    )}
+          return (
+            <div className="space-y-4 max-w-5xl mx-auto">
+              {/* Summary Header */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-black text-slate-100">
+                    Misiones de Campaña y Desafíos ({totalMissions})
+                  </h3>
+                  <div className="text-xs text-slate-400 mt-0.5 font-mono tabular-nums">
+                    {completedCount}/{totalMissions} completadas · {claimedTotal} reclamadas · {claimableCount} listas para reclamar
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+
+                {claimableCount > 0 && onClaimAllMissions && (
+                  <button
+                    onClick={onClaimAllMissions}
+                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    Reclamar Todas ({claimableCount})
+                  </button>
+                )}
+              </div>
+
+              {/* Filters Toolbar */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-3 space-y-2.5">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                  {[
+                    { key: 'all', label: `Todas (${totalMissions})` },
+                    { key: 'combat', label: 'Combate' },
+                    { key: 'story', label: 'Oleadas' },
+                    { key: 'arena', label: 'Arenas' },
+                    { key: 'economy', label: 'Economía' },
+                    { key: 'collection', label: 'Colección' }
+                  ].map((cat) => (
+                    <button
+                      key={`mcat_${cat.key}`}
+                      onClick={() => setMissionCategoryFilter(cat.key as typeof missionCategoryFilter)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                        missionCategoryFilter === cat.key
+                          ? 'bg-amber-500 text-slate-950 font-black'
+                          : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-800/80">
+                  {[
+                    { key: 'all', label: 'Todos los estados' },
+                    { key: 'claimable', label: `Listas (${claimableCount})` },
+                    { key: 'active', label: 'En progreso' },
+                    { key: 'hard', label: 'Alta dificultad' },
+                    { key: 'claimed', label: `Reclamadas (${claimedTotal})` }
+                  ].map((st) => (
+                    <button
+                      key={`mst_${st.key}`}
+                      onClick={() => setMissionStatusFilter(st.key as typeof missionStatusFilter)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                        missionStatusFilter === st.key
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                      }`}
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Missions Grid */}
+              {filteredMissions.length === 0 ? (
+                <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
+                  <div className="text-sm font-bold text-slate-300">No hay misiones en este filtro</div>
+                  <button
+                    onClick={() => {
+                      setMissionCategoryFilter('all');
+                      setMissionStatusFilter('all');
+                    }}
+                    className="px-4 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-black cursor-pointer"
+                  >
+                    Ver todas las misiones
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {filteredMissions.map((mission) => {
+                    const progressRatio = Math.min(1, mission.currentCount / mission.targetCount);
+                    const diffKey: MissionDifficulty = mission.difficulty || 'media';
+
+                    return (
+                      <div
+                        key={mission.id}
+                        className={`p-4 rounded-2xl border transition-colors flex flex-col justify-between gap-3 ${
+                          mission.claimed
+                            ? 'bg-slate-950/40 border-slate-800/70 opacity-60'
+                            : mission.completed
+                            ? 'bg-slate-900 border-amber-400/70'
+                            : 'bg-slate-950 border-slate-800'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 text-[11px] font-mono mb-1">
+                            <span className="text-slate-400">
+                              {categoryLabel[mission.category]} ·{' '}
+                              <span className={`font-bold ${difficultyStyle[diffKey]}`}>
+                                {difficultyLabel[diffKey]}
+                              </span>
+                            </span>
+                            <span className="tabular-nums text-slate-300 font-bold">
+                              {Math.min(mission.currentCount, mission.targetCount).toLocaleString()} /{' '}
+                              {mission.targetCount.toLocaleString()}
+                            </span>
+                          </div>
+
+                          <h4 className="font-black text-sm text-slate-100">{mission.title}</h4>
+                          <p className="text-xs text-slate-400 leading-relaxed mt-1 mb-2.5">
+                            {mission.description}
+                          </p>
+
+                          <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                            <div
+                              className={`h-full transition-all duration-300 ${
+                                mission.completed ? 'bg-emerald-500' : 'bg-amber-400'
+                              }`}
+                              style={{ width: `${progressRatio * 100}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                          <div className="text-xs font-mono tabular-nums flex items-center gap-2 flex-wrap">
+                            <span className="text-purple-300 font-bold">
+                              +{mission.rewardPacks} {mission.rewardPacks === 1 ? 'Sobre' : 'Sobres'}
+                            </span>
+                            {mission.rewardCoins ? (
+                              <span className="text-amber-300 font-bold">· +{mission.rewardCoins} mon.</span>
+                            ) : null}
+                            {mission.rewardSkillPoints ? (
+                              <span className="text-emerald-300 font-bold">· +{mission.rewardSkillPoints} PH</span>
+                            ) : null}
+                          </div>
+
+                          {mission.claimed ? (
+                            <span className="text-xs text-emerald-400 font-bold flex items-center gap-1 whitespace-nowrap">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Reclamado
+                            </span>
+                          ) : mission.completed ? (
+                            <button
+                              onClick={() => onClaimMission(mission.id)}
+                              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-colors cursor-pointer whitespace-nowrap"
+                            >
+                              Reclamar
+                            </button>
+                          ) : (
+                            <span className="text-[11px] text-slate-500 font-semibold whitespace-nowrap">
+                              {Math.round(progressRatio * 100)}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* SUBTAB 4: ALMANAC / BESTIARY */}
         {activeSubTab === 'ALMANAC' && (
@@ -1775,13 +2324,259 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                 onClick={handleManualSave}
                 className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs shadow-lg shadow-emerald-950/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <span>💾 Guardar Ahora</span>
+                <span>Guardar Ahora</span>
               </button>
               <button
                 onClick={() => setShowSaveModal(false)}
                 className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer"
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Shop Card Preview Modal */}
+      {shopPreviewCardId && UNITS[shopPreviewCardId] && (() => {
+        const previewUnit = UNITS[shopPreviewCardId];
+        const pMeta = getRarityMeta(previewUnit.rarity);
+        const isOwned = progression.unlockedCardIds.includes(previewUnit.id);
+        const coinPrice = getCardShopPrice(previewUnit);
+        const canAfford = (progression.savedCoins ?? 0) >= coinPrice;
+        const shopElig = canBuyCardInShop(previewUnit, progression);
+
+        return (
+          <div
+            onClick={() => setShopPreviewCardId(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg max-h-[90dvh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl"
+            >
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-14 h-14 rounded-xl overflow-hidden border-2 ${pMeta.cardBorder} bg-slate-950 shrink-0`}>
+                    {previewUnit.imageUrl && (
+                      <GameImage
+                        src={previewUnit.imageUrl}
+                        alt={previewUnit.name}
+                        className="w-full h-full object-cover"
+                        fallback={<div className="w-full h-full flex items-center justify-center bg-slate-800 text-xs">{previewUnit.name.slice(0, 2)}</div>}
+                      />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className={`text-[10px] font-black uppercase ${pMeta.textColor}`}>
+                      {pMeta.badgeLabel} · {previewUnit.role}
+                    </div>
+                    <h3 className="text-base font-black text-slate-100 truncate">{previewUnit.name}</h3>
+                    <div className="text-xs text-slate-400 truncate">{previewUnit.title}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShopPreviewCardId(null)}
+                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-4 overflow-y-auto space-y-3.5 text-xs">
+                <p className="text-slate-300 leading-relaxed">{previewUnit.description}</p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono tabular-nums">
+                  <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <div className="text-[10px] font-sans text-slate-400">Coste Arena</div>
+                    <div className="text-sm font-bold text-amber-300">{previewUnit.cost} oro</div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <div className="text-[10px] font-sans text-slate-400">Daño Base</div>
+                    <div className="text-sm font-bold text-amber-200">{previewUnit.baseDamage}</div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <div className="text-[10px] font-sans text-slate-400">Cadencia</div>
+                    <div className="text-sm font-bold text-emerald-300">{previewUnit.baseAttackSpeed}/s</div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <div className="text-[10px] font-sans text-slate-400">Alcance</div>
+                    <div className="text-sm font-bold text-cyan-300">{previewUnit.baseRange}px</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Niveles en Batalla
+                  </div>
+                  {previewUnit.tiers.map((t, idx) => (
+                    <div key={idx} className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-slate-200">{t.name}</div>
+                        <div className="text-[11px] text-slate-400">{t.description}</div>
+                      </div>
+                      <span className="font-mono tabular-nums text-[11px] text-amber-300 shrink-0">
+                        {t.cost > 0 ? `${t.cost}o` : 'Base'} · {t.damage} dmg
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950 border border-purple-500/30 space-y-1">
+                  <div className="font-bold text-purple-300 flex items-center justify-between">
+                    <span>Showdown: {previewUnit.showdownName}</span>
+                    <span className="font-mono text-[10px] text-slate-400">{previewUnit.showdownCooldown}s CD</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">{previewUnit.showdownDescription}</p>
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-slate-800 bg-slate-950/90 flex items-center justify-between gap-3">
+                <button
+                  onClick={() => setShopPreviewCardId(null)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold cursor-pointer"
+                >
+                  Cerrar
+                </button>
+                {isOwned ? (
+                  <div className="px-4 py-2.5 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
+                    Ya en tu colección
+                  </div>
+                ) : !shopElig.allowed ? (
+                  <div className="px-4 py-2.5 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-300 text-xs font-bold">
+                    Requiere completar Arena {shopElig.requiredArena}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      onBuyCardWithCoins?.(previewUnit.id);
+                      setShopPurchaseToast({ cardId: previewUnit.id, name: previewUnit.name });
+                      setShopPreviewCardId(null);
+                    }}
+                    disabled={!canAfford}
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black font-mono tabular-nums cursor-pointer ${
+                      canAfford
+                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                        : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+                    }`}
+                  >
+                    {canAfford ? `Comprar · ${coinPrice} monedas` : `Faltan monedas (${coinPrice})`}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Shop Pack Immediate Opening Reveal Modal */}
+      {shopPackReveal && (
+        <div
+          onClick={() => setShopPackReveal(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl max-h-[90dvh] flex flex-col bg-slate-900 border border-purple-500/40 rounded-2xl overflow-hidden shadow-2xl"
+          >
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <PackageOpen className="w-5 h-5 text-purple-400" />
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-purple-300">
+                    Recompensas Obtenidas
+                  </div>
+                  <h3 className="text-base font-black text-slate-100">{shopPackReveal.tierName}</h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setShopPackReveal(null)}
+                className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {shopPackReveal.rewards.map((reward, idx) => {
+                const unit = reward.cardId ? UNITS[reward.cardId] : null;
+                const rMeta = getRarityMeta(reward.rarity || unit?.rarity);
+                const isInDeck = reward.cardId ? (progression.activeDeckCardIds || []).includes(reward.cardId) : false;
+                const deckHasRoom = (progression.activeDeckCardIds || []).length < 7;
+
+                return (
+                  <div
+                    key={`shop_pull_${idx}`}
+                    className={`p-3.5 rounded-2xl border flex items-center gap-3 ${
+                      reward.type === 'card'
+                        ? `${rMeta.cardBg} ${rMeta.cardBorder}`
+                        : 'bg-slate-950 border-slate-800'
+                    }`}
+                  >
+                    {reward.type === 'card' && unit ? (
+                      <>
+                        <div className={`w-16 h-16 rounded-xl overflow-hidden border-2 ${rMeta.cardBorder} bg-slate-900 shrink-0`}>
+                          {unit.imageUrl && (
+                            <GameImage
+                              src={unit.imageUrl}
+                              alt={unit.name}
+                              className="w-full h-full object-cover"
+                              fallback={<div className="w-full h-full flex items-center justify-center bg-slate-800 text-xs">{unit.name.slice(0, 2)}</div>}
+                            />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className={`text-[10px] font-black uppercase ${rMeta.textColor}`}>
+                            {rMeta.badgeLabel} · ¡Nueva Carta!
+                          </div>
+                          <div className={`text-sm font-black truncate ${rMeta.textColor}`}>{unit.name}</div>
+                          <div className="text-[11px] text-slate-300 truncate">{unit.title}</div>
+                          {!isInDeck && deckHasRoom && onToggleDeckCard && (
+                            <button
+                              onClick={() => {
+                                onToggleDeckCard(unit.id);
+                                sounds.playPlace();
+                              }}
+                              className="mt-1.5 px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-black cursor-pointer"
+                            >
+                              Equipar al Mazo
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 rounded-xl bg-amber-950/70 border border-amber-500/40 flex items-center justify-center shrink-0">
+                          <Zap className="w-6 h-6 text-amber-400" />
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold uppercase text-slate-400">Puntos de Habilidad</div>
+                          <div className="text-lg font-black font-mono tabular-nums text-amber-300">
+                            +{reward.skillPoints} PH
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="p-4 border-t border-slate-800 bg-slate-950/90 flex items-center justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShopPackReveal(null);
+                  setActiveSubTab('DECK');
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold cursor-pointer"
+              >
+                Ir a Mi Mazo
+              </button>
+              <button
+                onClick={() => setShopPackReveal(null)}
+                className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black cursor-pointer"
+              >
+                Continuar en Tienda
               </button>
             </div>
           </div>

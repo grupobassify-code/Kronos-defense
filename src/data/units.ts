@@ -1191,7 +1191,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.2,
     projectileType: 'laser',
     projectileColor: '#F59E0B',
-    imageUrl: '/assets/images/hero_vanguard_solar_1791483615299.jpg',
+    imageUrl: '/assets/images/hero_aureon_sun_king.svg',
     showdownImageUrl: '/assets/images/attack_meteor_1791483757694.jpg',
     description: 'Divinidad del Valle Esmeralda. Emana rayos celestiales que bendicen y duplican la potencia de todas las defensas aliadas.',
     showdownName: 'Corona del Sol',
@@ -1247,7 +1247,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 0.95,
     projectileType: 'fireball',
     projectileColor: '#DC2626',
-    imageUrl: '/assets/images/hero_pyromancer_1791483624218.jpg',
+    imageUrl: '/assets/images/hero_vulcanox_magma_lord.svg',
     showdownImageUrl: '/assets/images/attack_supernova_1791483748936.jpg',
     description: 'Divinidad del Cañón de Magma. Abre calderas volcánicas que desatan ríos de roca fundida calcinando a toda la horda enemiga.',
     showdownName: 'Erupción Cataclísmica',
@@ -1303,7 +1303,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.3,
     projectileType: 'laser',
     projectileColor: '#38BDF8',
-    imageUrl: '/assets/images/hero_resonator_1791483708829.jpg',
+    imageUrl: '/assets/images/hero_cygnus_prime_ai.svg',
     showdownImageUrl: '/assets/images/attack_orbital_beam_1791483770365.jpg',
     description: 'Divinidad de la red tecnológica. Computa fallas en tiempo real y desata pulsos de interferencia electromagnética absoluta.',
     showdownName: 'Sobrecarga EMP Global',
@@ -1359,7 +1359,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.1,
     projectileType: 'beam',
     projectileColor: '#F59E0B',
-    imageUrl: '/assets/images/hero_chrono_guardian_1791483673461.jpg',
+    imageUrl: '/assets/images/hero_chronax_time_guardian.svg',
     showdownImageUrl: '/assets/images/attack_orbital_beam_1791483770365.jpg',
     description: 'Divinidad del Desierto de Cronos. Controla el flujo de la eternidad y rebobina las arenas del tiempo.',
     showdownName: 'Tiempo Cero',
@@ -1415,7 +1415,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.25,
     projectileType: 'resonance',
     projectileColor: '#A855F7',
-    imageUrl: '/assets/images/hero_shadow_assassin_1791486441952.jpg',
+    imageUrl: '/assets/images/hero_eclipse_divided.svg',
     showdownImageUrl: '/assets/images/boss_eclipse_1791483718360.jpg',
     description: 'Divinidad del Coliseo del Eclipse. Al colocarse genera una réplica gemela y colapsa la paradoja en una detonación bipolar.',
     showdownName: 'Paradoja Luminar',
@@ -1471,7 +1471,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.05,
     projectileType: 'ice',
     projectileColor: '#38BDF8',
-    imageUrl: '/assets/images/hero_cryo_mage_1791483643403.jpg',
+    imageUrl: '/assets/images/hero_ymir_frost_sovereign.svg',
     showdownImageUrl: '/assets/images/attack_orbital_beam_1791483770365.jpg',
     description: 'Divinidad de las Cumbres Glaciares. Controla la temperatura del cero absoluto congelando glaciares sobre el campo.',
     showdownName: 'Cero Absoluto',
@@ -1527,7 +1527,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.5,
     projectileType: 'laser',
     projectileColor: '#EC4899',
-    imageUrl: '/assets/images/hero_plasma_gunner_1791556369753.jpg',
+    imageUrl: '/assets/images/hero_kira_synthwave_empress.svg',
     showdownImageUrl: '/assets/images/attack_meteor_1791483757694.jpg',
     description: 'Divinidad de la Metrópolis Neón. Canaliza energía cibernética ultravioleta que se refracta a velocidades lumínicas.',
     showdownName: 'Sobrecarga Neón',
@@ -1583,7 +1583,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.0,
     projectileType: 'ice',
     projectileColor: '#06B6D4',
-    imageUrl: '/assets/images/hero_void_sniper_1791483664537.jpg',
+    imageUrl: '/assets/images/hero_nacar_abyssal_fish.svg',
     showdownImageUrl: '/assets/images/attack_orbital_beam_1791483770365.jpg',
     description: 'Divinidad del Abismo del Vacío. Abre fisuras oceánicas submarinas que succionan hordas enteras hacia la oscuridad abisal.',
     showdownName: 'Vórtice Abisal',
@@ -1639,7 +1639,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.15,
     projectileType: 'laser',
     projectileColor: '#FBBF24',
-    imageUrl: '/assets/images/hero_lunar_huntress_1791557218962.jpg',
+    imageUrl: '/assets/images/hero_seraphina_dawn_archon.svg',
     showdownImageUrl: '/assets/images/attack_supernova_1791483748936.jpg',
     description: 'Divinidad del Santuario Celestial. Heraldo de la luz de la creación que restaura la vitalidad del Núcleo y castiga a los invasores.',
     showdownName: 'Luz Trascendente',
@@ -1695,7 +1695,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.2,
     projectileType: 'resonance',
     projectileColor: '#38BDF8',
-    imageUrl: '/assets/images/hero_electro_wizard_1791557170088.jpg',
+    imageUrl: '/assets/images/hero_thorin_storm_overlord.svg',
     showdownImageUrl: '/assets/images/attack_meteor_1791483757694.jpg',
     description: 'Divinidad de la Ciudadela de las Tormentas. Forjador de relámpagos cataclísmicos que fulminan ejércitos enteros.',
     showdownName: 'Tormenta Cataclísmica',
@@ -1751,7 +1751,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.1,
     projectileType: 'coin',
     projectileColor: '#22C55E',
-    imageUrl: '/assets/images/hero_geomancer_titan_1791556415947.jpg',
+    imageUrl: '/assets/images/hero_gaia_world_heart.svg',
     showdownImageUrl: '/assets/images/attack_orbital_beam_1791483770365.jpg',
     description: 'Divinidad de la Selva Primordial. El espíritu vegetal de la Tierra que atrapa a los invasores y transmuta su fuerza en oro puro.',
     showdownName: 'Ira de la Tierra',
@@ -1810,7 +1810,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 0.9,
     projectileType: 'fireball',
     projectileColor: '#F97316',
-    imageUrl: '/assets/images/hero_inferno_dragon_1791557148598.jpg',
+    imageUrl: '/assets/images/hero_ignis_tartarus_colossus.svg',
     showdownImageUrl: '/assets/images/attack_supernova_1791483748936.jpg',
     description: 'Divinidad de la Fragua Infernal. Titán de acero fundido que derrite la armadura de los enemigos más colosales con calor estelar.',
     showdownName: 'Fundición del Tártaro',
@@ -1866,7 +1866,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.2,
     projectileType: 'resonance',
     projectileColor: '#818CF8',
-    imageUrl: '/assets/images/hero_arcane_witch_1791556434504.jpg',
+    imageUrl: '/assets/images/hero_astrea_constellation_weaver.svg',
     showdownImageUrl: '/assets/images/attack_supernova_1791483748936.jpg',
     description: 'Divinidad del Nexo Astral. Conecta los hilos del firmamento para desatar la detonación de estrellas supernovas.',
     showdownName: 'Supernova Estelar',
@@ -1922,7 +1922,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.1,
     projectileType: 'resonance',
     projectileColor: '#6B21A8',
-    imageUrl: '/assets/images/hero_shadow_assassin_1791486441952.jpg',
+    imageUrl: '/assets/images/hero_thanatos_underworld_herald.svg',
     showdownImageUrl: '/assets/images/attack_orbital_beam_1791483770365.jpg',
     description: 'Divinidad de la Cripta de las Sombras. El segador supremo que ejecuta almas debilitadas e inflige daño espectral devastador.',
     showdownName: 'Cosecha de Almas',
@@ -1978,7 +1978,7 @@ export const UNITS: Record<string, UnitBlueprint> = {
     baseAttackSpeed: 1.2,
     projectileType: 'fireball',
     projectileColor: '#EAB308',
-    imageUrl: '/assets/images/hero_inferno_dragon_1791557148598.jpg',
+    imageUrl: '/assets/images/hero_fenix_golden_phoenix.svg',
     showdownImageUrl: '/assets/images/attack_supernova_1791483748936.jpg',
     description: 'Divinidad Suprema del Trono del Valhalla. Señor del renacimiento celestial que otorga inmensas riquezas, restaura el Núcleo y desata el fuego eterno.',
     showdownName: 'Resurrección del Valhalla',
@@ -3616,6 +3616,1772 @@ export const UNITS: Record<string, UnitBlueprint> = {
       accent: '#F3E8FF',
       bg: 'rgba(192, 132, 252, 0.25)'
     }
+  },
+
+  // =========================================================================
+  // EXPANSIÓN 100 CARTAS (+33 NUEVAS CARTAS DISTRIBUIDAS EN TODAS LAS RAREZAS)
+  // =========================================================================
+
+  // --- 8 NUEVAS CARTAS COMUNES ---
+  centinela_acero: {
+    id: 'centinela_acero',
+    name: 'Centinela de Acero',
+    title: 'Guardia de Bastión',
+    role: 'ataque',
+    rarity: 'comun',
+    cost: 85,
+    baseDamage: 18,
+    baseRange: 130,
+    baseAttackSpeed: 1.35,
+    projectileType: 'bullet',
+    projectileColor: '#94A3B8',
+    imageUrl: '/assets/images/hero_centinela_acero.svg',
+    description: 'Soldado blindado con rifle balístico estándar. Defensa confiable y económica para contener las primeras oleadas.',
+    showdownName: 'Ráfaga de Bastión',
+    showdownDescription: 'Descarga fuego concentrado sobre todos los invasores en línea, infligiendo 240 de daño balístico.',
+    showdownCooldown: 28,
+    tiers: [
+      {
+        name: 'Carabina de Acero I',
+        cost: 0,
+        damage: 18,
+        range: 130,
+        attackSpeed: 1.35,
+        description: 'Disparos rápidos y precisos de calibre táctico.'
+      },
+      {
+        name: 'Munición Perforante II',
+        cost: 95,
+        damage: 36,
+        range: 150,
+        attackSpeed: 1.65,
+        description: 'Aumenta la cadencia y perfora armaduras ligeras.',
+        bonusEffect: 'Alcance táctico extendido'
+      },
+      {
+        name: 'Torreta Reforzada III',
+        cost: 210,
+        damage: 78,
+        range: 170,
+        attackSpeed: 2.1,
+        description: 'Ráfaga continua de alta velocidad para frenar hordas.',
+        bonusEffect: 'Cadencia balística máxima'
+      }
+    ],
+    colorTheme: {
+      primary: '#94A3B8',
+      secondary: '#475569',
+      accent: '#E2E8F0',
+      bg: 'rgba(148, 163, 184, 0.16)'
+    }
+  },
+
+  ballestero_real: {
+    id: 'ballestero_real',
+    name: 'Ballestero Real',
+    title: 'Tirador de Ciudadela',
+    role: 'ataque',
+    rarity: 'comun',
+    cost: 95,
+    baseDamage: 26,
+    baseRange: 165,
+    baseAttackSpeed: 1.0,
+    projectileType: 'arrow',
+    projectileColor: '#38BDF8',
+    imageUrl: '/assets/images/hero_ballestero_real.svg',
+    description: 'Armado con ballesta pesada de largo alcance que abate enemigos antes de que alcancen los muros.',
+    showdownName: 'Andanada Real',
+    showdownDescription: 'Dispara una lluvia de virotes pesados que infligen 290 de daño a todos los enemigos.',
+    showdownCooldown: 30,
+    tiers: [
+      {
+        name: 'Virote Templado I',
+        cost: 0,
+        damage: 26,
+        range: 165,
+        attackSpeed: 1.0,
+        description: 'Largo alcance con impacto sólido por disparo.'
+      },
+      {
+        name: 'Ballesta Doble II',
+        cost: 110,
+        damage: 52,
+        range: 185,
+        attackSpeed: 1.25,
+        description: 'Doble tensión mecánica con virotes de acero rúnico.',
+        bonusEffect: 'Alcance ampliado a 185px'
+      },
+      {
+        name: 'Virote Imperial III',
+        cost: 230,
+        damage: 110,
+        range: 210,
+        attackSpeed: 1.55,
+        description: 'Disparos perforantes de altísima velocidad terminal.',
+        bonusEffect: 'Precisión de francotirador'
+      }
+    ],
+    colorTheme: {
+      primary: '#38BDF8',
+      secondary: '#1D4ED8',
+      accent: '#DBEAFE',
+      bg: 'rgba(56, 189, 248, 0.15)'
+    }
+  },
+
+  granadero_tactico: {
+    id: 'granadero_tactico',
+    name: 'Granadero Táctico',
+    title: 'Especialista de Mortero',
+    role: 'area',
+    rarity: 'comun',
+    cost: 110,
+    baseDamage: 30,
+    baseRange: 120,
+    baseAttackSpeed: 0.85,
+    projectileType: 'fireball',
+    projectileColor: '#F97316',
+    imageUrl: '/assets/images/hero_granadero_tactico.svg',
+    description: 'Lanza granadas de fragmentación que explotan en área contra grupos compactos de exploradores y enjambres.',
+    showdownName: 'Barrido de Fragmentación',
+    showdownDescription: 'Detona cargas tácticas en todo el camino causando 310 de daño explosivo en área.',
+    showdownCooldown: 32,
+    tiers: [
+      {
+        name: 'Granada MK-I',
+        cost: 0,
+        damage: 30,
+        range: 120,
+        attackSpeed: 0.85,
+        description: 'Explosión de fragmentación en radio de 45px.'
+      },
+      {
+        name: 'Carga Termita II',
+        cost: 125,
+        damage: 62,
+        range: 135,
+        attackSpeed: 1.05,
+        description: 'Mayor radio de detonación y daño ígneo.',
+        bonusEffect: 'Radio explosivo ampliado'
+      },
+      {
+        name: 'Mortero de Asedio III',
+        cost: 255,
+        damage: 130,
+        range: 155,
+        attackSpeed: 1.3,
+        description: 'Bombardeo continuo capaz de limpiar enjambres completos.',
+        bonusEffect: 'Onda expansiva devastadora'
+      }
+    ],
+    colorTheme: {
+      primary: '#F97316',
+      secondary: '#9A3412',
+      accent: '#FFEDD5',
+      bg: 'rgba(249, 115, 22, 0.15)'
+    }
+  },
+
+  vigia_bosque: {
+    id: 'vigia_bosque',
+    name: 'Vigía del Bosque',
+    title: 'Explorador de Esporas',
+    role: 'control',
+    rarity: 'comun',
+    cost: 90,
+    baseDamage: 15,
+    baseRange: 145,
+    baseAttackSpeed: 1.2,
+    projectileType: 'spore',
+    projectileColor: '#22C55E',
+    imageUrl: '/assets/images/hero_vigia_bosque.svg',
+    description: 'Arquero silvestre cuyas flechas impregnadas de savia ralentizan a los invasores velozmente.',
+    showdownName: 'Niebla de Savia',
+    showdownDescription: 'Envuelve el sendero en esporas relajantes que ralentizan un 55% a todos los enemigos por 4s e infligen 210 de daño.',
+    showdownCooldown: 30,
+    tiers: [
+      {
+        name: 'Dardos de Savia I',
+        cost: 0,
+        damage: 15,
+        range: 145,
+        attackSpeed: 1.2,
+        description: 'Aplica ralentización leve al impactar.'
+      },
+      {
+        name: 'Resina Pegajosa II',
+        cost: 105,
+        damage: 30,
+        range: 165,
+        attackSpeed: 1.45,
+        description: 'Reduce la velocidad enemiga con mayor duración.',
+        bonusEffect: 'Control de velocidad mejorado'
+      },
+      {
+        name: 'Flechas de Enredadera III',
+        cost: 220,
+        damage: 66,
+        range: 185,
+        attackSpeed: 1.75,
+        description: 'Disparos rápidos que frenan el avance de tanques.',
+        bonusEffect: 'Frenado táctico continuo'
+      }
+    ],
+    colorTheme: {
+      primary: '#22C55E',
+      secondary: '#15803D',
+      accent: '#DCFCE7',
+      bg: 'rgba(34, 197, 94, 0.15)'
+    }
+  },
+
+  mercader_rondas: {
+    id: 'mercader_rondas',
+    name: 'Mercader de Rondas',
+    title: 'Proveedor de Suministros',
+    role: 'economia',
+    rarity: 'comun',
+    cost: 105,
+    baseDamage: 10,
+    baseRange: 110,
+    baseAttackSpeed: 0.9,
+    projectileType: 'coin',
+    projectileColor: '#FACC15',
+    imageUrl: '/assets/images/hero_mercader_rondas.svg',
+    description: 'Unidad económica accesible que financia tu defensa aportando monedas de oro al final de cada ronda.',
+    showdownName: 'Dividendo Táctico',
+    showdownDescription: 'Entrega +70 monedas de oro de inmediato para desplegar refuerzos y aturde levemente 0.6s.',
+    showdownCooldown: 40,
+    tiers: [
+      {
+        name: 'Caravana I',
+        cost: 0,
+        damage: 10,
+        range: 110,
+        attackSpeed: 0.9,
+        ecoYield: 12,
+        description: 'Genera +12 oro garantizado al superar cada oleada.'
+      },
+      {
+        name: 'Ruta Comercial II',
+        cost: 115,
+        damage: 20,
+        range: 125,
+        attackSpeed: 1.1,
+        ecoYield: 24,
+        description: 'Genera +24 oro por ronda.',
+        bonusEffect: '+24 Oro por oleada'
+      },
+      {
+        name: 'Gremio de Abasto III',
+        cost: 235,
+        damage: 42,
+        range: 140,
+        attackSpeed: 1.35,
+        ecoYield: 40,
+        description: 'Genera +40 oro por ronda para sostener mejoras tempranas.',
+        bonusEffect: '+40 Oro por oleada'
+      }
+    ],
+    colorTheme: {
+      primary: '#FACC15',
+      secondary: '#A16207',
+      accent: '#FEF9C3',
+      bg: 'rgba(250, 204, 21, 0.15)'
+    }
+  },
+
+  soldado_plasma: {
+    id: 'soldado_plasma',
+    name: 'Soldado de Plasma',
+    title: 'Infantería Fotónica',
+    role: 'ataque',
+    rarity: 'comun',
+    cost: 100,
+    baseDamage: 20,
+    baseRange: 140,
+    baseAttackSpeed: 1.5,
+    projectileType: 'laser',
+    projectileColor: '#06B6D4',
+    imageUrl: '/assets/images/hero_soldado_plasma.svg',
+    description: 'Infante futurista equipado con fusil de plasma rápido, ideal contra exploradores veloces.',
+    showdownName: 'Descarga Fotónica',
+    showdownDescription: 'Emite un barrido láser por toda la arena que inflige 260 de daño energético.',
+    showdownCooldown: 29,
+    tiers: [
+      {
+        name: 'Fusil Pulso I',
+        cost: 0,
+        damage: 20,
+        range: 140,
+        attackSpeed: 1.5,
+        description: 'Disparos láser estables de alta velocidad.'
+      },
+      {
+        name: 'Condensador Azul II',
+        cost: 110,
+        damage: 40,
+        range: 160,
+        attackSpeed: 1.85,
+        description: 'Acelera el disparo un 25% y duplica la potencia.',
+        bonusEffect: 'Cadencia láser acelerada'
+      },
+      {
+        name: 'Rifle Hiperión III',
+        cost: 240,
+        damage: 88,
+        range: 180,
+        attackSpeed: 2.3,
+        description: 'Fuego continuo de plasma ionizado.',
+        bonusEffect: 'Alta penetración energética'
+      }
+    ],
+    colorTheme: {
+      primary: '#06B6D4',
+      secondary: '#0E7490',
+      accent: '#CFFAFE',
+      bg: 'rgba(6, 182, 212, 0.15)'
+    }
+  },
+
+  zapador_mina: {
+    id: 'zapador_mina',
+    name: 'Zapador de Minas',
+    title: 'Ingeniero Explosivo',
+    role: 'area',
+    rarity: 'comun',
+    cost: 105,
+    baseDamage: 34,
+    baseRange: 115,
+    baseAttackSpeed: 0.8,
+    projectileType: 'missile',
+    projectileColor: '#F59E0B',
+    imageUrl: '/assets/images/hero_zapador_mina.svg',
+    description: 'Lanza cargas sísmicas de corto alcance que hacen tambalear a grupos blindados.',
+    showdownName: 'Campo Minado',
+    showdownDescription: 'Detona cargas subterráneas bajo todos los enemigos causando 300 de daño y empujándolos 55px atrás.',
+    showdownCooldown: 33,
+    tiers: [
+      {
+        name: 'Mina Táctica I',
+        cost: 0,
+        damage: 34,
+        range: 115,
+        attackSpeed: 0.8,
+        description: 'Cargas de alto impacto en área.'
+      },
+      {
+        name: 'Detonador Sísmico II',
+        cost: 120,
+        damage: 68,
+        range: 130,
+        attackSpeed: 1.0,
+        description: 'Incrementa el daño explosivo contra tanques.',
+        bonusEffect: 'Daño demoledor en área'
+      },
+      {
+        name: 'Cinturón Demoledor III',
+        cost: 245,
+        damage: 140,
+        range: 150,
+        attackSpeed: 1.25,
+        description: 'Explosiones masivas que abren brechas en armaduras.',
+        bonusEffect: 'Demolición de blindados'
+      }
+    ],
+    colorTheme: {
+      primary: '#F59E0B',
+      secondary: '#B45309',
+      accent: '#FEF3C7',
+      bg: 'rgba(245, 158, 11, 0.15)'
+    }
+  },
+
+  escudero_luz: {
+    id: 'escudero_luz',
+    name: 'Escudero de Luz',
+    title: 'Novicio del Alba',
+    role: 'soporte',
+    rarity: 'comun',
+    cost: 95,
+    baseDamage: 16,
+    baseRange: 135,
+    baseAttackSpeed: 1.2,
+    projectileType: 'resonance',
+    projectileColor: '#FDE047',
+    imageUrl: '/assets/images/hero_escudero_luz.svg',
+    description: 'Joven templario que proyecta pulsos de ánimo luminoso para reforzar la cadencia de torres aliadas.',
+    showdownName: 'Fulgor del Alba',
+    showdownDescription: 'Restaura +1 vida al Núcleo y aumenta +35% la cadencia de todas las torres por 5s.',
+    showdownCooldown: 36,
+    tiers: [
+      {
+        name: 'Sello Luminoso I',
+        cost: 0,
+        damage: 16,
+        range: 135,
+        attackSpeed: 1.2,
+        description: 'Ondas radiantes que atacan y alientan la línea.'
+      },
+      {
+        name: 'Estandarte Blanco II',
+        cost: 110,
+        damage: 34,
+        range: 155,
+        attackSpeed: 1.45,
+        description: 'Refuerza la resonancia táctica en mayor radio.',
+        bonusEffect: 'Aura de apoyo luminoso'
+      },
+      {
+        name: 'Guardia de la Aurora III',
+        cost: 230,
+        damage: 74,
+        range: 175,
+        attackSpeed: 1.8,
+        description: 'Emite destellos continuos de gran alcance.',
+        bonusEffect: 'Impulso de escuadra constante'
+      }
+    ],
+    colorTheme: {
+      primary: '#FDE047',
+      secondary: '#CA8A04',
+      accent: '#FEF9C3',
+      bg: 'rgba(253, 224, 71, 0.15)'
+    }
+  },
+
+  // --- 7 NUEVAS CARTAS ESPECIALES ---
+  lancero_solar: {
+    id: 'lancero_solar',
+    name: 'Lancero Solar',
+    title: 'Vanguardia Radiante',
+    role: 'ataque',
+    rarity: 'especial',
+    cost: 145,
+    baseDamage: 38,
+    baseRange: 155,
+    baseAttackSpeed: 1.25,
+    projectileType: 'beam',
+    projectileColor: '#FB923C',
+    imageUrl: '/assets/images/hero_lancero_solar.svg',
+    description: 'Atraviesa formaciones enteras con lanzas de plasma dorado de alta penetración.',
+    showdownName: 'Lanza del Cenit',
+    showdownDescription: 'Proyecta una lanza solar gigantesca que inflige 460 de daño a todos los enemigos y aplica quemadura.',
+    showdownCooldown: 34,
+    tiers: [
+      {
+        name: 'Pica Incandescente I',
+        cost: 0,
+        damage: 38,
+        range: 155,
+        attackSpeed: 1.25,
+        description: 'Rayos dorados de alcance sólido.'
+      },
+      {
+        name: 'Asta del Sol II',
+        cost: 140,
+        damage: 76,
+        range: 175,
+        attackSpeed: 1.55,
+        description: 'Perforación térmica contra enemigos acorazados.',
+        bonusEffect: 'Daño radiante duplicado'
+      },
+      {
+        name: 'Justa Astral III',
+        cost: 290,
+        damage: 158,
+        range: 200,
+        attackSpeed: 1.9,
+        description: 'Descargas fulminantes que calcinan blindajes pesados.',
+        bonusEffect: 'Penetración solar total'
+      }
+    ],
+    colorTheme: {
+      primary: '#FB923C',
+      secondary: '#C2410C',
+      accent: '#FFEDD5',
+      bg: 'rgba(251, 146, 60, 0.16)'
+    }
+  },
+
+  cazador_sombras: {
+    id: 'cazador_sombras',
+    name: 'Cazador de Sombras',
+    title: 'Acechador Nocturno',
+    role: 'ataque',
+    rarity: 'especial',
+    cost: 150,
+    baseDamage: 46,
+    baseRange: 175,
+    baseAttackSpeed: 1.1,
+    projectileType: 'slash',
+    projectileColor: '#8B5CF6',
+    imageUrl: '/assets/images/hero_cazador_sombras.svg',
+    description: 'Ejecuta cortes sombríos a distancia, priorizando objetivos con heridas o alta velocidad.',
+    showdownName: 'Emboscada Umbría',
+    showdownDescription: 'Asesta golpes letales desde las sombras: 650 de daño al enemigo más cercano al Núcleo y 300 a los demás.',
+    showdownCooldown: 32,
+    tiers: [
+      {
+        name: 'Hoja Nocturna I',
+        cost: 0,
+        damage: 46,
+        range: 175,
+        attackSpeed: 1.1,
+        description: 'Tajos veloces de energía sombría.'
+      },
+      {
+        name: 'Cacería Silenciosa II',
+        cost: 145,
+        damage: 94,
+        range: 195,
+        attackSpeed: 1.35,
+        description: 'Mayor alcance y precisión letal.',
+        bonusEffect: 'Críticos contra objetivos rápidos'
+      },
+      {
+        name: 'Verdugo del Crepúsculo III',
+        cost: 300,
+        damage: 195,
+        range: 220,
+        attackSpeed: 1.65,
+        description: 'Cortes abisales que aniquilan exploradores y élites.',
+        bonusEffect: 'Letalidad máxima nocturna'
+      }
+    ],
+    colorTheme: {
+      primary: '#8B5CF6',
+      secondary: '#5B21B6',
+      accent: '#EDE9FE',
+      bg: 'rgba(139, 92, 246, 0.16)'
+    }
+  },
+
+  pirotecnico_brasa: {
+    id: 'pirotecnico_brasa',
+    name: 'Pirotécnico de Brasa',
+    title: 'Artificiero Ígneo',
+    role: 'area',
+    rarity: 'especial',
+    cost: 160,
+    baseDamage: 42,
+    baseRange: 130,
+    baseAttackSpeed: 0.95,
+    projectileType: 'fireball',
+    projectileColor: '#EF4444',
+    imageUrl: '/assets/images/hero_pirotecnico_brasa.svg',
+    description: 'Dispara bengalas pirotécnicas que incendian a varios invasores simultáneamente.',
+    showdownName: 'Fuegos de Guerra',
+    showdownDescription: 'Lluvia de bengalas que causa 430 de daño y quema con 35 DPS durante 5s.',
+    showdownCooldown: 35,
+    tiers: [
+      {
+        name: 'Bengala Viva I',
+        cost: 0,
+        damage: 42,
+        range: 130,
+        attackSpeed: 0.95,
+        description: 'Detonación incendiaria en área.'
+      },
+      {
+        name: 'Pólvora Carmesí II',
+        cost: 150,
+        damage: 85,
+        range: 145,
+        attackSpeed: 1.15,
+        description: 'Quemaduras más intensas y mayor explosión.',
+        bonusEffect: 'Quemadura continua en área'
+      },
+      {
+        name: 'Festival Infernal III',
+        cost: 310,
+        damage: 175,
+        range: 165,
+        attackSpeed: 1.4,
+        description: 'Bombardeo pirotécnico incesante.',
+        bonusEffect: 'Ignición masiva en zona'
+      }
+    ],
+    colorTheme: {
+      primary: '#EF4444',
+      secondary: '#991B1B',
+      accent: '#FEE2E2',
+      bg: 'rgba(239, 68, 68, 0.16)'
+    }
+  },
+
+  torre_tesla_v2: {
+    id: 'torre_tesla_v2',
+    name: 'Torre Tesla V2',
+    title: 'Generador Voltaico',
+    role: 'control',
+    rarity: 'especial',
+    cost: 165,
+    baseDamage: 28,
+    baseRange: 140,
+    baseAttackSpeed: 1.35,
+    projectileType: 'lightning',
+    projectileColor: '#38BDF8',
+    imageUrl: '/assets/images/hero_torre_tesla_v2.svg',
+    description: 'Bobina de alto voltaje que electrocuta objetivos cercanos con arcos paralizantes breves.',
+    showdownName: 'Sobrecarga Tesla',
+    showdownDescription: 'Descarga eléctrica global de 390 de daño que aturde brevemente por 0.8s (0.4s a jefes).',
+    showdownCooldown: 36,
+    tiers: [
+      {
+        name: 'Bobina MK-II',
+        cost: 0,
+        damage: 28,
+        range: 140,
+        attackSpeed: 1.35,
+        description: 'Arcos voltaicos rápidos con micro-ralentización.'
+      },
+      {
+        name: 'Condensador Arco II',
+        cost: 155,
+        damage: 58,
+        range: 160,
+        attackSpeed: 1.65,
+        description: 'Potencia el choque eléctrico y su alcance.',
+        bonusEffect: 'Descarga disruptiva'
+      },
+      {
+        name: 'Núcleo Tormenta III',
+        cost: 320,
+        damage: 122,
+        range: 185,
+        attackSpeed: 2.0,
+        description: 'Corriente continua de ultra tensión.',
+        bonusEffect: 'Control voltaico superior'
+      }
+    ],
+    colorTheme: {
+      primary: '#38BDF8',
+      secondary: '#0369A1',
+      accent: '#E0F2FE',
+      bg: 'rgba(56, 189, 248, 0.16)'
+    }
+  },
+
+  botanico_veneno: {
+    id: 'botanico_veneno',
+    name: 'Botánico de Veneno',
+    title: 'Sabio de Esporas Ácidas',
+    role: 'control',
+    rarity: 'especial',
+    cost: 145,
+    baseDamage: 24,
+    baseRange: 145,
+    baseAttackSpeed: 1.2,
+    projectileType: 'spore',
+    projectileColor: '#84CC16',
+    imageUrl: '/assets/images/hero_botanico_veneno.svg',
+    description: 'Esparce toxinas corrosivas que debilitan el avance enemigo y corroen escudos lentamente.',
+    showdownName: 'Floración Tóxica',
+    showdownDescription: 'Libera esporas venenosas en todo el mapa: 330 de daño y 35 DPS de veneno por 6s.',
+    showdownCooldown: 35,
+    tiers: [
+      {
+        name: 'Espora Ácida I',
+        cost: 0,
+        damage: 24,
+        range: 145,
+        attackSpeed: 1.2,
+        description: 'Toxinas que dañan y frenan.'
+      },
+      {
+        name: 'Nube Corrosiva II',
+        cost: 140,
+        damage: 48,
+        range: 165,
+        attackSpeed: 1.45,
+        description: 'Aumenta la persistencia del veneno en ruta.',
+        bonusEffect: 'Corrosión continua'
+      },
+      {
+        name: 'Jardín Letal III',
+        cost: 295,
+        damage: 105,
+        range: 185,
+        attackSpeed: 1.75,
+        description: 'Esporas concentradas altamente destructivas.',
+        bonusEffect: 'Toxina de máximo espectro'
+      }
+    ],
+    colorTheme: {
+      primary: '#84CC16',
+      secondary: '#4D7C0F',
+      accent: '#ECFCCB',
+      bg: 'rgba(132, 204, 22, 0.16)'
+    }
+  },
+
+  banquero_crono: {
+    id: 'banquero_crono',
+    name: 'Banquero Crono',
+    title: 'Custodio del Tesoro Temporal',
+    role: 'economia',
+    rarity: 'especial',
+    cost: 140,
+    baseDamage: 16,
+    baseRange: 120,
+    baseAttackSpeed: 1.0,
+    projectileType: 'coin',
+    projectileColor: '#FBBF24',
+    imageUrl: '/assets/images/hero_banquero_crono.svg',
+    description: 'Invierte energía temporal para multiplicar tus ganancias de oro al finalizar cada oleada.',
+    showdownName: 'Bóveda Temporal',
+    showdownDescription: 'Libera +135 monedas de oro inmediato y ralentiza un 35% a los enemigos por 3s.',
+    showdownCooldown: 42,
+    tiers: [
+      {
+        name: 'Interés Crono I',
+        cost: 0,
+        damage: 16,
+        range: 120,
+        attackSpeed: 1.0,
+        ecoYield: 20,
+        description: 'Genera +20 oro garantizado al terminar cada ronda.'
+      },
+      {
+        name: 'Reserva Dorada II',
+        cost: 145,
+        damage: 34,
+        range: 135,
+        attackSpeed: 1.25,
+        ecoYield: 36,
+        description: 'Genera +36 oro por ronda y refuerza su disparo áureo.',
+        bonusEffect: '+36 Oro/ronda'
+      },
+      {
+        name: 'Banco Imperial III',
+        cost: 290,
+        damage: 72,
+        range: 155,
+        attackSpeed: 1.55,
+        ecoYield: 58,
+        description: 'Genera +58 oro por ronda para financiar defensas legendarias.',
+        bonusEffect: '+58 Oro/ronda garantizado'
+      }
+    ],
+    colorTheme: {
+      primary: '#FBBF24',
+      secondary: '#B45309',
+      accent: '#FEF3C7',
+      bg: 'rgba(251, 191, 36, 0.16)'
+    }
+  },
+
+  artillero_doble: {
+    id: 'artillero_doble',
+    name: 'Artillero Doble',
+    title: 'Cañonero Gemelo',
+    role: 'ataque',
+    rarity: 'especial',
+    cost: 155,
+    baseDamage: 24,
+    baseRange: 145,
+    baseAttackSpeed: 1.9,
+    projectileType: 'multishot',
+    projectileColor: '#38BDF8',
+    imageUrl: '/assets/images/hero_artillero_doble.svg',
+    description: 'Opera cañones rotatorios gemelos con cadencia extrema para barrer oleadas rápidas.',
+    showdownName: 'Fuego Cruzado Gemelo',
+    showdownDescription: 'Dispara ráfagas continuas por toda la arena infligiendo 420 de daño rápido.',
+    showdownCooldown: 31,
+    tiers: [
+      {
+        name: 'Cañones Gemelos I',
+        cost: 0,
+        damage: 24,
+        range: 145,
+        attackSpeed: 1.9,
+        description: 'Cadencia de disparo superior.'
+      },
+      {
+        name: 'Tambor Dual II',
+        cost: 150,
+        damage: 48,
+        range: 165,
+        attackSpeed: 2.3,
+        description: 'Velocidad de fuego demoledora contra enjambres.',
+        bonusEffect: 'Supresión balística'
+      },
+      {
+        name: 'Tormenta Rotatoria III',
+        cost: 305,
+        damage: 98,
+        range: 185,
+        attackSpeed: 2.8,
+        description: 'Lluvia ininterrumpida de proyectiles de plasma.',
+        bonusEffect: 'Cadencia de élite'
+      }
+    ],
+    colorTheme: {
+      primary: '#38BDF8',
+      secondary: '#0284C7',
+      accent: '#E0F2FE',
+      bg: 'rgba(56, 189, 248, 0.16)'
+    }
+  },
+
+  // --- 8 NUEVAS CARTAS ÉPICAS ---
+  paladin_estelar: {
+    id: 'paladin_estelar',
+    name: 'Paladín Estelar',
+    title: 'Caballero del Cosmos',
+    role: 'soporte',
+    rarity: 'epica',
+    cost: 220,
+    baseDamage: 56,
+    baseRange: 150,
+    baseAttackSpeed: 1.25,
+    projectileType: 'resonance',
+    projectileColor: '#FDE047',
+    imageUrl: '/assets/images/hero_paladin_estelar.svg',
+    description: 'Campeón celestial cuya aura fortalece el Núcleo y potencia a las torres aliadas con luz estelar.',
+    showdownName: 'Égida de Constelación',
+    showdownDescription: 'Restaura +2 vidas al Núcleo, otorga +45% de cadencia a todas las torres por 6s y causa 540 de daño sagrado.',
+    showdownCooldown: 38,
+    tiers: [
+      {
+        name: 'Espada Astral I',
+        cost: 0,
+        damage: 56,
+        range: 150,
+        attackSpeed: 1.25,
+        description: 'Golpes radiantes equilibrados.'
+      },
+      {
+        name: 'Escudo de Orión II',
+        cost: 205,
+        damage: 115,
+        range: 170,
+        attackSpeed: 1.5,
+        description: 'Incrementa potencia y alcance sagrado.',
+        bonusEffect: 'Resonancia protectora'
+      },
+      {
+        name: 'Campeón Estelar III',
+        cost: 420,
+        damage: 240,
+        range: 195,
+        attackSpeed: 1.85,
+        description: 'Impactos estelares capaces de frenar élites.',
+        bonusEffect: 'Inspiración táctica total'
+      }
+    ],
+    colorTheme: {
+      primary: '#FDE047',
+      secondary: '#4F46E5',
+      accent: '#FEF9C3',
+      bg: 'rgba(253, 224, 71, 0.16)'
+    }
+  },
+
+  asesino_espectral: {
+    id: 'asesino_espectral',
+    name: 'Asesino Espectral',
+    title: 'Filo del Más Allá',
+    role: 'ataque',
+    rarity: 'epica',
+    cost: 230,
+    baseDamage: 88,
+    baseRange: 175,
+    baseAttackSpeed: 1.15,
+    projectileType: 'slash',
+    projectileColor: '#2DD4BF',
+    imageUrl: '/assets/images/hero_asesino_espectral.svg',
+    description: 'Espectro letal que ignora blindajes pesados para eliminar rápidamente a jefes y colosos.',
+    showdownName: 'Ejecución Fantasmal',
+    showdownDescription: 'Atraviesa al enemigo más fuerte con 1250 de daño espectral y 520 al resto.',
+    showdownCooldown: 36,
+    tiers: [
+      {
+        name: 'Daga Etérea I',
+        cost: 0,
+        damage: 88,
+        range: 175,
+        attackSpeed: 1.15,
+        description: 'Cortes precisos de alto daño individual.'
+      },
+      {
+        name: 'Paso Fantasma II',
+        cost: 215,
+        damage: 178,
+        range: 195,
+        attackSpeed: 1.4,
+        description: 'Doble potencia contra objetivos blindados.',
+        bonusEffect: 'Perforación espectral'
+      },
+      {
+        name: 'Segador Etéreo III',
+        cost: 440,
+        damage: 365,
+        range: 220,
+        attackSpeed: 1.75,
+        description: 'Daño crítico devastador contra jefes.',
+        bonusEffect: 'Ejecución de élites'
+      }
+    ],
+    colorTheme: {
+      primary: '#2DD4BF',
+      secondary: '#0F766E',
+      accent: '#CCFBF1',
+      bg: 'rgba(45, 212, 191, 0.16)'
+    }
+  },
+
+  criomante_abismo: {
+    id: 'criomante_abismo',
+    name: 'Criomante del Abismo',
+    title: 'Tejedor de Escarcha Negra',
+    role: 'control',
+    rarity: 'epica',
+    cost: 215,
+    baseDamage: 40,
+    baseRange: 155,
+    baseAttackSpeed: 1.25,
+    projectileType: 'ice',
+    projectileColor: '#38BDF8',
+    imageUrl: '/assets/images/hero_criomante_abismo.svg',
+    description: 'Domina el hielo oscuro del abismo para ralentizar drásticamente a legiones enteras y quebrar su armadura.',
+    showdownName: 'Invierno Abisal',
+    showdownDescription: 'Inflige 560 de daño helado, reduce la armadura enemiga en 6 y paraliza por 1.2s (0.5s jefes).',
+    showdownCooldown: 40,
+    tiers: [
+      {
+        name: 'Escarcha Abisal I',
+        cost: 0,
+        damage: 40,
+        range: 155,
+        attackSpeed: 1.25,
+        description: 'Ralentiza 45% en cada impacto.'
+      },
+      {
+        name: 'Prisión Glacial II',
+        cost: 200,
+        damage: 82,
+        range: 175,
+        attackSpeed: 1.5,
+        description: 'Frena oleadas enteras con hielo oscuro.',
+        bonusEffect: 'Ralentización profunda'
+      },
+      {
+        name: 'Cero del Vacío III',
+        cost: 410,
+        damage: 172,
+        range: 195,
+        attackSpeed: 1.8,
+        description: 'Escarcha letal que combina control y alto DPS.',
+        bonusEffect: 'Congelación táctica abisal'
+      }
+    ],
+    colorTheme: {
+      primary: '#38BDF8',
+      secondary: '#1E3A8A',
+      accent: '#E0F2FE',
+      bg: 'rgba(56, 189, 248, 0.16)'
+    }
+  },
+
+  bombardero_orbital: {
+    id: 'bombardero_orbital',
+    name: 'Bombardero Orbital',
+    title: 'Coordinador Satelital',
+    role: 'area',
+    rarity: 'epica',
+    cost: 245,
+    baseDamage: 74,
+    baseRange: 185,
+    baseAttackSpeed: 0.85,
+    projectileType: 'missile',
+    projectileColor: '#F97316',
+    imageUrl: '/assets/images/hero_bombardero_orbital.svg',
+    description: 'Marca blancos desde órbita para descargar misiles guiados de impacto explosivo masivo.',
+    showdownName: 'Protocolo Órbita Cero',
+    showdownDescription: 'Solicita un bombardeo satelital sobre todo el campo de 760 de daño explosivo.',
+    showdownCooldown: 38,
+    tiers: [
+      {
+        name: 'Mira Satelital I',
+        cost: 0,
+        damage: 74,
+        range: 185,
+        attackSpeed: 0.85,
+        description: 'Misiles de amplio radio de explosión.'
+      },
+      {
+        name: 'Ojiva Guiada II',
+        cost: 225,
+        damage: 152,
+        range: 205,
+        attackSpeed: 1.05,
+        description: 'Aumenta el alcance orbital y radio explosivo.',
+        bonusEffect: 'Impacto orbital ampliado'
+      },
+      {
+        name: 'Aniquilación Orbital III',
+        cost: 460,
+        damage: 315,
+        range: 230,
+        attackSpeed: 1.3,
+        description: 'Destrucción masiva de blindados y enjambres.',
+        bonusEffect: 'Ojiva termobárica'
+      }
+    ],
+    colorTheme: {
+      primary: '#F97316',
+      secondary: '#9A3412',
+      accent: '#FFEDD5',
+      bg: 'rgba(249, 115, 22, 0.16)'
+    }
+  },
+
+  maestro_runas: {
+    id: 'maestro_runas',
+    name: 'Maestro de Runas',
+    title: 'Archimago Rúnico',
+    role: 'multiplicador',
+    rarity: 'epica',
+    cost: 235,
+    baseDamage: 58,
+    baseRange: 165,
+    baseAttackSpeed: 1.35,
+    projectileType: 'resonance',
+    projectileColor: '#C084FC',
+    imageUrl: '/assets/images/hero_maestro_runas.svg',
+    description: 'Graba sigilos arcanos que amplifican el daño sufrido por los invasores y atacan a múltiples blancos.',
+    showdownName: 'Círculo de Glifos',
+    showdownDescription: 'Activa glifos arcanos que infligen 640 de daño y reducen la armadura enemiga en 10.',
+    showdownCooldown: 37,
+    tiers: [
+      {
+        name: 'Runa Menor I',
+        cost: 0,
+        damage: 58,
+        range: 165,
+        attackSpeed: 1.35,
+        description: 'Descargas arcanas resonantes.'
+      },
+      {
+        name: 'Sello Amplificador II',
+        cost: 215,
+        damage: 118,
+        range: 185,
+        attackSpeed: 1.65,
+        description: 'Glifos de mayor potencia y cadencia.',
+        bonusEffect: 'Debilitamiento rúnico'
+      },
+      {
+        name: 'Códice Supremo III',
+        cost: 445,
+        damage: 250,
+        range: 210,
+        attackSpeed: 2.0,
+        description: 'Energía pura que atraviesa escudos enemigos.',
+        bonusEffect: 'Maestría arcana múltiple'
+      }
+    ],
+    colorTheme: {
+      primary: '#C084FC',
+      secondary: '#7E22CE',
+      accent: '#F3E8FF',
+      bg: 'rgba(192, 132, 252, 0.16)'
+    }
+  },
+
+  forjador_titanio: {
+    id: 'forjador_titanio',
+    name: 'Forjador de Titanio',
+    title: 'Herrero de Guerra',
+    role: 'especial',
+    rarity: 'epica',
+    cost: 225,
+    baseDamage: 72,
+    baseRange: 140,
+    baseAttackSpeed: 1.05,
+    projectileType: 'shockwave',
+    projectileColor: '#FB923C',
+    imageUrl: '/assets/images/hero_forjador_titanio.svg',
+    description: 'Golpea el suelo con su martillo fundido liberando ondas sísmicas que fracturan armaduras.',
+    showdownName: 'Yunque del Titán',
+    showdownDescription: 'Forja un impacto sísmico de 680 de daño, derrite la armadura enemiga a 0 y aturde 1.1s.',
+    showdownCooldown: 37,
+    tiers: [
+      {
+        name: 'Martillo Caliente I',
+        cost: 0,
+        damage: 72,
+        range: 140,
+        attackSpeed: 1.05,
+        description: 'Ondas de choque contundentes.'
+      },
+      {
+        name: 'Forja de Titanio II',
+        cost: 210,
+        damage: 146,
+        range: 160,
+        attackSpeed: 1.3,
+        description: 'Rompe placas blindadas en cada golpe.',
+        bonusEffect: 'Fractura de armadura'
+      },
+      {
+        name: 'Martillo Solar III',
+        cost: 430,
+        damage: 305,
+        range: 180,
+        attackSpeed: 1.6,
+        description: 'Sacudidas imparables de área mediana.',
+        bonusEffect: 'Impacto rompe-tanques'
+      }
+    ],
+    colorTheme: {
+      primary: '#FB923C',
+      secondary: '#9A3412',
+      accent: '#FFEDD5',
+      bg: 'rgba(251, 146, 60, 0.16)'
+    }
+  },
+
+  cazadora_viento: {
+    id: 'cazadora_viento',
+    name: 'Cazadora del Viento',
+    title: 'Saeta del Vendaval',
+    role: 'ataque',
+    rarity: 'epica',
+    cost: 215,
+    baseDamage: 48,
+    baseRange: 190,
+    baseAttackSpeed: 1.7,
+    projectileType: 'arrow',
+    projectileColor: '#34D399',
+    imageUrl: '/assets/images/hero_cazadora_viento.svg',
+    description: 'Dispara flechas huracanadas a máxima velocidad que empujan ligeramente y barren rutas largas.',
+    showdownName: 'Ciclón de Flechas',
+    showdownDescription: 'Desata un vendaval de saetas que causa 580 de daño y empuja a todos los enemigos 90px atrás.',
+    showdownCooldown: 35,
+    tiers: [
+      {
+        name: 'Arco Céfiro I',
+        cost: 0,
+        damage: 48,
+        range: 190,
+        attackSpeed: 1.7,
+        description: 'Largo alcance y cadencia veloz.'
+      },
+      {
+        name: 'Ráfaga Borrascosa II',
+        cost: 205,
+        damage: 98,
+        range: 210,
+        attackSpeed: 2.1,
+        description: 'Flechas supersónicas de altísima frecuencia.',
+        bonusEffect: 'Cadencia ciclónica'
+      },
+      {
+        name: 'Tifón Esmeralda III',
+        cost: 420,
+        damage: 205,
+        range: 235,
+        attackSpeed: 2.6,
+        description: 'Cobertura casi total del mapa con ráfagas letales.',
+        bonusEffect: 'Alcance y cadencia supremos'
+      }
+    ],
+    colorTheme: {
+      primary: '#34D399',
+      secondary: '#047857',
+      accent: '#D1FAE5',
+      bg: 'rgba(52, 211, 153, 0.16)'
+    }
+  },
+
+  alquimista_esmeralda: {
+    id: 'alquimista_esmeralda',
+    name: 'Alquimista Esmeralda',
+    title: 'Maestra de Pociones',
+    role: 'area',
+    rarity: 'epica',
+    cost: 220,
+    baseDamage: 52,
+    baseRange: 145,
+    baseAttackSpeed: 1.15,
+    projectileType: 'spore',
+    projectileColor: '#10B981',
+    imageUrl: '/assets/images/hero_alquimista_esmeralda.svg',
+    description: 'Arroja frascos de ácido esmeralda que disuelven escuadrones enteros y generan daño continuo.',
+    showdownName: 'Elixir Disolvente',
+    showdownDescription: 'Inunda el campo con ácido esmeralda: 520 de daño, 60 DPS de veneno por 6s y -8 de armadura.',
+    showdownCooldown: 36,
+    tiers: [
+      {
+        name: 'Matraz Ácido I',
+        cost: 0,
+        damage: 52,
+        range: 145,
+        attackSpeed: 1.15,
+        description: 'Ácido volátil en área.'
+      },
+      {
+        name: 'Fórmula Corrosiva II',
+        cost: 205,
+        damage: 108,
+        range: 165,
+        attackSpeed: 1.4,
+        description: 'Disuelve armaduras metálicas con rapidez.',
+        bonusEffect: 'Ácido persistente'
+      },
+      {
+        name: 'Gran Obra Esmeralda III',
+        cost: 425,
+        damage: 228,
+        range: 185,
+        attackSpeed: 1.7,
+        description: 'Nubes químicas devastadoras en área extensa.',
+        bonusEffect: 'Corrosión total en zona'
+      }
+    ],
+    colorTheme: {
+      primary: '#10B981',
+      secondary: '#065F46',
+      accent: '#D1FAE5',
+      bg: 'rgba(16, 185, 129, 0.16)'
+    }
+  },
+
+  // --- 8 NUEVAS CARTAS LEGENDARIAS ---
+  emperador_rayo: {
+    id: 'emperador_rayo',
+    name: 'Emperador del Rayo',
+    title: 'Soberano de Alto Voltaje',
+    role: 'control',
+    rarity: 'legendaria',
+    cost: 320,
+    baseDamage: 105,
+    baseRange: 180,
+    baseAttackSpeed: 1.55,
+    projectileType: 'lightning',
+    projectileColor: '#38BDF8',
+    imageUrl: '/assets/images/hero_emperador_rayo.svg',
+    description: 'Monarca electromagnético cuyos relámpagos imperiales fulminan múltiples enemigos con descargas encadenadas.',
+    showdownName: 'Juicio del Relámpago',
+    showdownDescription: 'Descarga rayos imperiales sobre todos los enemigos causando 1050 de daño y aturdimiento breve de 1.1s (0.5s jefes).',
+    showdownCooldown: 40,
+    tiers: [
+      {
+        name: 'Cetro Voltaico I',
+        cost: 0,
+        damage: 105,
+        range: 180,
+        attackSpeed: 1.55,
+        description: 'Rayos de alta potencia y gran alcance.'
+      },
+      {
+        name: 'Corona Tormenta II',
+        cost: 290,
+        damage: 215,
+        range: 200,
+        attackSpeed: 1.9,
+        description: 'Multiplica la tensión eléctrica contra élites.',
+        bonusEffect: 'Sobrecarga imperial'
+      },
+      {
+        name: 'Trono del Trueno III',
+        cost: 590,
+        damage: 455,
+        range: 225,
+        attackSpeed: 2.35,
+        description: 'Tormenta continua imparable de nivel legendario.',
+        bonusEffect: 'Arco supremo incesante'
+      }
+    ],
+    colorTheme: {
+      primary: '#38BDF8',
+      secondary: '#1D4ED8',
+      accent: '#FEF08A',
+      bg: 'rgba(56, 189, 248, 0.2)'
+    }
+  },
+
+  senor_cenizas: {
+    id: 'senor_cenizas',
+    name: 'Señor de las Cenizas',
+    title: 'Heraldo del Cataclismo',
+    role: 'area',
+    rarity: 'legendaria',
+    cost: 335,
+    baseDamage: 120,
+    baseRange: 160,
+    baseAttackSpeed: 1.15,
+    projectileType: 'fireball',
+    projectileColor: '#EF4444',
+    imageUrl: '/assets/images/hero_senor_cenizas.svg',
+    description: 'Entidad volcánica legendaria que incinera ejércitos completos con bolas de fuego apocalípticas.',
+    showdownName: 'Lluvia de Ceniza Viva',
+    showdownDescription: 'Calcina la arena entera infligiendo 1120 de daño ígneo y 85 DPS de quemadura por 7s.',
+    showdownCooldown: 42,
+    tiers: [
+      {
+        name: 'Ascua Eterna I',
+        cost: 0,
+        damage: 120,
+        range: 160,
+        attackSpeed: 1.15,
+        description: 'Explosiones magmáticas de gran radio.'
+      },
+      {
+        name: 'Manto de Obsidiana II',
+        cost: 300,
+        damage: 245,
+        range: 180,
+        attackSpeed: 1.4,
+        description: 'Llama abrasadora que derrite tanques.',
+        bonusEffect: 'Quemadura severa'
+      },
+      {
+        name: 'Erupción Apocalíptica III',
+        cost: 610,
+        damage: 510,
+        range: 205,
+        attackSpeed: 1.7,
+        description: 'Incendio implacable de toda la zona de combate.',
+        bonusEffect: 'Fuego cataclísmico'
+      }
+    ],
+    colorTheme: {
+      primary: '#EF4444',
+      secondary: '#7F1D1D',
+      accent: '#FED7AA',
+      bg: 'rgba(239, 68, 68, 0.2)'
+    }
+  },
+
+  arquitecto_vacio: {
+    id: 'arquitecto_vacio',
+    name: 'Arquitecto del Vacío',
+    title: 'Geómetra Dimensional',
+    role: 'multiplicador',
+    rarity: 'legendaria',
+    cost: 340,
+    baseDamage: 110,
+    baseRange: 185,
+    baseAttackSpeed: 1.35,
+    projectileType: 'portal',
+    projectileColor: '#A855F7',
+    imageUrl: '/assets/images/hero_arquitecto_vacio.svg',
+    description: 'Manipula anomalías gravitatorias que atraen y desintegran a múltiples objetivos al mismo tiempo.',
+    showdownName: 'Singularidad Invertida',
+    showdownDescription: 'Rebobina a todos los invasores 130px hacia atrás y los golpea con 1050 de daño del vacío.',
+    showdownCooldown: 42,
+    tiers: [
+      {
+        name: 'Fisura Menor I',
+        cost: 0,
+        damage: 110,
+        range: 185,
+        attackSpeed: 1.35,
+        description: 'Proyectiles dimensionales precisos.'
+      },
+      {
+        name: 'Matriz del Vacío II',
+        cost: 310,
+        damage: 230,
+        range: 205,
+        attackSpeed: 1.65,
+        description: 'Distorsiona la trayectoria y armadura enemiga.',
+        bonusEffect: 'Gravedad anómala'
+      },
+      {
+        name: 'Horizonte de Eventos III',
+        cost: 620,
+        damage: 485,
+        range: 230,
+        attackSpeed: 2.0,
+        description: 'Desgarra la realidad bajo los invasores.',
+        bonusEffect: 'Colapso dimensional'
+      }
+    ],
+    colorTheme: {
+      primary: '#A855F7',
+      secondary: '#581C87',
+      accent: '#F3E8FF',
+      bg: 'rgba(168, 85, 247, 0.2)'
+    }
+  },
+
+  valquiria_aurora: {
+    id: 'valquiria_aurora',
+    name: 'Valquiria de la Aurora',
+    title: 'Justiciera Boreal',
+    role: 'soporte',
+    rarity: 'legendaria',
+    cost: 315,
+    baseDamage: 95,
+    baseRange: 170,
+    baseAttackSpeed: 1.5,
+    projectileType: 'slash',
+    projectileColor: '#2DD4BF',
+    imageUrl: '/assets/images/hero_valquiria_aurora.svg',
+    description: 'Guerrera legendaria que combina cortes radiantes devastadores con bendiciones de velocidad y curación.',
+    showdownName: 'Danza de la Aurora',
+    showdownDescription: 'Restaura +2 vidas al Núcleo, potencia +75% la cadencia aliada por 7s y causa 820 de daño boreal.',
+    showdownCooldown: 40,
+    tiers: [
+      {
+        name: 'Lanza Boreal I',
+        cost: 0,
+        damage: 95,
+        range: 170,
+        attackSpeed: 1.5,
+        description: 'Tajos veloces de energía polar.'
+      },
+      {
+        name: 'Alas de Luz II',
+        cost: 285,
+        damage: 195,
+        range: 190,
+        attackSpeed: 1.85,
+        description: 'Aumenta velocidad de ataque y soporte.',
+        bonusEffect: 'Aura boreal protectora'
+      },
+      {
+        name: 'Furia Celestial III',
+        cost: 575,
+        damage: 410,
+        range: 215,
+        attackSpeed: 2.25,
+        description: 'Embestida luminosa implacable.',
+        bonusEffect: 'Cadencia y apoyo legendarios'
+      }
+    ],
+    colorTheme: {
+      primary: '#2DD4BF',
+      secondary: '#0F766E',
+      accent: '#ECFEFF',
+      bg: 'rgba(45, 212, 191, 0.2)'
+    }
+  },
+
+  coloso_obsidiana: {
+    id: 'coloso_obsidiana',
+    name: 'Coloso de Obsidiana',
+    title: 'Titán Indestructible',
+    role: 'invocador',
+    rarity: 'legendaria',
+    cost: 345,
+    baseDamage: 145,
+    baseRange: 150,
+    baseAttackSpeed: 0.95,
+    projectileType: 'shockwave',
+    projectileColor: '#A855F7',
+    imageUrl: '/assets/images/hero_coloso_obsidiana.svg',
+    description: 'Gigante ancestral forjado en vidrio volcánico que pulveriza blindajes con ondas telúricas.',
+    showdownName: 'Sismo de Obsidiana',
+    showdownDescription: 'Golpea la tierra causando 1180 de daño brutal, rompe 12 de armadura y aturde 1.2s (0.5s jefes).',
+    showdownCooldown: 42,
+    tiers: [
+      {
+        name: 'Puño Basáltico I',
+        cost: 0,
+        damage: 145,
+        range: 150,
+        attackSpeed: 0.95,
+        description: 'Impactos pesados demoledores.'
+      },
+      {
+        name: 'Coraza Magmática II',
+        cost: 310,
+        damage: 295,
+        range: 165,
+        attackSpeed: 1.15,
+        description: 'Ondas sísmicas de enorme alcance.',
+        bonusEffect: 'Aplastamiento pesado'
+      },
+      {
+        name: 'Monolito Supremo III',
+        cost: 630,
+        damage: 615,
+        range: 185,
+        attackSpeed: 1.4,
+        description: 'Cada impacto equivale a un meteorito en ruta.',
+        bonusEffect: 'Fuerza titánica máxima'
+      }
+    ],
+    colorTheme: {
+      primary: '#A855F7',
+      secondary: '#3B0764',
+      accent: '#FB923C',
+      bg: 'rgba(168, 85, 247, 0.2)'
+    }
+  },
+
+  francotirador_pulsar: {
+    id: 'francotirador_pulsar',
+    name: 'Francotirador Púlsar',
+    title: 'Ojo de Estrella de Neutrones',
+    role: 'ataque',
+    rarity: 'legendaria',
+    cost: 330,
+    baseDamage: 190,
+    baseRange: 250,
+    baseAttackSpeed: 0.9,
+    projectileType: 'beam',
+    projectileColor: '#22D3EE',
+    imageUrl: '/assets/images/hero_francotirador_pulsar.svg',
+    description: 'Cobertura casi global con haces de púlsar concentrados diseñados para destruir jefes a distancia.',
+    showdownName: 'Disparo Púlsar Crítico',
+    showdownDescription: 'Impacta al jefe o enemigo más fuerte con 2400 de daño puro y 700 a todos los demás.',
+    showdownCooldown: 39,
+    tiers: [
+      {
+        name: 'Mira Cuántica I',
+        cost: 0,
+        damage: 190,
+        range: 250,
+        attackSpeed: 0.9,
+        description: 'Alcance masivo y daño letal.'
+      },
+      {
+        name: 'Cañón Neutrónico II',
+        cost: 300,
+        damage: 385,
+        range: 275,
+        attackSpeed: 1.1,
+        description: 'Destruye objetivos blindados de un solo haz.',
+        bonusEffect: 'Alcance de 275px'
+      },
+      {
+        name: 'Singularidad Púlsar III',
+        cost: 615,
+        damage: 810,
+        range: 310,
+        attackSpeed: 1.35,
+        description: 'Aniquilación instantánea a lo largo de toda la arena.',
+        bonusEffect: 'Cobertura total anti-jefes'
+      }
+    ],
+    colorTheme: {
+      primary: '#22D3EE',
+      secondary: '#0E7490',
+      accent: '#CFFAFE',
+      bg: 'rgba(34, 211, 238, 0.2)'
+    }
+  },
+
+  invocador_fenix: {
+    id: 'invocador_fenix',
+    name: 'Invocador del Fénix',
+    title: 'Guardián de Llama Eterna',
+    role: 'invocador',
+    rarity: 'legendaria',
+    cost: 325,
+    baseDamage: 108,
+    baseRange: 170,
+    baseAttackSpeed: 1.4,
+    projectileType: 'fireball',
+    projectileColor: '#F59E0B',
+    imageUrl: '/assets/images/hero_invocador_fenix.svg',
+    description: 'Conjura espíritus ígneos renacientes que bombardean las líneas invasoras con llamas doradas.',
+    showdownName: 'Renacer Ígneo',
+    showdownDescription: 'Llamarada fénix de 1050 de daño, +120 de oro extra y +1 vida al Núcleo.',
+    showdownCooldown: 42,
+    tiers: [
+      {
+        name: 'Pluma Dorada I',
+        cost: 0,
+        damage: 108,
+        range: 170,
+        attackSpeed: 1.4,
+        description: 'Llamaradas continuas de alta energía.'
+      },
+      {
+        name: 'Vuelo del Fénix II',
+        cost: 295,
+        damage: 220,
+        range: 190,
+        attackSpeed: 1.7,
+        description: 'Fuego sagrado de amplio impacto.',
+        bonusEffect: 'Abrasamiento dorado'
+      },
+      {
+        name: 'Inmortalidad Solar III',
+        cost: 595,
+        damage: 465,
+        range: 215,
+        attackSpeed: 2.1,
+        description: 'Tormenta de aves de fuego implacables.',
+        bonusEffect: 'Llama eterna legendaria'
+      }
+    ],
+    colorTheme: {
+      primary: '#F59E0B',
+      secondary: '#B91C1C',
+      accent: '#FEF3C7',
+      bg: 'rgba(245, 158, 11, 0.2)'
+    }
+  },
+
+  maestro_tormenta: {
+    id: 'maestro_tormenta',
+    name: 'Maestro de la Tormenta',
+    title: 'Señor del Huracán',
+    role: 'control',
+    rarity: 'legendaria',
+    cost: 320,
+    baseDamage: 98,
+    baseRange: 175,
+    baseAttackSpeed: 1.5,
+    projectileType: 'lightning',
+    projectileColor: '#60A5FA',
+    imageUrl: '/assets/images/hero_maestro_tormenta.svg',
+    description: 'Controla vientos y relámpagos combinados para desordenar y castigar hordas enteras.',
+    showdownName: 'Ojo del Huracán',
+    showdownDescription: 'Empuja 100px atrás a todos los enemigos, ralentiza 55% por 5s e inflige 940 de daño eléctrico.',
+    showdownCooldown: 40,
+    tiers: [
+      {
+        name: 'Viento Eléctrico I',
+        cost: 0,
+        damage: 98,
+        range: 175,
+        attackSpeed: 1.5,
+        description: 'Descargas rápidas con presión atmosférica.'
+      },
+      {
+        name: 'Borrasca Eléctrica II',
+        cost: 290,
+        damage: 202,
+        range: 195,
+        attackSpeed: 1.85,
+        description: 'Tormenta intensa contra oleadas densas.',
+        bonusEffect: 'Control climático de élite'
+      },
+      {
+        name: 'Cataclismo Tifón III',
+        cost: 585,
+        damage: 430,
+        range: 220,
+        attackSpeed: 2.25,
+        description: 'Relámpagos huracanados de área dominante.',
+        bonusEffect: 'Dominio total de tormenta'
+      }
+    ],
+    colorTheme: {
+      primary: '#60A5FA',
+      secondary: '#1E40AF',
+      accent: '#DBEAFE',
+      bg: 'rgba(96, 165, 250, 0.2)'
+    }
+  },
+
+  // --- 2 NUEVAS CARTAS DIVINIDADES ---
+  helios_celestial: {
+    id: 'helios_celestial',
+    name: 'Helios Celestial',
+    title: 'Deidad del Astro Supremo',
+    role: 'area',
+    rarity: 'divinidad',
+    arenaUnlockLevel: 12,
+    cost: 420,
+    baseDamage: 155,
+    baseRange: 195,
+    baseAttackSpeed: 1.45,
+    projectileType: 'beam',
+    projectileColor: '#FACC15',
+    imageUrl: '/assets/images/hero_helios_celestial.svg',
+    description: 'Divinidad solar suprema que irradia luz purificadora, derritiendo armaduras e iluminando el sendero con fuego estelar.',
+    showdownName: 'Amanecer Divino',
+    showdownDescription: 'Desciende la corona del sol: inflige 1650 de daño radiante global, elimina armaduras, aplica 90 DPS y restaura +2 vidas.',
+    showdownCooldown: 45,
+    tiers: [
+      {
+        name: 'Corona Solar I',
+        cost: 0,
+        damage: 155,
+        range: 195,
+        attackSpeed: 1.45,
+        description: 'Haces solares divinos de amplio espectro.'
+      },
+      {
+        name: 'Fulgor Inmortal II',
+        cost: 375,
+        damage: 325,
+        range: 220,
+        attackSpeed: 1.8,
+        description: 'Calcina escuadrones completos con radiación astral.',
+        bonusEffect: 'Fuego solar divino'
+      },
+      {
+        name: 'Trono del Sol III',
+        cost: 790,
+        damage: 710,
+        range: 245,
+        attackSpeed: 2.25,
+        description: 'Poder absoluto del Astro Rey sobre el campo de batalla.',
+        bonusEffect: 'Supremacía solar celestial'
+      }
+    ],
+    colorTheme: {
+      primary: '#FACC15',
+      secondary: '#D97706',
+      accent: '#FEF9C3',
+      bg: 'rgba(250, 204, 21, 0.24)'
+    }
+  },
+
+  nyx_abismo_eterno: {
+    id: 'nyx_abismo_eterno',
+    name: 'Nyx, Abismo Eterno',
+    title: 'Diosa de la Noche Primordial',
+    role: 'multiplicador',
+    rarity: 'divinidad',
+    arenaUnlockLevel: 14,
+    cost: 440,
+    baseDamage: 165,
+    baseRange: 200,
+    baseAttackSpeed: 1.4,
+    projectileType: 'portal',
+    projectileColor: '#C084FC',
+    imageUrl: '/assets/images/hero_nyx_abismo_eterno.svg',
+    description: 'Deidad ancestral de la noche cósmica que consume la esencia vital de los invasores y altera el flujo de la realidad.',
+    showdownName: 'Eclipse Primordial',
+    showdownDescription: 'Sumerge la arena en oscuridad eterna: ejecuta enemigos con <35% HP, causa 1750 de daño a jefes y congela 1.5s.',
+    showdownCooldown: 46,
+    tiers: [
+      {
+        name: 'Velo Nocturno I',
+        cost: 0,
+        damage: 165,
+        range: 200,
+        attackSpeed: 1.4,
+        description: 'Orbes abisales de energía primordial.'
+      },
+      {
+        name: 'Manto del Eclipse II',
+        cost: 390,
+        damage: 345,
+        range: 225,
+        attackSpeed: 1.75,
+        description: 'Desgarra la resistencia de colosos y jefes.',
+        bonusEffect: 'Penetración del eclipse'
+      },
+      {
+        name: 'Noche Eterna III',
+        cost: 820,
+        damage: 760,
+        range: 255,
+        attackSpeed: 2.2,
+        description: 'Poder divino absoluto que consume toda amenaza invasora.',
+        bonusEffect: 'Supremacía primordial del abismo'
+      }
+    ],
+    colorTheme: {
+      primary: '#C084FC',
+      secondary: '#4C1D95',
+      accent: '#F3E8FF',
+      bg: 'rgba(192, 132, 252, 0.25)'
+    }
   }
 
 };
@@ -3630,7 +5396,7 @@ export function getDivinityForArena(arenaLevel: number): UnitBlueprint | undefin
 }
 
 /**
- * Returns all 15 Divine characters sorted by Arena level (1 to 15).
+ * Returns all Divine characters sorted by Arena level (1 to 15).
  */
 export function getAllDivinities(): UnitBlueprint[] {
   return UNIT_LIST.filter((u) => u.rarity === 'divinidad').sort(
@@ -3647,20 +5413,20 @@ export function isCardLockedByArena(card: UnitBlueprint, highestArenaUnlocked: n
 }
 
 const ARENA_GIFT_POOL: Record<number, string[]> = {
-  2: ['golem_magma', 'mago_fuego', 'inferno_dragon'],
-  3: ['hacker_cibernetico', 'ingeniero_mecanico', 'robot_centinela'],
-  4: ['viajero_tiempo', 'chrono_guardian', 'alquimista_dorado'],
-  5: ['lunar_huntress', 'shadow_assassin', 'francotirador_fantasma'],
-  6: ['guardian_hielo', 'caballero_cristal', 'lanzacohetes'],
-  7: ['chaman_electrico', 'electro_wizard', 'plasma_gunner'],
-  8: ['void_sniper', 'arcane_witch', 'cientifico_nuclear'],
-  9: ['sacerdote_solar', 'paladin_aegis', 'medico_combate'],
-  10: ['titan_tormenta', 'valkyrie_storm', 'valkyrie_blade'],
-  11: ['reina_espinas', 'druida_bosque', 'domador_bestias'],
-  12: ['mecha_artillery', 'artillero_pesado', 'canonero_pirata'],
-  13: ['resonator', 'invocador_golems', 'golem_sentinel'],
-  14: ['asesina_carmesi', 'ninja_sombrio', 'rey_slimes'],
-  15: ['samurai_carmesi', 'dragon_mecanico', 'arquera_elfica']
+  2: ['golem_magma', 'mago_fuego', 'pirotecnico_brasa', 'inferno_dragon'],
+  3: ['hacker_cibernetico', 'torre_tesla_v2', 'soldado_plasma', 'ingeniero_mecanico'],
+  4: ['viajero_tiempo', 'banquero_crono', 'chrono_guardian', 'alquimista_dorado'],
+  5: ['lunar_huntress', 'cazador_sombras', 'shadow_assassin', 'francotirador_fantasma'],
+  6: ['guardian_hielo', 'criomante_abismo', 'caballero_cristal', 'lanzacohetes'],
+  7: ['chaman_electrico', 'emperador_rayo', 'electro_wizard', 'plasma_gunner'],
+  8: ['void_sniper', 'arquitecto_vacio', 'arcane_witch', 'cientifico_nuclear'],
+  9: ['sacerdote_solar', 'paladin_estelar', 'paladin_aegis', 'medico_combate'],
+  10: ['titan_tormenta', 'maestro_tormenta', 'valkyrie_storm', 'valquiria_aurora'],
+  11: ['reina_espinas', 'botanico_veneno', 'alquimista_esmeralda', 'druida_bosque'],
+  12: ['mecha_artillery', 'bombardero_orbital', 'forjador_titanio', 'artillero_pesado'],
+  13: ['resonator', 'maestro_runas', 'invocador_golems', 'coloso_obsidiana'],
+  14: ['asesina_carmesi', 'asesino_espectral', 'francotirador_pulsar', 'ninja_sombrio'],
+  15: ['samurai_carmesi', 'invocador_fenix', 'dragon_mecanico', 'cazadora_viento']
 };
 
 /**

@@ -81,18 +81,19 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
                 }`}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-bold text-sm text-slate-100">{mission.title}</h3>
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase ${
-                        mission.category === 'story'
-                          ? 'bg-blue-950 text-blue-400 border border-blue-900'
-                          : mission.category === 'combat'
-                          ? 'bg-red-950 text-red-400 border border-red-900'
-                          : 'bg-amber-950 text-amber-400 border border-amber-900'
-                      }`}
-                    >
-                      {mission.category === 'story' ? 'Historia' : mission.category === 'combat' ? 'Combate' : 'Economía'}
+                    <span className="text-[11px] font-mono text-slate-400">
+                      · {mission.category === 'story'
+                        ? 'Oleadas'
+                        : mission.category === 'combat'
+                        ? 'Combate'
+                        : mission.category === 'arena'
+                        ? 'Arenas'
+                        : mission.category === 'collection'
+                        ? 'Colección'
+                        : 'Economía'}
+                      {mission.difficulty ? ` · ${mission.difficulty.toUpperCase()}` : ''}
                     </span>
                   </div>
 
@@ -110,8 +111,8 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
                         style={{ width: `${progressRatio * 100}%` }}
                       />
                     </div>
-                    <span className="text-[11px] font-mono text-slate-300">
-                      {Math.min(mission.currentCount, mission.targetCount)} / {mission.targetCount}
+                    <span className="text-[11px] font-mono tabular-nums text-slate-300">
+                      {Math.min(mission.currentCount, mission.targetCount).toLocaleString()} / {mission.targetCount.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -120,9 +121,10 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
                 <div className="shrink-0 flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-800">
                   <div className="text-right">
                     <div className="text-[10px] text-slate-400">Recompensa</div>
-                    <div className="text-xs font-bold text-purple-300 flex items-center gap-1">
-                      <PackageOpen className="w-3.5 h-3.5 text-purple-400" />
+                    <div className="text-xs font-bold text-purple-300 flex items-center gap-1.5 flex-wrap justify-end">
                       <span>+{mission.rewardPacks} {mission.rewardPacks === 1 ? 'Sobre' : 'Sobres'}</span>
+                      {mission.rewardCoins ? <span className="text-amber-300">· +{mission.rewardCoins} mon.</span> : null}
+                      {mission.rewardSkillPoints ? <span className="text-emerald-300">· +{mission.rewardSkillPoints} PH</span> : null}
                     </div>
                   </div>
 
@@ -134,9 +136,9 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
                   ) : mission.completed ? (
                     <button
                       onClick={() => handleClaim(mission.id)}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-900/40 cursor-pointer transition-all animate-bounce"
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-900/40 cursor-pointer transition-all"
                     >
-                      ¡Reclamar Recompensa!
+                      Reclamar
                     </button>
                   ) : (
                     <span className="text-xs text-slate-500 font-medium px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-900">
