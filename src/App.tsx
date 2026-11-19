@@ -32,6 +32,9 @@ import {
   loadProgression,
   saveProgression,
   getLevelStatMultiplier,
+  getInMatchUnitTier,
+  canUseUnitShowdown,
+  MAX_IN_MATCH_LEVEL,
   openBoosterPack,
   openShopTierPack,
   syncMissionsWithProgression,
@@ -45,6 +48,7 @@ import {
   SHOP_SP_COIN_PRICE,
   SHOP_SP_BUNDLE_AMOUNT
 } from './utils/progression';
+import { Sparkles } from 'lucide-react';
 
 import { GameCanvas } from './components/GameCanvas';
 import { HUD } from './components/HUD';
@@ -119,6 +123,7 @@ export default function App() {
     music.setWaveActive(isWaveActive);
   }, [isWaveActive]);
   const [autoWave, setAutoWave] = useState<boolean>(() => progression.settings?.autoWave ?? false);
+  const [autoShowdown, setAutoShowdown] = useState<boolean>(false);
   const [gameSpeed, setGameSpeed] = useState<GameSpeed>(() => (progression.settings?.gameSpeed as GameSpeed) ?? 1);
   const [isMuted, setIsMuted] = useState<boolean>(() => progression.settings?.sfxMuted ?? sounds.getMuted());
   const [isMusicMuted, setIsMusicMuted] = useState<boolean>(() => !(progression.settings?.musicEnabled ?? true));
@@ -525,13 +530,17 @@ export default function App() {
     );
   }, [currentMap.id]);
 
-  // Trigger Showdown
+  // Trigger Showdown (unlocked from Card Nv.3 OR Match Unit Nv.3)
   const handleTriggerShowdown = useCallback((instanceId: string) => {
     const targetUnit = stateRef.current.placedUnits.find((u) => u.instanceId === instanceId);
     const targetBp = targetUnit ? UNITS[targetUnit.blueprintId] : null;
-    const targetLevel = targetUnit ? progression.cardMasteryLevels[targetUnit.blueprintId] || 1 : 1;
-    const targetMastery = getLevelStatMultiplier(targetLevel);
-    if (targetUnit && targetUnit.showdownReady && targetBp && targetMastery.isShowdownUnlocked) {
+    const targetCardLevel = targetUnit ? progression.cardMasteryLevels[targetUnit.blueprintId] || 1 : 1;
+    if (
+      targetUnit &&
+      targetUnit.showdownReady &&
+      targetBp &&
+      canUseUnitShowdown(targetCardLevel, targetUnit.level)
+    ) {
       setMissions((missionsList) =>
         missionsList.map((m) => {
           if (m.id === 'mission_showdown_master_25') {
@@ -550,10 +559,9 @@ export default function App() {
       const bp = UNITS[unit.blueprintId];
       if (!bp) return prevUnits;
 
-      // Verify Card Mastery is Level 10
       const cardLevel = progression.cardMasteryLevels[unit.blueprintId] || 1;
       const mastery = getLevelStatMultiplier(cardLevel);
-      if (!mastery.isShowdownUnlocked) return prevUnits;
+      if (!canUseUnitShowdown(cardLevel, unit.level)) return prevUnits;
 
       sounds.playShowdown();
 
@@ -1761,6 +1769,26 @@ export default function App() {
     });
   }, [maxBaseHealth, progression.cardMasteryLevels]);
 
+  const handleTriggerAllReadyShowdowns = useCallback(() => {
+    const readyUnits = stateRef.current.placedUnits.filter((u) => {
+      const cardLv = progression.cardMasteryLevels[u.blueprintId] || 1;
+      return u.showdownReady && canUseUnitShowdown(cardLv, u.level);
+    });
+    readyUnits.forEach((u) => handleTriggerShowdown(u.instanceId));
+  }, [progression.cardMasteryLevels, handleTriggerShowdown]);
+
+  // Auto-Showdown triggers ready abilities automatically during active waves when enemies are present
+  useEffect(() => {
+    if (!autoShowdown || !isWaveActive || activeEnemies.length === 0) return;
+    const readyUnit = placedUnits.find((u) => {
+      const cardLv = progression.cardMasteryLevels[u.blueprintId] || 1;
+      return u.showdownReady && canUseUnitShowdown(cardLv, u.level);
+    });
+    if (readyUnit) {
+      handleTriggerShowdown(readyUnit.instanceId);
+    }
+  }, [autoShowdown, isWaveActive, activeEnemies.length, placedUnits, progression.cardMasteryLevels, handleTriggerShowdown]);
+
   // Place unit
   const handleTileClick = (gridX: number, gridY: number) => {
     if (!selectedBlueprintId) {
@@ -1822,7 +1850,7 @@ export default function App() {
       kills: 0,
       targetStrategy: 'first',
       attackCooldown: 0,
-      showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult,
+      showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * 0.5,
       showdownReady: false,
       angle: 0,
       lastTargetId: null
@@ -1865,7 +1893,7 @@ export default function App() {
               kills: 0,
               targetStrategy: 'first',
               attackCooldown: 0.2,
-              showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult,
+              showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * 0.5,
               showdownReady: false,
               angle: 0,
               lastTargetId: null
@@ -1891,14 +1919,14 @@ export default function App() {
     );
   };
 
-  // Upgrade unit inside match (Tier 1 -> 2 -> 3)
+  // Upgrade unit inside match (Tier 1 -> 2 -> 3 -> 4 -> 5 -> 6)
   const handleUpgradeUnit = (instanceId: string) => {
     setPlacedUnits((prev) =>
       prev.map((u) => {
         if (u.instanceId !== instanceId) return u;
         const bp = UNITS[u.blueprintId];
-        if (!bp || u.level >= 3) return u;
-        const nextTier = bp.tiers[u.level];
+        if (!bp || u.level >= MAX_IN_MATCH_LEVEL) return u;
+        const nextTier = getInMatchUnitTier(bp, u.level + 1);
         if (gold < nextTier.cost) return u;
 
         setGold((g) => g - nextTier.cost);
@@ -2251,11 +2279,33 @@ export default function App() {
         setGameSpeed(2);
       } else if (e.key === '3') {
         setGameSpeed(3);
+      } else if (e.key === 'q' || e.key === 'Q') {
+        if (viewState === 'PLAYING' && activeBottomTab === 'BATTLE') {
+          if (e.shiftKey) {
+            handleTriggerAllReadyShowdowns();
+          } else {
+            const firstReady = stateRef.current.placedUnits.find((u) => {
+              const cLv = progression.cardMasteryLevels[u.blueprintId] || 1;
+              return u.showdownReady && canUseUnitShowdown(cLv, u.level);
+            });
+            if (firstReady) {
+              handleTriggerShowdown(firstReady.instanceId);
+            }
+          }
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isWaveActive, viewState, handleStartWave]);
+  }, [
+    isWaveActive,
+    viewState,
+    activeBottomTab,
+    handleStartWave,
+    handleTriggerShowdown,
+    handleTriggerAllReadyShowdowns,
+    progression.cardMasteryLevels
+  ]);
 
   // Main 60 FPS Game Loop
   useEffect(() => {
@@ -2488,17 +2538,18 @@ export default function App() {
           const bp = UNITS[unit.blueprintId];
           if (!bp) return unit;
 
-          const tier = bp.tiers[unit.level - 1];
+          const tier = getInMatchUnitTier(bp, unit.level);
 
           // Story Mode Card Mastery Level (1 to 10)
           const cardLevel = currentProgression.cardMasteryLevels[unit.blueprintId] || 1;
           const mastery = getLevelStatMultiplier(cardLevel);
 
           let cd = Math.max(0, unit.attackCooldown - dt);
-          let showdownCd = Math.max(0, unit.showdownCooldownTimer - dt);
+          const cdChargeMult = unit.level >= 6 ? 1.5 : 1.25;
+          let showdownCd = Math.max(0, unit.showdownCooldownTimer - dt * cdChargeMult);
 
-          // Showdown is ONLY ready if unit card is at Level 10!
-          const isShowdownReady = mastery.isShowdownUnlocked && showdownCd <= 0;
+          // Showdown unlocks from Card Nv.3 OR Match Unit Nv.3!
+          const isShowdownReady = canUseUnitShowdown(cardLevel, unit.level) && showdownCd <= 0;
 
           // Check if boosted by Resonator
           const isBoosted = (unit.boostedUntil ?? 0) > 0;
@@ -2560,9 +2611,9 @@ export default function App() {
               sounds.playShoot(bp.projectileType);
 
               const isSplash = bp.role === 'area' || bp.projectileType === 'shockwave' || bp.projectileType === 'stun';
-              const splashRadius = isSplash ? (bp.projectileType === 'shockwave' ? 70 + (unit.level - 1) * 25 : 55 + (unit.level - 1) * 20) : 0;
+              const splashRadius = isSplash ? (bp.projectileType === 'shockwave' ? 70 + (unit.level - 1) * 20 : 55 + (unit.level - 1) * 16) : 0;
               const isStunner = bp.projectileType === 'stun' || bp.id === 'golem_magma' || bp.id === 'caballero_cristal';
-              const stunDuration = isStunner ? (unit.level === 3 ? 0.75 : 0.45) : undefined;
+              const stunDuration = isStunner ? (unit.level >= 3 ? 0.75 : 0.45) : undefined;
 
               if (bp.projectileType === 'multishot' || bp.id === 'artillero_pesado') {
                 // Fire a volley of 3 staggered rounds
@@ -2617,7 +2668,7 @@ export default function App() {
                         ? 0.5
                         : 0.4
                       : bp.role === 'control'
-                      ? unit.level === 3
+                      ? unit.level >= 3
                         ? 0.3
                         : 0.5
                       : bp.projectileType === 'spore'
@@ -2625,10 +2676,10 @@ export default function App() {
                       : undefined,
                   freezeDuration:
                     bp.id === 'cryo_mage'
-                      ? unit.level === 3
+                      ? unit.level >= 3
                         ? 0.6
                         : undefined
-                      : (bp.role === 'control' && unit.level === 3) || bp.projectileType === 'ice'
+                      : (bp.role === 'control' && unit.level >= 3) || bp.projectileType === 'ice'
                       ? 0.65
                       : undefined,
                   fromCryoMage: bp.id === 'cryo_mage',
@@ -2883,7 +2934,7 @@ export default function App() {
           stateRef.current.placedUnits.forEach((u) => {
             const bp = UNITS[u.blueprintId];
             if (bp && bp.role === 'economia') {
-              const tier = bp.tiers[u.level - 1];
+              const tier = getInMatchUnitTier(bp, u.level);
               let yieldVal = tier.ecoYield || 0;
               // Fénix Áureo, el Renacido — Habilidad Tributo de Ceniza:
               // Produce recompensas mayores en rondas difíciles (+50%) y de jefe (+150%)
@@ -3105,6 +3156,96 @@ export default function App() {
               canAffordPlacement={canAffordPlacement}
             />
           </div>
+
+          {/* Quick-Cast Showdown Bar: 1-Click activation + [Q] + Auto-Showdown */}
+          {placedUnits.length > 0 && (() => {
+            const showdownCapable = placedUnits
+              .map((u) => {
+                const bp = UNITS[u.blueprintId];
+                const cardLv = progression.cardMasteryLevels[u.blueprintId] || 1;
+                const unlocked = canUseUnitShowdown(cardLv, u.level);
+                return { u, bp, unlocked };
+              })
+              .filter((item) => item.bp && item.unlocked)
+              .sort((a, b) => {
+                if (a.u.showdownReady !== b.u.showdownReady) return a.u.showdownReady ? -1 : 1;
+                return a.u.showdownCooldownTimer - b.u.showdownCooldownTimer;
+              });
+
+            const readyCount = showdownCapable.filter((x) => x.u.showdownReady).length;
+
+            return (
+              <div className="w-full bg-slate-900/95 border border-slate-800 rounded-2xl px-3 py-2 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 text-xs font-black text-amber-300 shrink-0 whitespace-nowrap">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>Showdowns [Q]</span>
+                  </div>
+
+                  {showdownCapable.length === 0 ? (
+                    <span className="text-[11px] text-slate-400 truncate">
+                      Sube una unidad a Nivel 3 en la arena (o su carta a Nv.3) para lanzar su Showdown en un clic.
+                    </span>
+                  ) : (
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                      {showdownCapable.map(({ u, bp }) => (
+                        <button
+                          key={`qs_${u.instanceId}`}
+                          onClick={() => {
+                            if (u.showdownReady) {
+                              handleTriggerShowdown(u.instanceId);
+                            } else {
+                              setSelectedUnitId(u.instanceId);
+                            }
+                          }}
+                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
+                            u.showdownReady
+                              ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-sm'
+                              : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-slate-200'
+                          }`}
+                          title={
+                            u.showdownReady
+                              ? `Activar ${bp!.showdownName} ahora`
+                              : `${bp!.showdownName} recargando (${Math.ceil(u.showdownCooldownTimer)}s)`
+                          }
+                        >
+                          <span className="truncate max-w-[115px]">{bp!.name}</span>
+                          <span className="font-mono tabular-nums opacity-85">
+                            {u.showdownReady ? '¡LISTO!' : `${Math.ceil(u.showdownCooldownTimer)}s`}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {showdownCapable.length > 0 && (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {readyCount >= 2 && (
+                      <button
+                        onClick={handleTriggerAllReadyShowdowns}
+                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-[11px] cursor-pointer whitespace-nowrap"
+                      >
+                        Lanzar Todos ({readyCount})
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => setAutoShowdown((v) => !v)}
+                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer whitespace-nowrap ${
+                        autoShowdown
+                          ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
+                      title="Activa automáticamente los Showdowns cuando estén listos en combate"
+                    >
+                      {autoShowdown ? 'Auto: ON' : 'Auto: OFF'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Dynamic Context Panel: Inspector if a unit is clicked, otherwise Unit Shop */}
           {selectedUnit ? (

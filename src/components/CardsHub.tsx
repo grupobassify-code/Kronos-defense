@@ -6,6 +6,8 @@ import { getArenaForWave, getArenaByLevel } from '../data/maps';
 import {
   LEVEL_UP_COSTS,
   getLevelStatMultiplier,
+  getInMatchUnitTier,
+  MAX_IN_MATCH_LEVEL,
   getKillsRequiredForPack,
   getCardShopPrice,
   canBuyCardInShop,
@@ -839,7 +841,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
               <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-0 bg-slate-950 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
                 {(() => {
                   const selRMeta = getRarityMeta(selectedUnit.rarity);
-                  const activeTier = selectedUnit.tiers[inspectorTierPreview] || selectedUnit.tiers[0];
+                  const activeTier = getInMatchUnitTier(selectedUnit, inspectorTierPreview + 1);
                   return (
                     <>
                       {/* Header with portrait */}
@@ -975,24 +977,24 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                         </div>
                       </div>
 
-                      {/* In-Arena 3 Upgrade Tiers Preview */}
+                      {/* In-Arena 6 Upgrade Tiers Preview */}
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                            Mejoras dentro de la Arena
+                            Mejoras en Arena (Nv.1–{MAX_IN_MATCH_LEVEL})
                           </span>
-                          <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800">
-                            {[0, 1, 2].map((tIdx) => (
+                          <div className="flex items-center gap-0.5 bg-slate-900 p-0.5 rounded-lg border border-slate-800">
+                            {[0, 1, 2, 3, 4, 5].map((tIdx) => (
                               <button
                                 key={tIdx}
                                 onClick={() => setInspectorTierPreview(tIdx)}
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
                                   inspectorTierPreview === tIdx
                                     ? 'bg-cyan-500 text-slate-950'
                                     : 'text-slate-400 hover:text-slate-200'
                                 }`}
                               >
-                                Nv.{tIdx + 1}
+                                N{tIdx + 1}
                               </button>
                             ))}
                           </div>
@@ -1000,8 +1002,8 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                         <div className="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 text-[11px] space-y-1">
                           <div className="flex items-center justify-between font-bold text-slate-200">
                             <span>{activeTier.name}</span>
-                            <span className="font-mono text-amber-300">
-                              {activeTier.cost > 0 ? `${activeTier.cost} oro` : 'Base'}
+                            <span className="font-mono tabular-nums text-amber-300">
+                              {activeTier.cost > 0 ? `${activeTier.cost} oro` : 'Base'} · {activeTier.damage} dmg
                             </span>
                           </div>
                           <p className="text-slate-400 leading-snug">{activeTier.description}</p>
@@ -1016,7 +1018,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                             <span>{selectedUnit.showdownName}</span>
                           </span>
                           <span className="text-[10px] font-mono text-slate-400">
-                            {currentStats.isShowdownUnlocked ? 'Activo' : 'Requiere Nv.10'} · {selectedUnit.showdownCooldown}s
+                            {currentStats.isShowdownUnlocked ? 'Activo desde inicio' : 'Carta Nv.3 o Arena Nv.3'} · {selectedUnit.showdownCooldown}s
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-400 leading-relaxed">

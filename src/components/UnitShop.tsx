@@ -137,7 +137,7 @@ export const UnitShop: React.FC<UnitShopProps> = ({
           const isSelected = selectedBlueprintId === unit.id;
           const canAfford = currentGold >= unit.cost;
           const level = cardMasteryLevels[unit.id] || 1;
-          const isMaxShowdown = level >= 10;
+          const isMaxShowdown = level >= 3;
           const rMeta = getRarityMeta(unit.rarity);
 
           return (

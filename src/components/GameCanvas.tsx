@@ -11,6 +11,7 @@ import { UNITS } from '../data/units';
 import { ENEMIES } from '../data/enemies';
 import { isPathTile, isObstacleTile } from '../utils/pathUtils';
 import { resolveAssetUrl } from '../utils/assets';
+import { getInMatchUnitTier } from '../utils/progression';
 
 interface GameCanvasProps {
   map: MapData;
@@ -521,7 +522,7 @@ function drawRangeOverlays(
   if (selectedUnit) {
     const bp = UNITS[selectedUnit.blueprintId];
     if (bp) {
-      const tier = bp.tiers[selectedUnit.level - 1];
+      const tier = getInMatchUnitTier(bp, selectedUnit.level);
       const range = tier.range;
 
       ctx.save();
@@ -570,9 +571,10 @@ function drawUnit(ctx: CanvasRenderingContext2D, unit: PlacedUnit, isSelected: b
   ctx.translate(x, y);
 
   // Selection halo
+  const haloRadius = level >= 6 ? 33 : level >= 4 ? 31 : level === 3 ? 29 : level === 2 ? 26 : 23;
   if (isSelected) {
     ctx.beginPath();
-    ctx.arc(0, 0, level === 3 ? 29 : level === 2 ? 26 : 23, 0, Math.PI * 2);
+    ctx.arc(0, 0, haloRadius, 0, Math.PI * 2);
     ctx.strokeStyle = '#38BDF8';
     ctx.lineWidth = 3;
     ctx.stroke();
@@ -580,18 +582,127 @@ function drawUnit(ctx: CanvasRenderingContext2D, unit: PlacedUnit, isSelected: b
 
   // Showdown Ready Pulse
   if (showdownReady) {
+    const sdPulse = 1 + Math.sin(Date.now() / 160) * 0.08;
     ctx.beginPath();
-    ctx.arc(0, 0, level === 3 ? 28 : level === 2 ? 25 : 22, 0, Math.PI * 2);
+    ctx.arc(0, 0, (haloRadius - 1) * sdPulse, 0, Math.PI * 2);
     ctx.strokeStyle = '#F59E0B';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3;
     ctx.stroke();
   }
 
   // DYNAMIC EVOLVING BASE PLATE (PLACA BASE):
-  // El color y la estructura de la base cambian y se vuelven mucho más espectaculares con cada mejora
+  // El color y la estructura de la base cambian y se vuelven mucho más espectaculares con cada mejora (Nv. 1 - 6)
   const animTime = Date.now();
 
-  if (level === 3) {
+  if (level >= 6) {
+    // NIVEL 6: TRASCENDENCIA CÓSMICA (Doble anillo prismático rotatorio)
+    const rotA = (animTime / 1400) % (Math.PI * 2);
+    const rotB = -(animTime / 1900) % (Math.PI * 2);
+    const pulse = Math.sin(animTime / 240) * 0.1 + 0.9;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, 29 * pulse, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(236, 72, 153, 0.22)';
+    ctx.fill();
+    ctx.strokeStyle = '#F472B6';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.rotate(rotA);
+    ctx.strokeStyle = '#38BDF8';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i * Math.PI) / 3;
+      const sx = Math.cos(a) * 26;
+      const sy = Math.sin(a) * 26;
+      if (i === 0) ctx.moveTo(sx, sy);
+      else ctx.lineTo(sx, sy);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.rotate(rotB - rotA);
+    ctx.fillStyle = '#FDE047';
+    for (let i = 0; i < 6; i++) {
+      const a = (i * Math.PI) / 3;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * 25.5, Math.sin(a) * 25.5, 2.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, 0, Math.PI * 2);
+    ctx.fillStyle = '#0F172A';
+    ctx.fill();
+    ctx.strokeStyle = '#FDE047';
+    ctx.lineWidth = 3.5;
+    ctx.stroke();
+  } else if (level === 5) {
+    // NIVEL 5: ASCENSIÓN ARCANO VIOLETA
+    const rot = (animTime / 1600) % (Math.PI * 2);
+    const pulse = Math.sin(animTime / 280) * 0.09 + 0.91;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, 27 * pulse, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(168, 85, 247, 0.24)';
+    ctx.fill();
+    ctx.strokeStyle = '#C084FC';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.rotate(rot);
+    ctx.fillStyle = '#E879F9';
+    for (let i = 0; i < 5; i++) {
+      const a = (i * Math.PI * 2) / 5;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * 24.5, Math.sin(a) * 24.5, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, 0, Math.PI * 2);
+    ctx.fillStyle = '#1E1B4B';
+    ctx.fill();
+    ctx.strokeStyle = '#C084FC';
+    ctx.lineWidth = 3.2;
+    ctx.stroke();
+  } else if (level === 4) {
+    // NIVEL 4: SOBRECARGA ESMERALDA / PLASMA
+    const rot = (animTime / 2000) % (Math.PI * 2);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, 25, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
+    ctx.fill();
+    ctx.strokeStyle = '#34D399';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.rotate(rot);
+    ctx.fillStyle = '#6EE7B7';
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2;
+      ctx.fillRect(Math.cos(a) * 23 - 2, Math.sin(a) * 23 - 2, 4, 4);
+    }
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 21.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#064E3B';
+    ctx.fill();
+    ctx.strokeStyle = '#34D399';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  } else if (level === 3) {
     // NIVEL 3: PEDESTAL MÍTICO DORADO / TRONO DIVINO RESONANTE
     const gearRot = (animTime / 1800) % (Math.PI * 2);
     const pulseGlow = Math.sin(animTime / 320) * 0.12 + 0.88;
@@ -734,15 +845,38 @@ function drawUnit(ctx: CanvasRenderingContext2D, unit: PlacedUnit, isSelected: b
   // Rotating weapon pointer
   ctx.save();
   ctx.rotate(angle);
-  ctx.fillStyle = level === 3 ? '#FDE047' : level === 2 ? '#38BDF8' : bp.colorTheme.primary;
-  ctx.fillRect(8, -2.5, 11, 5);
+  ctx.fillStyle =
+    level >= 6
+      ? '#F472B6'
+      : level === 5
+      ? '#E879F9'
+      : level === 4
+      ? '#34D399'
+      : level === 3
+      ? '#FDE047'
+      : level === 2
+      ? '#38BDF8'
+      : bp.colorTheme.primary;
+  ctx.fillRect(8, -2.5, level >= 4 ? 13 : 11, 5);
   ctx.restore();
 
-  // Level Stars indicator
+  // Level Stars / Badge indicator
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  if (level === 3) {
+  if (level >= 6) {
+    ctx.fillStyle = '#FDE047';
+    ctx.font = 'bold 10px system-ui';
+    ctx.fillText('✦Nv.6✦', 0, 20);
+  } else if (level === 5) {
+    ctx.fillStyle = '#E879F9';
+    ctx.font = 'bold 9.5px system-ui';
+    ctx.fillText('★★★★★', 0, 19);
+  } else if (level === 4) {
+    ctx.fillStyle = '#34D399';
+    ctx.font = 'bold 9.5px system-ui';
+    ctx.fillText('★★★★', 0, 19);
+  } else if (level === 3) {
     ctx.fillStyle = '#FDE047';
     ctx.font = 'bold 10px system-ui';
     ctx.fillText('★★★', 0, 19);

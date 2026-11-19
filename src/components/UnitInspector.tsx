@@ -1,7 +1,12 @@
 import React from 'react';
 import { PlacedUnit, TargetStrategy } from '../types/game';
 import { UNITS } from '../data/units';
-import { getLevelStatMultiplier } from '../utils/progression';
+import {
+  getLevelStatMultiplier,
+  getInMatchUnitTier,
+  canUseUnitShowdown,
+  MAX_IN_MATCH_LEVEL
+} from '../utils/progression';
 import {
   Sparkles,
   ArrowUpCircle,
@@ -45,13 +50,13 @@ export const UnitInspector: React.FC<UnitInspectorProps> = ({
   const bp = UNITS[unit.blueprintId];
   if (!bp) return null;
 
-  const currentTier = bp.tiers[unit.level - 1];
-  const nextTier = unit.level < 3 ? bp.tiers[unit.level] : null;
+  const currentTier = getInMatchUnitTier(bp, unit.level);
+  const nextTier = unit.level < MAX_IN_MATCH_LEVEL ? getInMatchUnitTier(bp, unit.level + 1) : null;
   const canAffordUpgrade = nextTier ? currentGold >= nextTier.cost : false;
   const refundAmount = Math.floor(unit.totalInvestment * 0.7);
 
   const masteryMultiplier = getLevelStatMultiplier(cardLevel);
-  const isShowdownUnlocked = masteryMultiplier.isShowdownUnlocked;
+  const isShowdownUnlocked = canUseUnitShowdown(cardLevel, unit.level);
 
   // Effective stats with card mastery
   const effectiveDamage = Math.round(currentTier.damage * masteryMultiplier.damageMult);
@@ -111,10 +116,10 @@ export const UnitInspector: React.FC<UnitInspectorProps> = ({
             )}
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-bold text-base text-slate-100">{bp.name}</h3>
-              <span className="text-xs font-mono text-amber-400 font-bold px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-800/50">
-                Nivel {unit.level}
+              <span className="text-xs font-mono tabular-nums text-amber-400 font-bold px-2 py-0.5 rounded bg-amber-950/40 border border-amber-800/50">
+                Nivel {unit.level} / {MAX_IN_MATCH_LEVEL}
               </span>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
@@ -256,23 +261,27 @@ export const UnitInspector: React.FC<UnitInspectorProps> = ({
                 }`}
               >
                 <Sparkles className="w-4 h-4" />
-                {unit.showdownReady ? '¡Activar Showdown!' : `Recargando (${Math.ceil(unit.showdownCooldownTimer)}s)`}
+                <span>
+                  {unit.showdownReady
+                    ? '¡Activar Showdown! [Q]'
+                    : `Recargando (${Math.ceil(unit.showdownCooldownTimer)}s)`}
+                </span>
               </button>
             ) : (
-              <div className="bg-red-950/40 border border-red-900/50 rounded-xl p-2.5 text-center">
-                <div className="flex items-center justify-center gap-1 text-xs text-red-300 font-bold mb-1">
-                  <Lock className="w-3.5 h-3.5 text-red-400" />
-                  <span>Requiere Carta Nivel 10</span>
+              <div className="bg-slate-950 border border-amber-500/30 rounded-xl p-2.5 text-center">
+                <div className="flex items-center justify-center gap-1 text-xs text-amber-300 font-bold mb-1">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Showdown en Arena Nv.3 o Carta Nv.3</span>
                 </div>
                 <p className="text-[10px] text-slate-400 mb-2">
-                  Esta habilidad especial se desbloquea al alcanzar el nivel máximo (10) de esta carta en la Armería.
+                  Sube esta unidad al Nivel 3 durante la partida o sube la carta a Nv.3 para activar su habilidad definitiva.
                 </p>
                 {onOpenArmory && (
                   <button
                     onClick={onOpenArmory}
                     className="px-2.5 py-1 rounded-lg bg-amber-950/80 border border-amber-500/50 text-amber-300 hover:bg-amber-900 font-bold text-[11px] transition-colors cursor-pointer"
                   >
-                    Mejorar en Armería (Nv. {cardLevel}/10)
+                    Mejorar Carta (Nv. {cardLevel}/10)
                   </button>
                 )}
               </div>
@@ -283,12 +292,32 @@ export const UnitInspector: React.FC<UnitInspectorProps> = ({
         {/* Column 3: Upgrade & Sell */}
         <div className="space-y-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 flex flex-col justify-between">
           <div>
-            <div className="text-xs uppercase font-bold text-slate-400 tracking-wider mb-1.5">
-              Mejora de Unidad
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">
+                Mejora de Unidad
+              </span>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: MAX_IN_MATCH_LEVEL }).map((_, idx) => (
+                  <span
+                    key={idx}
+                    className={`w-3 h-1.5 rounded-full ${
+                      idx < unit.level
+                        ? unit.level >= 6
+                          ? 'bg-pink-400'
+                          : unit.level >= 4
+                          ? 'bg-emerald-400'
+                          : 'bg-amber-400'
+                        : 'bg-slate-800'
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
             {nextTier ? (
               <div className="space-y-1.5">
-                <div className="text-xs font-semibold text-slate-200">{nextTier.name}</div>
+                <div className="text-xs font-semibold text-slate-200">
+                  Nv.{unit.level + 1}: {nextTier.name}
+                </div>
                 <div className="text-[11px] text-slate-400 leading-tight">
                   {nextTier.description}
                 </div>
@@ -297,14 +326,14 @@ export const UnitInspector: React.FC<UnitInspectorProps> = ({
                     ✦ {nextTier.bonusEffect}
                   </div>
                 )}
-                <div className="flex items-center justify-between text-xs font-mono pt-1 text-slate-300">
+                <div className="flex items-center justify-between text-xs font-mono tabular-nums pt-1 text-slate-300">
                   <span>Daño: {currentTier.damage} → <span className="text-emerald-400 font-bold">{nextTier.damage}</span></span>
                   <span>Alcance: {currentTier.range} → <span className="text-blue-400 font-bold">{nextTier.range}</span></span>
                 </div>
               </div>
             ) : (
-              <div className="text-xs text-amber-400/90 py-4 text-center font-medium">
-                ★ Nivel Máximo Alcanzado ★
+              <div className="text-xs text-amber-300 py-4 text-center font-bold">
+                ✦ Nivel {MAX_IN_MATCH_LEVEL} Trascendencia Máxima ✦
               </div>
             )}
           </div>

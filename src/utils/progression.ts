@@ -1,4 +1,4 @@
-import { PlayerProgression, PackReward, Mission, UnitBlueprint, ShopPackDefinition, ShopPackTierId } from '../types/game';
+import { PlayerProgression, PackReward, Mission, UnitBlueprint, UpgradeTier, ShopPackDefinition, ShopPackTierId } from '../types/game';
 import { UNITS } from '../data/units';
 import { INITIAL_MISSIONS } from '../data/missions';
 
@@ -200,10 +200,72 @@ export function resetLocalProgression(): { progression: PlayerProgression; missi
   return { progression: INITIAL_PROGRESSION, missions: INITIAL_MISSIONS };
 }
 
+export const MAX_IN_MATCH_LEVEL = 6;
+
 /**
- * Calculates balanced stat multiplier for level 1 to 10
- * Lv 1: 1.0 (base)
- * Lv 10: 1.315 (+31.5% balanced damage, not overpowered)
+ * Checks if a placed unit can activate Showdown (Card Lv.3+ OR upgraded to Lv.3+ in arena).
+ */
+export function canUseUnitShowdown(cardLevel: number, inMatchLevel: number = 1): boolean {
+  return cardLevel >= 3 || inMatchLevel >= 3;
+}
+
+/**
+ * Returns the UpgradeTier stats for any in-match level from 1 to 6.
+ * Levels 1-3 use bp.tiers[0..2]; Levels 4-6 dynamically scale from Tier 3.
+ */
+export function getInMatchUnitTier(bp: UnitBlueprint, level: number): UpgradeTier {
+  const safeLv = Math.max(1, Math.min(MAX_IN_MATCH_LEVEL, level));
+  if (safeLv <= 3) {
+    return bp.tiers[safeLv - 1] || bp.tiers[0];
+  }
+
+  const tier3 = bp.tiers[2] || bp.tiers[bp.tiers.length - 1];
+  const baseTier3Cost = Math.max(120, tier3.cost || Math.round(bp.cost * 1.5));
+
+  if (safeLv === 4) {
+    return {
+      name: `${tier3.name} · Sobrecarga`,
+      cost: Math.round((baseTier3Cost * 1.55) / 5) * 5,
+      damage: Math.round(tier3.damage * 1.45),
+      range: Math.round(tier3.range + 16),
+      attackSpeed: Number((tier3.attackSpeed * 1.15).toFixed(2)),
+      description: 'Sobrecarga táctica en arena: +45% daño, +15% cadencia y +16px alcance.',
+      bonusEffect: 'Showdown +25% más potente',
+      ecoYield: tier3.ecoYield ? Math.round(tier3.ecoYield * 1.5) : undefined
+    };
+  }
+
+  if (safeLv === 5) {
+    const tier4Cost = Math.round((baseTier3Cost * 1.55) / 5) * 5;
+    return {
+      name: `${tier3.name} · Ascensión`,
+      cost: Math.round((tier4Cost * 1.65) / 5) * 5,
+      damage: Math.round(tier3.damage * 2.1),
+      range: Math.round(tier3.range + 32),
+      attackSpeed: Number((tier3.attackSpeed * 1.32).toFixed(2)),
+      description: 'Ascensión de élite: supera el doble de daño de Nivel 3 y +32% cadencia.',
+      bonusEffect: 'Recarga Showdown acelerada y +32px alcance',
+      ecoYield: tier3.ecoYield ? Math.round(tier3.ecoYield * 2.2) : undefined
+    };
+  }
+
+  const tier4Cost = Math.round((baseTier3Cost * 1.55) / 5) * 5;
+  const tier5Cost = Math.round((tier4Cost * 1.65) / 5) * 5;
+  return {
+    name: `${tier3.name} · Trascendencia`,
+    cost: Math.round((tier5Cost * 1.75) / 5) * 5,
+    damage: Math.round(tier3.damage * 3.1),
+    range: Math.round(tier3.range + 52),
+    attackSpeed: Number((tier3.attackSpeed * 1.55).toFixed(2)),
+    description: 'Forma Suprema Nivel 6: x3.1 daño sobre Nivel 3, +52px alcance y máxima cadencia.',
+    bonusEffect: 'Showdown recarga 50% más rápido y potencia extrema',
+    ecoYield: tier3.ecoYield ? Math.round(tier3.ecoYield * 3.2) : undefined
+  };
+}
+
+/**
+ * Calculates balanced stat multiplier for card mastery level 1 to 10.
+ * Showdown now unlocks starting at Card Lv.3 (or Match Unit Lv.3) for smoother usability!
  */
 export function getLevelStatMultiplier(level: number): {
   damageMult: number;
@@ -215,10 +277,10 @@ export function getLevelStatMultiplier(level: number): {
   const bonusSteps = safeLevel - 1; // 0 to 9
 
   return {
-    damageMult: 1 + bonusSteps * 0.035, // +3.5% damage per level
+    damageMult: 1 + bonusSteps * 0.04, // +4% damage per card level
     speedMult: 1 + bonusSteps * 0.025, // +2.5% attack speed per level
-    showdownCdMult: 1 - bonusSteps * 0.025, // -2.5% cooldown per level
-    isShowdownUnlocked: safeLevel >= 10 // Showdown ONLY unlocks at level 10!
+    showdownCdMult: Math.max(0.65, 1 - bonusSteps * 0.035), // Up to -31.5% cooldown reduction
+    isShowdownUnlocked: safeLevel >= 3
   };
 }
 
