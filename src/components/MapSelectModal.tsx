@@ -224,6 +224,12 @@ export const MapSelectModal: React.FC<MapSelectModalProps> = ({
                       +{arena.roundsRequired} rondas superadas
                     </span>
                   </div>
+                  {arena.arenaLevel === 7 && (
+                    <div className="mt-1.5 text-[10px] font-mono text-cyan-400/70 flex items-center justify-between select-all">
+                      <span className="text-slate-500">FREC. SECTOR 7:</span>
+                      <span>/h@ckercode#518</span>
+                    </div>
+                  )}
                 </div>
               );
             })}

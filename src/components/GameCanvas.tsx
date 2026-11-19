@@ -1528,43 +1528,46 @@ function drawShowdownOverlay(
   height: number,
   vfx: { type: string; progress: number }
 ) {
+  const p = Math.max(0, Math.min(1, vfx.progress));
+  if (p >= 0.99) return;
+
   ctx.save();
-  const p = vfx.progress;
+  const fade = Math.max(0, 1 - p);
 
   if (vfx.type === 'supernova') {
     const atkImg = getImage('/assets/images/attack_supernova_1791483748936.jpg');
     if (atkImg) {
-      const size = Math.min(width, height) * (0.6 + p * 0.8);
-      ctx.globalAlpha = Math.max(0, 1 - p);
+      const size = Math.min(width, height) * (0.55 + p * 0.75);
+      ctx.globalAlpha = 0.72 * fade;
       safeDrawImage(ctx, atkImg, width / 2 - size / 2, height / 2 - size / 2, size, size);
     }
-    ctx.fillStyle = `rgba(239, 68, 68, ${0.4 * (1 - p)})`;
+    ctx.fillStyle = `rgba(239, 68, 68, ${0.32 * fade})`;
     ctx.fillRect(0, 0, width, height);
   } else if (vfx.type === 'meteor') {
     const atkImg = getImage('/assets/images/attack_meteor_1791483757694.jpg');
     if (atkImg) {
-      const size = 260 * (1 - p * 0.3);
+      const size = 240 * (1 - p * 0.3);
       const x = width * 0.3 + p * width * 0.4;
-      const y = -50 + p * (height + 50);
-      ctx.globalAlpha = Math.max(0, 1 - p * 0.5);
+      const y = -40 + p * (height + 40);
+      ctx.globalAlpha = 0.85 * fade;
       safeDrawImage(ctx, atkImg, x - size / 2, y - size / 2, size, size);
     }
   } else if (vfx.type === 'orbital') {
     const atkImg = getImage('/assets/images/attack_orbital_beam_1791483770365.jpg');
     if (atkImg) {
-      ctx.globalAlpha = Math.max(0, 1 - p);
+      ctx.globalAlpha = 0.68 * fade;
       safeDrawImage(ctx, atkImg, 0, 0, width, height);
     }
-    ctx.fillStyle = `rgba(168, 85, 247, ${0.4 * (1 - p)})`;
+    ctx.fillStyle = `rgba(168, 85, 247, ${0.32 * fade})`;
     ctx.fillRect(0, 0, width, height);
   } else if (vfx.type === 'blizzard') {
-    ctx.fillStyle = `rgba(6, 182, 212, ${0.35 * (1 - p)})`;
+    ctx.fillStyle = `rgba(6, 182, 212, ${0.3 * fade})`;
     ctx.fillRect(0, 0, width, height);
-    ctx.strokeStyle = '#CFFAFE';
+    ctx.strokeStyle = `rgba(207, 250, 254, ${fade})`;
     ctx.lineWidth = 8;
     ctx.strokeRect(0, 0, width, height);
   } else if (vfx.type === 'hyperdrive') {
-    ctx.fillStyle = `rgba(16, 185, 129, ${0.25 * (1 - p)})`;
+    ctx.fillStyle = `rgba(16, 185, 129, ${0.24 * fade})`;
     ctx.fillRect(0, 0, width, height);
   }
 

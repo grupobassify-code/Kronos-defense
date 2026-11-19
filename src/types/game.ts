@@ -341,6 +341,7 @@ export interface PlayerProgression {
   arenaBestWaves?: Record<string, number>; // Highest wave record per arena map id
   totalMatchesPlayed?: number; // Total matches initiated
   lastSavedTimestamp?: number; // Timestamp of last local save
+  redeemedCheatCodes?: string[]; // Secret one-time hack codes already redeemed
   settings?: {
     musicEnabled: boolean;
     musicVolume: number;

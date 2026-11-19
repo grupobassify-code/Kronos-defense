@@ -42,7 +42,10 @@ import {
   Wallet,
   Eye,
   ArrowUpDown,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Terminal,
+  KeyRound,
+  Timer
 } from 'lucide-react';
 import { music } from '../utils/music';
 import { saveProgression } from '../utils/progression';
@@ -64,6 +67,8 @@ interface CardsHubProps {
   onBuyPackBundleWithCoins?: () => void;
   onBuyAndOpenPackTier?: (tierId: ShopPackTierId) => PackReward[];
   onBuySkillPointsWithCoins?: () => void;
+  freeShopUntil?: number;
+  onRedeemCheatCode?: (code: string) => { success: boolean; title?: string; message: string };
   requestedSubTab?: SubTabKey | null;
   onConsumeRequestedSubTab?: () => void;
   currentWave?: number;
@@ -83,6 +88,8 @@ export const CardsHub: React.FC<CardsHubProps> = ({
   onBuyPackBundleWithCoins,
   onBuyAndOpenPackTier,
   onBuySkillPointsWithCoins,
+  freeShopUntil = 0,
+  onRedeemCheatCode,
   requestedSubTab = null,
   onConsumeRequestedSubTab,
   currentWave = 1
@@ -96,7 +103,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
   const [raritySortAsc, setRaritySortAsc] = useState<boolean>(true); // true: Común -> Divinidad, false: Divinidad -> Común
   const [inspectorTierPreview, setInspectorTierPreview] = useState<number>(0);
 
-  // Card Shop filters
+  // Card Shop filters & Redeemable Cheat Codes
   const [shopSearch, setShopSearch] = useState<string>('');
   const [shopRarity, setShopRarity] = useState<string>('all');
   const [shopRole, setShopRole] = useState<string>('all');
@@ -105,6 +112,34 @@ export const CardsHub: React.FC<CardsHubProps> = ({
   const [shopPreviewCardId, setShopPreviewCardId] = useState<string | null>(null);
   const [shopPurchaseToast, setShopPurchaseToast] = useState<{ cardId: string; name: string } | null>(null);
   const [shopPackReveal, setShopPackReveal] = useState<{ tierName: string; rewards: PackReward[] } | null>(null);
+  const [cheatCodeInput, setCheatCodeInput] = useState<string>('');
+  const [cheatFeedback, setCheatFeedback] = useState<{ success: boolean; title?: string; message: string } | null>(null);
+  const [nowTick, setNowTick] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    if (freeShopUntil <= Date.now()) return;
+    setNowTick(Date.now());
+    const id = window.setInterval(() => {
+      const current = Date.now();
+      setNowTick(current);
+      if (current >= freeShopUntil) {
+        window.clearInterval(id);
+      }
+    }, 500);
+    return () => window.clearInterval(id);
+  }, [freeShopUntil]);
+
+  const freeShopSecondsLeft = Math.max(0, Math.ceil((freeShopUntil - nowTick) / 1000));
+  const isFreeShop = freeShopSecondsLeft > 0;
+
+  const handleSubmitCheatCode = () => {
+    if (!onRedeemCheatCode || !cheatCodeInput.trim()) return;
+    const result = onRedeemCheatCode(cheatCodeInput);
+    setCheatFeedback(result);
+    if (result.success) {
+      setCheatCodeInput('');
+    }
+  };
 
   // Missions filters
   const [missionCategoryFilter, setMissionCategoryFilter] = useState<'all' | MissionCategory>('all');
@@ -1026,6 +1061,13 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                         </p>
                       </div>
 
+                      {selectedUnit.id === 'hacker_cibernetico' && (
+                        <div className="px-3 py-2 rounded-xl bg-slate-950 border border-cyan-500/25 text-[10px] font-mono text-cyan-300/80 flex items-center justify-between gap-2 select-all">
+                          <span className="text-slate-500 uppercase">Archivo Descifrado:</span>
+                          <span className="font-bold">/h@ckercode#642</span>
+                        </div>
+                      )}
+
                       {/* Bottom Upgrade / Unlock Action */}
                       {isSelectedUnlocked ? (
                         <div className="pt-2 border-t border-slate-800 space-y-2">
@@ -1117,18 +1159,22 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                     <PackageOpen className="w-4 h-4 text-purple-400 shrink-0" />
                     <span className="truncate">Lote x3 Sobres Crono</span>
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">Ahorra 300 monedas</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    {isFreeShop ? 'Hackeo activo: Coste 0' : 'Ahorra 300 monedas'}
+                  </div>
                 </div>
                 <button
                   onClick={() => onBuyPackBundleWithCoins?.()}
-                  disabled={(progression.savedCoins ?? 0) < SHOP_BUNDLE_3_PACKS_PRICE}
+                  disabled={!isFreeShop && (progression.savedCoins ?? 0) < SHOP_BUNDLE_3_PACKS_PRICE}
                   className={`px-3.5 py-2 rounded-xl text-xs font-black font-mono tabular-nums whitespace-nowrap transition-colors cursor-pointer ${
-                    (progression.savedCoins ?? 0) >= SHOP_BUNDLE_3_PACKS_PRICE
+                    isFreeShop
+                      ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950'
+                      : (progression.savedCoins ?? 0) >= SHOP_BUNDLE_3_PACKS_PRICE
                       ? 'bg-purple-600 hover:bg-purple-500 text-white'
                       : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
                   }`}
                 >
-                  {SHOP_BUNDLE_3_PACKS_PRICE} mon.
+                  {isFreeShop ? 'GRATIS (0)' : `${SHOP_BUNDLE_3_PACKS_PRICE} mon.`}
                 </button>
               </div>
 
@@ -1142,17 +1188,125 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                 </div>
                 <button
                   onClick={() => onBuySkillPointsWithCoins?.()}
-                  disabled={(progression.savedCoins ?? 0) < SHOP_SP_COIN_PRICE}
+                  disabled={!isFreeShop && (progression.savedCoins ?? 0) < SHOP_SP_COIN_PRICE}
                   className={`px-3.5 py-2 rounded-xl text-xs font-black font-mono tabular-nums whitespace-nowrap transition-colors cursor-pointer ${
-                    (progression.savedCoins ?? 0) >= SHOP_SP_COIN_PRICE
+                    isFreeShop
+                      ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950'
+                      : (progression.savedCoins ?? 0) >= SHOP_SP_COIN_PRICE
                       ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
                       : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
                   }`}
                 >
-                  {SHOP_SP_COIN_PRICE} mon.
+                  {isFreeShop ? 'GRATIS (0)' : `${SHOP_SP_COIN_PRICE} mon.`}
                 </button>
               </div>
             </div>
+
+            {/* Active Free Shop Countdown Banner */}
+            {isFreeShop && (
+              <div className="rounded-2xl border-2 border-emerald-400/70 bg-gradient-to-r from-emerald-950/90 via-cyan-950/80 to-slate-950 p-3.5 flex flex-col sm:flex-row items-center justify-between gap-2.5 shadow-lg shadow-emerald-950/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-400/20 border border-emerald-400/50 flex items-center justify-center shrink-0">
+                    <Timer className="w-5 h-5 text-emerald-300 animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black uppercase tracking-wider text-emerald-300">
+                      Modo Tienda Gratis Hackeada Activo
+                    </div>
+                    <div className="text-[11px] text-slate-200">
+                      Todas las cartas elegibles, sobres, cofres y puntos de habilidad cuestan 0 monedas.
+                    </div>
+                  </div>
+                </div>
+                <div className="px-4 py-1.5 rounded-xl bg-emerald-400 text-slate-950 font-black font-mono tabular-nums text-sm shrink-0">
+                  {freeShopSecondsLeft}s restantes
+                </div>
+              </div>
+            )}
+
+            {/* Redeemable Hack Codes Terminal */}
+            {onRedeemCheatCode && (
+              <div className="rounded-2xl border border-cyan-500/35 bg-slate-950/90 p-4 space-y-3">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/40 flex items-center justify-center shrink-0">
+                      <Terminal className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-black text-slate-100">Códigos Canjeables</h3>
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-300 font-bold">
+                          1 Solo Uso
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Introduce un código secreto válido para desbloquear ventajas especiales. Cada código solo puede canjearse una vez.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full lg:w-auto lg:min-w-[380px]">
+                    <div className="relative flex-1">
+                      <KeyRound className="w-4 h-4 text-cyan-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={cheatCodeInput}
+                        onChange={(e) => setCheatCodeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSubmitCheatCode();
+                          }
+                        }}
+                        placeholder="Ingresa un código secreto..."
+                        className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-cyan-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSubmitCheatCode}
+                      disabled={!cheatCodeInput.trim()}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-colors whitespace-nowrap cursor-pointer ${
+                        cheatCodeInput.trim()
+                          ? 'bg-cyan-400 hover:bg-cyan-300 text-slate-950'
+                          : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+                      }`}
+                    >
+                      Canjear
+                    </button>
+                  </div>
+                </div>
+
+                {cheatFeedback && (
+                  <div
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs ${
+                      cheatFeedback.success
+                        ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-200'
+                        : 'bg-rose-950/60 border-rose-500/50 text-rose-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <CheckCircle2
+                        className={`w-4 h-4 shrink-0 ${
+                          cheatFeedback.success ? 'text-emerald-400' : 'text-rose-400'
+                        }`}
+                      />
+                      <span className="truncate sm:whitespace-normal">
+                        {cheatFeedback.title ? <strong className="mr-1.5">{cheatFeedback.title}:</strong> : null}
+                        {cheatFeedback.message}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCheatFeedback(null)}
+                      className="text-slate-400 hover:text-white cursor-pointer shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Purchasable Booster Packs & Chests Shelf */}
             <div className="space-y-3 bg-slate-950/70 border border-purple-500/30 rounded-2xl p-4">
@@ -1170,7 +1324,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                 {SHOP_PACK_TIERS.map((tier) => {
-                  const canAffordTier = (progression.savedCoins ?? 0) >= tier.priceCoins;
+                  const canAffordTier = isFreeShop || (progression.savedCoins ?? 0) >= tier.priceCoins;
                   const tierAccent =
                     tier.id === 'cosmic'
                       ? 'border-cyan-400/60 bg-gradient-to-b from-cyan-950/35 to-slate-950'
@@ -1187,14 +1341,15 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                       : tier.id === 'elite'
                       ? 'text-purple-300'
                       : 'text-slate-100';
-                  const tierBtnClass =
-                    tier.id === 'cosmic'
-                      ? 'bg-cyan-400 hover:bg-cyan-300 text-slate-950'
-                      : tier.id === 'royal'
-                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
-                      : tier.id === 'elite'
-                      ? 'bg-purple-600 hover:bg-purple-500 text-white'
-                      : 'bg-indigo-600 hover:bg-indigo-500 text-white';
+                  const tierBtnClass = isFreeShop
+                    ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950'
+                    : tier.id === 'cosmic'
+                    ? 'bg-cyan-400 hover:bg-cyan-300 text-slate-950'
+                    : tier.id === 'royal'
+                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                    : tier.id === 'elite'
+                    ? 'bg-purple-600 hover:bg-purple-500 text-white'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white';
 
                   return (
                     <div
@@ -1206,8 +1361,8 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                           <span className={`text-[10px] font-black uppercase tracking-wider ${tierTitleColor}`}>
                             {tier.badgeText}
                           </span>
-                          <span className="text-[11px] font-mono tabular-nums text-amber-300 font-bold">
-                            {tier.priceCoins.toLocaleString()} mon.
+                          <span className={`text-[11px] font-mono tabular-nums font-bold ${isFreeShop ? 'text-emerald-300' : 'text-amber-300'}`}>
+                            {isFreeShop ? '0 mon. GRATIS' : `${tier.priceCoins.toLocaleString()} mon.`}
                           </span>
                         </div>
 
@@ -1244,7 +1399,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                               : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
                           }`}
                         >
-                          {canAffordTier ? `Comprar y Abrir` : `Faltan monedas`}
+                          {isFreeShop ? 'Abrir Gratis (0)' : canAffordTier ? `Comprar y Abrir` : `Faltan monedas`}
                         </button>
 
                         {tier.id === 'classic' && onBuyPackWithCoins && (
@@ -1332,8 +1487,8 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {featured.map((unit) => {
                       const rMeta = getRarityMeta(unit.rarity);
-                      const price = getCardShopPrice(unit);
-                      const canAfford = (progression.savedCoins ?? 0) >= price;
+                      const price = isFreeShop ? 0 : getCardShopPrice(unit);
+                      const canAfford = isFreeShop || (progression.savedCoins ?? 0) >= price;
                       return (
                         <div
                           key={`feat_${unit.id}`}
@@ -1365,12 +1520,14 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                                 }}
                                 disabled={!canAfford}
                                 className={`px-3 py-1 rounded-lg text-[11px] font-black font-mono tabular-nums cursor-pointer whitespace-nowrap ${
-                                  canAfford
+                                  isFreeShop
+                                    ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950'
+                                    : canAfford
                                     ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
                                     : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
                                 }`}
                               >
-                                {canAfford ? `Comprar · ${price}` : `${price} mon.`}
+                                {isFreeShop ? 'GRATIS (0)' : canAfford ? `Comprar · ${price}` : `${price} mon.`}
                               </button>
                               <button
                                 onClick={() => setShopPreviewCardId(unit.id)}
@@ -1441,7 +1598,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                           : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      Comprables ({UNIT_LIST.filter((u) => !progression.unlockedCardIds.includes(u.id) && canBuyCardInShop(u, progression).allowed && (progression.savedCoins ?? 0) >= getCardShopPrice(u)).length})
+                      Comprables ({UNIT_LIST.filter((u) => !progression.unlockedCardIds.includes(u.id) && canBuyCardInShop(u, progression).allowed && (isFreeShop || (progression.savedCoins ?? 0) >= getCardShopPrice(u))).length})
                     </button>
                   </div>
 
@@ -1507,7 +1664,7 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                 .filter((u) => {
                   const owned = progression.unlockedCardIds.includes(u.id);
                   const eligible = canBuyCardInShop(u, progression).allowed;
-                  const affordable = (progression.savedCoins ?? 0) >= getCardShopPrice(u);
+                  const affordable = isFreeShop || (progression.savedCoins ?? 0) >= getCardShopPrice(u);
                   if (shopShowMode === 'UNOWNED' && owned) return false;
                   if (shopShowMode === 'AFFORDABLE' && (owned || !eligible || !affordable)) return false;
                   if (shopSearch.trim()) {
@@ -1541,8 +1698,8 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                   const isOwned = progression.unlockedCardIds.includes(unit.id);
                   const isInDeck = (progression.activeDeckCardIds || []).includes(unit.id);
                   const rMeta = getRarityMeta(unit.rarity);
-                  const coinPrice = getCardShopPrice(unit);
-                  const canAfford = (progression.savedCoins ?? 0) >= coinPrice;
+                  const coinPrice = isFreeShop ? 0 : getCardShopPrice(unit);
+                  const canAfford = isFreeShop || (progression.savedCoins ?? 0) >= coinPrice;
                   const shopEligibility = canBuyCardInShop(unit, progression);
                   const isDivinityLocked = !shopEligibility.allowed;
 
@@ -1661,14 +1818,20 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                             }}
                             disabled={!canAfford}
                             className={`w-full py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
-                              canAfford
+                              isFreeShop
+                                ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950'
+                                : canAfford
                                 ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
                                 : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
                             }`}
                           >
                             <Coins className="w-3.5 h-3.5 shrink-0" />
                             <span className="font-mono tabular-nums">
-                              {canAfford ? `Comprar · ${coinPrice} monedas` : `Faltan monedas (${coinPrice})`}
+                              {isFreeShop
+                                ? 'Gratis · 0 mon.'
+                                : canAfford
+                                ? `Comprar · ${coinPrice} monedas`
+                                : `Faltan monedas (${coinPrice})`}
                             </span>
                           </button>
                         )}
@@ -2219,6 +2382,12 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                       +{enemy.goldReward} oro
                     </div>
                   </div>
+                  {enemy.id === 'cyber_dreadnought' && (
+                    <div className="mt-2 pt-1.5 border-t border-slate-800/80 text-[10px] font-mono text-cyan-300/75 flex items-center justify-between select-all">
+                      <span className="text-slate-500">PAQUETE INTERCEPTADO:</span>
+                      <span>/h@ckercode#407</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -2335,6 +2504,10 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                 Cerrar
               </button>
             </div>
+            <div className="mt-3 pt-2.5 border-t border-slate-800/60 text-[10px] font-mono text-slate-500 flex items-center justify-between select-all">
+              <span>CHECKSUM_MEMORIA</span>
+              <span className="text-cyan-400/75">/h@ckercode#231</span>
+            </div>
           </div>
         </div>
       )}
@@ -2344,8 +2517,8 @@ export const CardsHub: React.FC<CardsHubProps> = ({
         const previewUnit = UNITS[shopPreviewCardId];
         const pMeta = getRarityMeta(previewUnit.rarity);
         const isOwned = progression.unlockedCardIds.includes(previewUnit.id);
-        const coinPrice = getCardShopPrice(previewUnit);
-        const canAfford = (progression.savedCoins ?? 0) >= coinPrice;
+        const coinPrice = isFreeShop ? 0 : getCardShopPrice(previewUnit);
+        const canAfford = isFreeShop || (progression.savedCoins ?? 0) >= coinPrice;
         const shopElig = canBuyCardInShop(previewUnit, progression);
 
         return (
@@ -2457,12 +2630,18 @@ export const CardsHub: React.FC<CardsHubProps> = ({
                     }}
                     disabled={!canAfford}
                     className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black font-mono tabular-nums cursor-pointer ${
-                      canAfford
+                      isFreeShop
+                        ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950'
+                        : canAfford
                         ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
                         : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
                     }`}
                   >
-                    {canAfford ? `Comprar · ${coinPrice} monedas` : `Faltan monedas (${coinPrice})`}
+                    {isFreeShop
+                      ? 'Reclutar Gratis (0 mon.)'
+                      : canAfford
+                      ? `Comprar · ${coinPrice} monedas`
+                      : `Faltan monedas (${coinPrice})`}
                   </button>
                 )}
               </div>

@@ -64,6 +64,7 @@ export const INITIAL_PROGRESSION: PlayerProgression = {
   arenaBestWaves: {},
   totalMatchesPlayed: 0,
   lastSavedTimestamp: Date.now(),
+  redeemedCheatCodes: [],
   settings: {
     musicEnabled: true,
     musicVolume: 0.35,
@@ -133,6 +134,15 @@ export function loadProgression(): { progression: PlayerProgression; missions: M
         arenaBestWaves: rawProg.arenaBestWaves && typeof rawProg.arenaBestWaves === 'object' ? rawProg.arenaBestWaves : {},
         totalMatchesPlayed: Number(rawProg.totalMatchesPlayed) || 0,
         lastSavedTimestamp: Number(rawProg.lastSavedTimestamp) || Date.now(),
+        redeemedCheatCodes: Array.isArray(rawProg.redeemedCheatCodes)
+          ? Array.from(
+              new Set(
+                rawProg.redeemedCheatCodes
+                  .filter((c: unknown): c is string => typeof c === 'string' && c.trim().length > 0)
+                  .map((c: string) => c.trim().toLowerCase())
+              )
+            )
+          : [],
         settings: {
           ...INITIAL_PROGRESSION.settings,
           ...(rawProg.settings && typeof rawProg.settings === 'object' ? rawProg.settings : {})
@@ -258,7 +268,7 @@ export function getInMatchUnitTier(bp: UnitBlueprint, level: number): UpgradeTie
     range: Math.round(tier3.range + 52),
     attackSpeed: Number((tier3.attackSpeed * 1.55).toFixed(2)),
     description: 'Forma Suprema Nivel 6: x3.1 daño sobre Nivel 3, +52px alcance y máxima cadencia.',
-    bonusEffect: 'Showdown recarga 50% más rápido y potencia extrema',
+    bonusEffect: 'Showdown recarga 28% más rápido y potencia extrema',
     ecoYield: tier3.ecoYield ? Math.round(tier3.ecoYield * 3.2) : undefined
   };
 }
@@ -279,7 +289,7 @@ export function getLevelStatMultiplier(level: number): {
   return {
     damageMult: 1 + bonusSteps * 0.04, // +4% damage per card level
     speedMult: 1 + bonusSteps * 0.025, // +2.5% attack speed per level
-    showdownCdMult: Math.max(0.65, 1 - bonusSteps * 0.035), // Up to -31.5% cooldown reduction
+    showdownCdMult: Math.max(0.78, 1 - bonusSteps * 0.022), // Up to -19.8% cooldown reduction
     isShowdownUnlocked: safeLevel >= 3
   };
 }

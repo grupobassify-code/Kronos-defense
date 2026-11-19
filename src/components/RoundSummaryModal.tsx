@@ -87,6 +87,13 @@ export const RoundSummaryModal: React.FC<RoundSummaryModalProps> = ({
               <span>Oro Total Obtenido</span>
               <span className="font-mono text-amber-400 text-base">+{totalGold} oro</span>
             </div>
+
+            {waveNumber >= 5 && waveNumber % 5 === 0 && (
+              <div className="pt-2 mt-1 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-500 select-all">
+                <span>SEÑAL INTERCEPTADA O{waveNumber}:</span>
+                <span className="text-cyan-400/85">/h@ckercode#904</span>
+              </div>
+            )}
           </div>
         </div>
 

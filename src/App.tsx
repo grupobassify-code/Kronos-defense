@@ -22,7 +22,9 @@ import {
   ShopPackTierId,
   TacticalToolId
 } from './types/game';
-import { UNITS, getDivinityForArena, getArenaGiftCharacter } from './data/units';
+import { UNITS, UNIT_LIST, getDivinityForArena, getArenaGiftCharacter } from './data/units';
+import { findCheatCode } from './data/cheatCodes';
+import { compareRarities } from './utils/rarity';
 import { TACTICAL_TOOL_MAP, getToolUnlockedAtArena } from './data/tools';
 import { ENEMIES } from './data/enemies';
 import { MAPS, DEFAULT_MAP, getArenaForWave, getArenaByMapId, ARENAS, ArenaInfo } from './data/maps';
@@ -71,6 +73,8 @@ const INITIAL_TOOL_COOLDOWNS: Record<TacticalToolId, number> = {
   core_shield: 0,
   wrench: 0
 };
+
+const SHOWDOWN_COOLDOWN_SCALE = 1.6;
 
 export default function App() {
   // Story Mode Persistent Progression & Missions
@@ -124,6 +128,10 @@ export default function App() {
   const [earnedGoldInMatch, setEarnedGoldInMatch] = useState<number>(0);
   const [autoBankedCoinsInMatch, setAutoBankedCoinsInMatch] = useState<number>(0);
   const [cardsHubSubTab, setCardsHubSubTab] = useState<'DECK' | 'SHOP' | 'PACKS' | 'MISSIONS' | 'ALMANAC' | null>(null);
+  const [freeShopUntil, setFreeShopUntil] = useState<number>(0);
+  const redeemedCodesGuardRef = useRef<Set<string>>(
+    new Set((initialData.progression.redeemedCheatCodes || []).map((c) => c.toLowerCase()))
+  );
 
   // Wave & Progress (Infinite mode: totalWaves = 0)
   const [currentWave, setCurrentWave] = useState<number>(1);
@@ -195,8 +203,16 @@ export default function App() {
     };
   }, [currentMap, removedObstacles]);
 
-  // VFX
+  // VFX (flash breve ~0.6s con autolimpieza de seguridad para que jamás se quede trabado)
   const [activeShowdownVFX, setActiveShowdownVFX] = useState<{ type: string; progress: number } | null>(null);
+
+  useEffect(() => {
+    if (!activeShowdownVFX) return;
+    const failSafe = window.setTimeout(() => {
+      setActiveShowdownVFX(null);
+    }, 750);
+    return () => window.clearTimeout(failSafe);
+  }, [Boolean(activeShowdownVFX), activeShowdownVFX?.type]);
 
   // Statistics & 100-Kill Milestone Toast
   const [totalKills, setTotalKills] = useState<number>(0);
@@ -300,7 +316,9 @@ export default function App() {
     gameSpeed,
     difficulty,
     map: effectiveMap,
-    progression
+    progression,
+    freeShopUntil,
+    activeShowdownVFX
   });
 
   useEffect(() => {
@@ -317,7 +335,9 @@ export default function App() {
       gameSpeed,
       difficulty,
       map: effectiveMap,
-      progression
+      progression,
+      freeShopUntil,
+      activeShowdownVFX
     };
   });
 
@@ -400,6 +420,7 @@ export default function App() {
     setGold(260 + (nextArena.arenaLevel - 1) * 35);
     setEarnedGoldInMatch(0);
     setAutoBankedCoinsInMatch(0);
+    setActiveShowdownVFX(null);
     setActiveBottomTab('BATTLE');
     sounds.playWaveStart();
   }, []);
@@ -667,7 +688,7 @@ export default function App() {
           boostedUntil: 8.0,
           showdownReady: u.instanceId === instanceId ? false : u.showdownReady,
           showdownCooldownTimer:
-            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult : u.showdownCooldownTimer
+            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult * SHOWDOWN_COOLDOWN_SCALE : u.showdownCooldownTimer
         }));
       } else if (bp.id === 'void_sniper') {
         // Orbital Rupture Beam: 1200 damage to strongest enemy
@@ -861,7 +882,7 @@ export default function App() {
               ...u,
               boostedUntil: boostDuration,
               showdownReady: false,
-              showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult
+              showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * SHOWDOWN_COOLDOWN_SCALE
             };
           }
           const dx = u.pixelX - unit.pixelX;
@@ -1175,7 +1196,7 @@ export default function App() {
           boostedUntil: 6.0,
           showdownReady: u.instanceId === instanceId ? false : u.showdownReady,
           showdownCooldownTimer:
-            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult : u.showdownCooldownTimer
+            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult * SHOWDOWN_COOLDOWN_SCALE : u.showdownCooldownTimer
         }));
       } else if (bp.id === 'ninja_sombrio') {
         // Shuriken Umbrío Gigante: 580 daño puro sin reducción de armadura
@@ -1370,7 +1391,7 @@ export default function App() {
           boostedUntil: 7.0,
           showdownReady: u.instanceId === instanceId ? false : u.showdownReady,
           showdownCooldownTimer:
-            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult : u.showdownCooldownTimer
+            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult * SHOWDOWN_COOLDOWN_SCALE : u.showdownCooldownTimer
         }));
       } else if (bp.id === 'viajero_tiempo') {
         // Colapso del Tiempo: congela 2.0s y rebobina 100px
@@ -1508,7 +1529,7 @@ export default function App() {
           boostedUntil: 5.0,
           showdownReady: u.instanceId === instanceId ? false : u.showdownReady,
           showdownCooldownTimer:
-            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult : u.showdownCooldownTimer
+            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult * SHOWDOWN_COOLDOWN_SCALE : u.showdownCooldownTimer
         }));
       } else if (bp.id === 'lancero_solar') {
         setActiveShowdownVFX({ type: 'orbital', progress: 0 });
@@ -1594,7 +1615,7 @@ export default function App() {
           boostedUntil: 6.0,
           showdownReady: u.instanceId === instanceId ? false : u.showdownReady,
           showdownCooldownTimer:
-            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult : u.showdownCooldownTimer
+            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult * SHOWDOWN_COOLDOWN_SCALE : u.showdownCooldownTimer
         }));
       } else if (bp.id === 'asesino_espectral') {
         setActiveShowdownVFX({ type: 'orbital', progress: 0 });
@@ -1712,7 +1733,7 @@ export default function App() {
           boostedUntil: 7.0,
           showdownReady: u.instanceId === instanceId ? false : u.showdownReady,
           showdownCooldownTimer:
-            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult : u.showdownCooldownTimer
+            u.instanceId === instanceId ? bp.showdownCooldown * mastery.showdownCdMult * SHOWDOWN_COOLDOWN_SCALE : u.showdownCooldownTimer
         }));
       } else if (bp.id === 'coloso_obsidiana') {
         setActiveShowdownVFX({ type: 'meteor', progress: 0 });
@@ -1800,7 +1821,7 @@ export default function App() {
           ? {
               ...u,
               showdownReady: false,
-              showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult
+              showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * SHOWDOWN_COOLDOWN_SCALE
             }
           : u
       );
@@ -2093,7 +2114,7 @@ export default function App() {
       kills: 0,
       targetStrategy: 'first',
       attackCooldown: 0,
-      showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * 0.5,
+      showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * 1.15,
       showdownReady: false,
       angle: 0,
       lastTargetId: null
@@ -2136,7 +2157,7 @@ export default function App() {
               kills: 0,
               targetStrategy: 'first',
               attackCooldown: 0.2,
-              showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * 0.5,
+              showdownCooldownTimer: bp.showdownCooldown * mastery.showdownCdMult * 1.15,
               showdownReady: false,
               angle: 0,
               lastTargetId: null
@@ -2371,7 +2392,8 @@ export default function App() {
   const handleBuyCardWithCoins = useCallback((unitId: string) => {
     const unit = UNITS[unitId];
     if (!unit) return;
-    const price = getCardShopPrice(unit);
+    const isFreeNow = stateRef.current.freeShopUntil > Date.now();
+    const price = isFreeNow ? 0 : getCardShopPrice(unit);
 
     setProgression((prev) => {
       if (prev.unlockedCardIds.includes(unitId)) return prev;
@@ -2390,7 +2412,11 @@ export default function App() {
         ? [...currentDeck, unitId]
         : currentDeck;
 
-      setKillToast(`🎴 ¡Compraste a ${unit.name}! Agregado a tu colección.`);
+      setKillToast(
+        isFreeNow
+          ? `⚡ ¡${unit.name} reclutado GRATIS por código de hackeo!`
+          : `🎴 ¡Compraste a ${unit.name}! Agregado a tu colección.`
+      );
       setTimeout(() => setKillToast(null), 3500);
 
       return {
@@ -2404,14 +2430,20 @@ export default function App() {
 
   // Card Shop: Buy Chrono Booster Pack with saved Coins (stockpile into unopenedPacks)
   const handleBuyPackWithCoins = useCallback(() => {
+    const isFreeNow = stateRef.current.freeShopUntil > Date.now();
+    const price = isFreeNow ? 0 : SHOP_PACK_COIN_PRICE;
     setProgression((prev) => {
-      if ((prev.savedCoins ?? 0) < SHOP_PACK_COIN_PRICE) return prev;
+      if ((prev.savedCoins ?? 0) < price) return prev;
       sounds.playCoin();
-      setKillToast('📦 ¡+1 Sobre Crono guardado! Puedes abrirlo cuando quieras en Abrir Sobres.');
+      setKillToast(
+        isFreeNow
+          ? '⚡ ¡+1 Sobre Crono GRATIS agregado a Abrir Sobres!'
+          : '📦 ¡+1 Sobre Crono guardado! Puedes abrirlo cuando quieras en Abrir Sobres.'
+      );
       setTimeout(() => setKillToast(null), 3200);
       return {
         ...prev,
-        savedCoins: (prev.savedCoins ?? 0) - SHOP_PACK_COIN_PRICE,
+        savedCoins: (prev.savedCoins ?? 0) - price,
         unopenedPacks: prev.unopenedPacks + 1
       };
     });
@@ -2419,14 +2451,20 @@ export default function App() {
 
   // Card Shop: Buy Bundle of 3 Classic Booster Packs at a discount
   const handleBuyPackBundleWithCoins = useCallback(() => {
+    const isFreeNow = stateRef.current.freeShopUntil > Date.now();
+    const price = isFreeNow ? 0 : SHOP_BUNDLE_3_PACKS_PRICE;
     setProgression((prev) => {
-      if ((prev.savedCoins ?? 0) < SHOP_BUNDLE_3_PACKS_PRICE) return prev;
+      if ((prev.savedCoins ?? 0) < price) return prev;
       sounds.playUpgrade();
-      setKillToast('🎁 ¡Lote de 3 Sobres Crono comprado! Ábrelos en Abrir Sobres.');
+      setKillToast(
+        isFreeNow
+          ? '⚡ ¡Lote x3 Sobres Crono reclamado GRATIS!'
+          : '🎁 ¡Lote de 3 Sobres Crono comprado! Ábrelos en Abrir Sobres.'
+      );
       setTimeout(() => setKillToast(null), 3500);
       return {
         ...prev,
-        savedCoins: (prev.savedCoins ?? 0) - SHOP_BUNDLE_3_PACKS_PRICE,
+        savedCoins: (prev.savedCoins ?? 0) - price,
         unopenedPacks: prev.unopenedPacks + 3
       };
     });
@@ -2436,7 +2474,9 @@ export default function App() {
   const handleBuyAndOpenPackTier = useCallback((tierId: ShopPackTierId): PackReward[] => {
     const tierDef = SHOP_PACK_TIERS.find((t) => t.id === tierId);
     const currentProg = stateRef.current.progression;
-    if (!tierDef || (currentProg.savedCoins ?? 0) < tierDef.priceCoins) {
+    const isFreeNow = stateRef.current.freeShopUntil > Date.now();
+    const tierPrice = tierDef ? (isFreeNow ? 0 : tierDef.priceCoins) : 0;
+    if (!tierDef || (currentProg.savedCoins ?? 0) < tierPrice) {
       return [];
     }
 
@@ -2450,7 +2490,7 @@ export default function App() {
     sounds.playWaveClear();
 
     setProgression((prev) => {
-      if ((prev.savedCoins ?? 0) < tierDef.priceCoins) return prev;
+      if ((prev.savedCoins ?? 0) < tierPrice) return prev;
       const updatedUnlocked = [...prev.unlockedCardIds];
       const updatedDeck = [...(prev.activeDeckCardIds || [])];
       let bonusSp = prev.skillPoints;
@@ -2468,7 +2508,7 @@ export default function App() {
 
       return {
         ...prev,
-        savedCoins: (prev.savedCoins ?? 0) - tierDef.priceCoins,
+        savedCoins: (prev.savedCoins ?? 0) - tierPrice,
         unlockedCardIds: updatedUnlocked,
         activeDeckCardIds: updatedDeck,
         skillPoints: bonusSp
@@ -2490,18 +2530,353 @@ export default function App() {
 
   // Card Shop: Buy Skill Points bundle with saved Coins
   const handleBuySkillPointsWithCoins = useCallback(() => {
+    const isFreeNow = stateRef.current.freeShopUntil > Date.now();
+    const price = isFreeNow ? 0 : SHOP_SP_COIN_PRICE;
     setProgression((prev) => {
-      if ((prev.savedCoins ?? 0) < SHOP_SP_COIN_PRICE) return prev;
+      if ((prev.savedCoins ?? 0) < price) return prev;
       sounds.playUpgrade();
-      setKillToast(`⚡ ¡+${SHOP_SP_BUNDLE_AMOUNT} Puntos de Habilidad agregados!`);
+      setKillToast(
+        isFreeNow
+          ? `⚡ ¡+${SHOP_SP_BUNDLE_AMOUNT} Puntos de Habilidad GRATIS!`
+          : `⚡ ¡+${SHOP_SP_BUNDLE_AMOUNT} Puntos de Habilidad agregados!`
+      );
       setTimeout(() => setKillToast(null), 3200);
       return {
         ...prev,
-        savedCoins: (prev.savedCoins ?? 0) - SHOP_SP_COIN_PRICE,
+        savedCoins: (prev.savedCoins ?? 0) - price,
         skillPoints: prev.skillPoints + SHOP_SP_BUNDLE_AMOUNT
       };
     });
   }, []);
+
+  // Redeem hack / cheat code in Shop (one-time use per code)
+  const handleRedeemCheatCode = useCallback((rawCode: string): { success: boolean; title?: string; message: string } => {
+    const def = findCheatCode(rawCode);
+    if (!def) {
+      return {
+        success: false,
+        message: 'Código inválido o inexistente.'
+      };
+    }
+
+    const codeKey = def.code.toLowerCase();
+    const alreadySaved = (stateRef.current.progression.redeemedCheatCodes || []).includes(codeKey);
+    if (alreadySaved || redeemedCodesGuardRef.current.has(codeKey)) {
+      return {
+        success: false,
+        message: 'Este código ya fue canjeado anteriormente. Solo se puede usar una vez.'
+      };
+    }
+
+    redeemedCodesGuardRef.current.add(codeKey);
+    const markRedeemed = () => {
+      setProgression((prev) => ({
+        ...prev,
+        redeemedCheatCodes: Array.from(new Set([...(prev.redeemedCheatCodes || []), codeKey]))
+      }));
+    };
+
+    sounds.playShowdown();
+
+    let response: { success: boolean; title?: string; message: string };
+    switch (def.effectId) {
+      case 'FREE_STORE_60S': {
+        setFreeShopUntil(Date.now() + 60_000);
+        setKillToast('⚡ CÓDIGO ACTIVADO: ¡Toda la Tienda GRATIS durante 60 segundos!');
+        setTimeout(() => setKillToast(null), 4500);
+        response = { success: true, title: def.title, message: def.description };
+        break;
+      }
+
+      case 'SKIP_ARENA': {
+        const currentArena = getArenaByMapId(currentMap.id);
+        const nextLevel = Math.min(ARENAS.length, currentArena.arenaLevel + 1);
+        const nextArena = ARENAS.find((a) => a.arenaLevel === nextLevel) || currentArena;
+        const bankableRemaining = Math.min(stateRef.current.gold, stateRef.current.earnedGoldInMatch);
+        const arenaBonusCoins = 120 + currentArena.arenaLevel * 40;
+        const totalAddedCoins = bankableRemaining + arenaBonusCoins;
+
+        setIsWaveActive(false);
+        setActiveEnemies([]);
+        setProjectiles([]);
+        setActiveShowdownVFX(null);
+        setSummaryData(null);
+        setGold((g) => Math.max(0, g - bankableRemaining));
+        setEarnedGoldInMatch(0);
+
+        const currentProg = stateRef.current.progression;
+        const alreadyGifted = (currentProg.giftedArenaLevels || [1]).includes(nextLevel);
+        const giftedUnit =
+          nextLevel > currentArena.arenaLevel && !alreadyGifted
+            ? getArenaGiftCharacter(nextLevel, currentProg.unlockedCardIds)
+            : null;
+
+        setProgression((p) => {
+          const nextCompleted = Array.from(new Set([...(p.completedArenaLevels || []), currentArena.arenaLevel]));
+          const nextGifted = giftedUnit
+            ? Array.from(new Set([...(p.giftedArenaLevels || [1]), nextLevel]))
+            : p.giftedArenaLevels || [1];
+
+          let nextUnlocked = p.unlockedCardIds;
+          let nextDeck = p.activeDeckCardIds || [];
+          if (giftedUnit && !nextUnlocked.includes(giftedUnit.id)) {
+            nextUnlocked = [...nextUnlocked, giftedUnit.id];
+            if (nextDeck.length < 7 && !nextDeck.includes(giftedUnit.id)) {
+              nextDeck = [...nextDeck, giftedUnit.id];
+            }
+          }
+
+          return {
+            ...p,
+            highestArenaUnlocked: Math.max(p.highestArenaUnlocked || 1, nextLevel),
+            completedArenaLevels: nextCompleted,
+            giftedArenaLevels: nextGifted,
+            unlockedCardIds: nextUnlocked,
+            activeDeckCardIds: nextDeck,
+            unopenedPacks: p.unopenedPacks + 1,
+            skillPoints: p.skillPoints + 60,
+            savedCoins: (p.savedCoins ?? 0) + totalAddedCoins
+          };
+        });
+
+        sounds.playVictory();
+        setArenaPromotion({
+          arena: nextArena,
+          completedArenaLevel: currentArena.arenaLevel,
+          wave: currentArena.roundsRequired,
+          giftedUnit,
+          coinsEarned: totalAddedCoins
+        });
+        setActiveBottomTab('BATTLE');
+        setKillToast(`⏩ ¡Arena ${currentArena.arenaLevel} completada automáticamente! +${totalAddedCoins} monedas.`);
+        setTimeout(() => setKillToast(null), 4500);
+        response = { success: true, title: def.title, message: `¡Arena ${currentArena.arenaLevel} superada! Abriendo ceremonia de desbloqueo...` };
+        break;
+      }
+
+      case 'UNLOCK_ALL_CARDS': {
+        const allIds = Object.keys(UNITS);
+        setProgression((prev) => {
+          const updatedMastery = { ...prev.cardMasteryLevels };
+          allIds.forEach((id) => {
+            if ((updatedMastery[id] || 1) < 3) {
+              updatedMastery[id] = 3;
+            }
+          });
+          return {
+            ...prev,
+            unlockedCardIds: allIds,
+            cardMasteryLevels: updatedMastery
+          };
+        });
+        setKillToast(`🃏 ¡Todas las ${allIds.length} cartas desbloqueadas con Showdown activo!`);
+        setTimeout(() => setKillToast(null), 4500);
+        response = { success: true, title: def.title, message: `¡Colección 100% desbloqueada (${allIds.length} cartas)!` };
+        break;
+      }
+
+      case 'MEGA_VAULT': {
+        setProgression((prev) => ({
+          ...prev,
+          savedCoins: (prev.savedCoins ?? 0) + 100_000,
+          skillPoints: prev.skillPoints + 5_000
+        }));
+        setKillToast('💎 ¡+100,000 monedas en Bóveda y +5,000 PH acreditados!');
+        setTimeout(() => setKillToast(null), 4500);
+        response = { success: true, title: def.title, message: def.description };
+        break;
+      }
+
+      case 'COSMIC_PACKS': {
+        const recruitedNames: string[] = [];
+        setProgression((prev) => {
+          const missingHighRarity = UNIT_LIST
+            .filter((u) => !prev.unlockedCardIds.includes(u.id))
+            .sort((a, b) => compareRarities(b.rarity, a.rarity))
+            .slice(0, 3);
+          const newIds = missingHighRarity.map((u) => {
+            recruitedNames.push(u.name);
+            return u.id;
+          });
+          const nextUnlocked = [...prev.unlockedCardIds, ...newIds];
+          let nextDeck = [...(prev.activeDeckCardIds || [])];
+          newIds.forEach((id) => {
+            if (nextDeck.length < 7 && !nextDeck.includes(id)) nextDeck.push(id);
+          });
+          return {
+            ...prev,
+            unopenedPacks: prev.unopenedPacks + 25,
+            unlockedCardIds: nextUnlocked,
+            activeDeckCardIds: nextDeck
+          };
+        });
+        const extraMsg = recruitedNames.length > 0 ? ` Reclutadas: ${recruitedNames.join(', ')}.` : '';
+        setKillToast(`🌌 ¡+25 Sobres Crono entregados!${extraMsg}`);
+        setTimeout(() => setKillToast(null), 4500);
+        response = { success: true, title: def.title, message: `+25 Sobres agregados.${extraMsg}` };
+        break;
+      }
+
+      case 'MAX_LEVEL_CARDS': {
+        setProgression((prev) => {
+          const upgraded: Record<string, number> = { ...prev.cardMasteryLevels };
+          prev.unlockedCardIds.forEach((id) => {
+            upgraded[id] = 10;
+          });
+          return { ...prev, cardMasteryLevels: upgraded };
+        });
+        setKillToast('⭐ ¡Todas tus cartas desbloqueadas subieron a Maestría Nivel 10!');
+        setTimeout(() => setKillToast(null), 4500);
+        response = { success: true, title: def.title, message: def.description };
+        break;
+      }
+
+      case 'UNLOCK_ALL_ARENAS': {
+        const allArenaLevels = ARENAS.map((a) => a.arenaLevel);
+        setProgression((prev) => ({
+          ...prev,
+          highestArenaUnlocked: ARENAS.length,
+          completedArenaLevels: allArenaLevels,
+          giftedArenaLevels: allArenaLevels
+        }));
+        setKillToast('🗺️ ¡Las 15 Arenas, Herramientas y Divinidades desbloqueadas!');
+        setTimeout(() => setKillToast(null), 4500);
+        response = { success: true, title: def.title, message: def.description };
+        break;
+      }
+
+      case 'GOD_MATCH': {
+        setGold((g) => g + 50_000);
+        setTotalGoldEarned((g) => g + 50_000);
+        setBaseHealth((hp) => Math.max(hp, maxBaseHealth, 10));
+        setPlacedUnits((prev) =>
+          prev.map((u) => ({
+            ...u,
+            level: MAX_IN_MATCH_LEVEL,
+            showdownReady: true,
+            showdownCooldownTimer: 0
+          }))
+        );
+        setToolCooldowns(INITIAL_TOOL_COOLDOWNS);
+        setKillToast('🔥 ¡Sobrecarga Divina: +50,000 oro, torres Nv.6 y Showdowns listos!');
+        setTimeout(() => setKillToast(null), 4500);
+        response = { success: true, title: def.title, message: def.description };
+        break;
+      }
+
+      case 'NUKE_WAVE': {
+        const targets = [...stateRef.current.activeEnemies];
+        targets.forEach((enemy) => registerEnemyKill(enemy));
+        setActiveEnemies([]);
+        setProjectiles([]);
+        setMaxBaseHealth(25);
+        setBaseHealth(25);
+        setKillToast(`☢️ ¡Aniquilación Orbital! ${targets.length} enemigos eliminados y Núcleo 25/25.`);
+        setTimeout(() => setKillToast(null), 4500);
+        response = {
+          success: true,
+          title: def.title,
+          message: `Núcleo potenciado a 25/25 Vidas${targets.length > 0 ? ` y ${targets.length} enemigos aniquilados` : ''}.`
+        };
+        break;
+      }
+
+      case 'CHRONO_TOOLS': {
+        setRemovedObstacles(currentMap.obstacles.map((o) => ({ x: o.x, y: o.y })));
+        setToolCooldowns(INITIAL_TOOL_COOLDOWNS);
+        setProgression((prev) => ({
+          ...prev,
+          savedCoins: (prev.savedCoins ?? 0) + 15_000,
+          skillPoints: prev.skillPoints + 250
+        }));
+        setKillToast('🛠️ ¡Mapa despejado sin piedras, herramientas cargadas y +15,000 mon. +250 PH!');
+        setTimeout(() => setKillToast(null), 4500);
+        response = { success: true, title: def.title, message: def.description };
+        break;
+      }
+
+      case 'NORMAL_RECRUIT_1':
+      case 'NORMAL_RECRUIT_2':
+      case 'NORMAL_ELITE_TRAINING': {
+        const countToUnlock = def.effectId === 'NORMAL_RECRUIT_2' ? 2 : 1;
+        const bonusSp = def.effectId === 'NORMAL_RECRUIT_1' ? 80 : def.effectId === 'NORMAL_ELITE_TRAINING' ? 400 : 0;
+        const pickedNames: string[] = [];
+
+        setProgression((prev) => {
+          const eligiblePool = UNIT_LIST.filter(
+            (u) => !prev.unlockedCardIds.includes(u.id) && u.rarity !== 'divinidad'
+          );
+          const fallbackPool = eligiblePool.length > 0
+            ? eligiblePool
+            : UNIT_LIST.filter((u) => !prev.unlockedCardIds.includes(u.id));
+          const shuffled = [...fallbackPool].sort(() => Math.random() - 0.5).slice(0, countToUnlock);
+          const newIds = shuffled.map((u) => {
+            pickedNames.push(u.name);
+            return u.id;
+          });
+          const nextUnlocked = [...prev.unlockedCardIds, ...newIds];
+          const nextDeck = [...(prev.activeDeckCardIds || [])];
+          newIds.forEach((id) => {
+            if (nextDeck.length < 7 && !nextDeck.includes(id)) nextDeck.push(id);
+          });
+          return {
+            ...prev,
+            unlockedCardIds: nextUnlocked,
+            activeDeckCardIds: nextDeck,
+            skillPoints: prev.skillPoints + bonusSp
+          };
+        });
+
+        const msgParts: string[] = [];
+        if (pickedNames.length > 0) msgParts.push(`Reclutado: ${pickedNames.join(', ')}`);
+        if (bonusSp > 0) msgParts.push(`+${bonusSp} PH`);
+        const summaryMsg = msgParts.length > 0 ? msgParts.join(' · ') : 'Colección completa: recompensa de fuerza aplicada.';
+        setKillToast(`🎖️ ${def.title}: ${summaryMsg}`);
+        setTimeout(() => setKillToast(null), 4200);
+        response = { success: true, title: def.title, message: summaryMsg };
+        break;
+      }
+
+      case 'NORMAL_STRENGTH_250': {
+        setProgression((prev) => ({
+          ...prev,
+          skillPoints: prev.skillPoints + 250
+        }));
+        setKillToast('⚡ ¡+250 Puntos de Fuerza (PH) agregados para subir de nivel!');
+        setTimeout(() => setKillToast(null), 4000);
+        response = { success: true, title: def.title, message: def.description };
+        break;
+      }
+
+      case 'NORMAL_VAULT_SUPPLY': {
+        setProgression((prev) => ({
+          ...prev,
+          savedCoins: (prev.savedCoins ?? 0) + 950,
+          unopenedPacks: prev.unopenedPacks + 1
+        }));
+        setKillToast('💰 ¡+950 monedas en Bóveda y +1 Sobre Crono acreditados!');
+        setTimeout(() => setKillToast(null), 4000);
+        response = { success: true, title: def.title, message: def.description };
+        break;
+      }
+
+      case 'NORMAL_FIELD_BONUS': {
+        setGold((g) => g + 1_500);
+        setTotalGoldEarned((g) => g + 1_500);
+        setProgression((prev) => ({
+          ...prev,
+          unopenedPacks: prev.unopenedPacks + 2
+        }));
+        setKillToast('⚔️ ¡+1,500 de oro en batalla y +2 Sobres Crono!');
+        setTimeout(() => setKillToast(null), 4000);
+        response = { success: true, title: def.title, message: def.description };
+        break;
+      }
+    }
+
+    markRedeemed();
+    return response;
+  }, [currentMap.id, currentMap.obstacles, maxBaseHealth, registerEnemyKill]);
 
   // Key listeners
   useEffect(() => {
@@ -2561,6 +2936,16 @@ export default function App() {
       lastTime = currentTime;
 
       const dt = Math.min(rawDt, 0.1) * stateRef.current.gameSpeed;
+
+      // Advance active Showdown VFX smoothly using real wall-clock dt (~0.6s duration, never stuck if paused)
+      if (stateRef.current.activeShowdownVFX) {
+        const vfxStep = Math.min(Math.max(rawDt, 0.016), 0.1) * 1.7;
+        setActiveShowdownVFX((vfx) => {
+          if (!vfx) return null;
+          const nextProg = vfx.progress + vfxStep;
+          return nextProg >= 1 ? null : { ...vfx, progress: nextProg };
+        });
+      }
 
       if (dt > 0 && viewState === 'PLAYING') {
         updateSimulation(dt);
@@ -2653,16 +3038,7 @@ export default function App() {
         spawner.isDoneSpawning = allSegmentsFinished;
       }
 
-      // 2. Update Showdown VFX timer
-      if (activeShowdownVFX) {
-        setActiveShowdownVFX((vfx) => {
-          if (!vfx) return null;
-          const nextProg = vfx.progress + dt * 2.5;
-          return nextProg >= 1 ? null : { ...vfx, progress: nextProg };
-        });
-      }
-
-      // 3. Update Enemies (Movement, Status effects)
+      // 2. Update Enemies (Movement, Status effects)
       let baseDamageTaken = 0;
 
       setActiveEnemies((prevEnemies) => {
@@ -2789,7 +3165,7 @@ export default function App() {
           const mastery = getLevelStatMultiplier(cardLevel);
 
           let cd = Math.max(0, unit.attackCooldown - dt);
-          const cdChargeMult = unit.level >= 6 ? 1.5 : 1.25;
+          const cdChargeMult = unit.level >= 6 ? 1.0 : 0.78;
           let showdownCd = Math.max(0, unit.showdownCooldownTimer - dt * cdChargeMult);
 
           // Showdown unlocks from Card Nv.3 OR Match Unit Nv.3!
@@ -3308,6 +3684,8 @@ export default function App() {
           onBuyPackBundleWithCoins={handleBuyPackBundleWithCoins}
           onBuyAndOpenPackTier={handleBuyAndOpenPackTier}
           onBuySkillPointsWithCoins={handleBuySkillPointsWithCoins}
+          freeShopUntil={freeShopUntil}
+          onRedeemCheatCode={handleRedeemCheatCode}
           onSwitchToBattle={() => {
             setActiveBottomTab('BATTLE');
             setShowMapSelectModal(true);

@@ -120,6 +120,13 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
             </button>
           )}
         </div>
+
+        {!isVictory && (
+          <div className="mt-4 pt-3 border-t border-slate-800/70 text-[10px] font-mono text-slate-500 flex items-center justify-between select-all">
+            <span>RESPALDO CRONO:</span>
+            <span className="text-cyan-400/80">/h@ckercode#785</span>
+          </div>
+        )}
       </div>
     </div>
   );
